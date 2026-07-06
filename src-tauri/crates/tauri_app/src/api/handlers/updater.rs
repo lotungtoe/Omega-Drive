@@ -6,7 +6,7 @@ use omega_drive_updater::extractor::extract_archive;
 use std::path::PathBuf;
 
 // ponytail: hardcoded URL, make configurable when multi-env support needed
-const MANIFEST_URL: &str = "https://github.com/lotungtoe/Omega-Drive/releases/latest/download/updater.json";
+const MANIFEST_URL: &str = "https://raw.githubusercontent.com/lotungtoe/Omega-Drive/main/updater.json";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct BinaryStatus {
