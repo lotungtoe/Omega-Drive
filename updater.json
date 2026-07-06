@@ -1,0 +1,108 @@
+{
+  "platforms": {
+    "windows-x86_64": {
+      "version": "1.0.0",
+      "app": {
+        "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/Omega-Drive-x86_64-pc-windows-msvc.msi",
+        "checksum": ""
+      },
+      "binaries": {
+        "ffmpeg": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-x86_64-pc-windows-msvc.zip",
+          "checksum": ""
+        },
+        "ffprobe": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-x86_64-pc-windows-msvc.zip",
+          "checksum": ""
+        },
+        "yt-dlp": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-x86_64-pc-windows-msvc.zip",
+          "checksum": ""
+        },
+        "deno": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-x86_64-pc-windows-msvc.zip",
+          "checksum": ""
+        }
+      },
+      "changelog": "https://github.com/lotungtoe/Omega-Drive/releases/tag/v1.0.0"
+    },
+    "linux-x86_64": {
+      "version": "1.0.0",
+      "app": {
+        "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/Omega-Drive-x86_64-unknown-linux-gnu.AppImage",
+        "checksum": ""
+      },
+      "binaries": {
+        "ffmpeg": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-x86_64-unknown-linux-gnu.tar.gz",
+          "checksum": ""
+        },
+        "ffprobe": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-x86_64-unknown-linux-gnu.tar.gz",
+          "checksum": ""
+        },
+        "yt-dlp": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-x86_64-unknown-linux-gnu.tar.gz",
+          "checksum": ""
+        },
+        "deno": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-x86_64-unknown-linux-gnu.tar.gz",
+          "checksum": ""
+        }
+      },
+      "changelog": "https://github.com/lotungtoe/Omega-Drive/releases/tag/v1.0.0"
+    },
+    "darwin-x86_64": {
+      "version": "1.0.0",
+      "app": {
+        "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/Omega-Drive-x86_64-apple-darwin.dmg",
+        "checksum": ""
+      },
+      "binaries": {
+        "ffmpeg": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-x86_64-apple-darwin.tar.gz",
+          "checksum": ""
+        },
+        "ffprobe": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-x86_64-apple-darwin.tar.gz",
+          "checksum": ""
+        },
+        "yt-dlp": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-x86_64-apple-darwin.tar.gz",
+          "checksum": ""
+        },
+        "deno": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-x86_64-apple-darwin.tar.gz",
+          "checksum": ""
+        }
+      },
+      "changelog": "https://github.com/lotungtoe/Omega-Drive/releases/tag/v1.0.0"
+    },
+    "darwin-aarch64": {
+      "version": "1.0.0",
+      "app": {
+        "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/Omega-Drive-aarch64-apple-darwin.dmg",
+        "checksum": ""
+      },
+      "binaries": {
+        "ffmpeg": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-aarch64-apple-darwin.tar.gz",
+          "checksum": ""
+        },
+        "ffprobe": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-aarch64-apple-darwin.tar.gz",
+          "checksum": ""
+        },
+        "yt-dlp": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-aarch64-apple-darwin.tar.gz",
+          "checksum": ""
+        },
+        "deno": {
+          "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/binaries-aarch64-apple-darwin.tar.gz",
+          "checksum": ""
+        }
+      },
+      "changelog": "https://github.com/lotungtoe/Omega-Drive/releases/tag/v1.0.0"
+    }
+  }
+}
