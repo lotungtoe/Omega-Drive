@@ -37,7 +37,7 @@
       "dialog": true,
       "pubkey": "",
       "endpoints": [
-        "https://api.github.com/repos/<owner>/<repo>/releases/latest"
+        "https://api.github.com/repos/lotungtoe/Omega-Drive/releases/latest"
       ],
       "windows": {
         "installMode": "passive"
