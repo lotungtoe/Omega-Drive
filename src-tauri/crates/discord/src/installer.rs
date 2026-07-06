@@ -24,7 +24,7 @@ use omega_drive_gateway::provider::{
     },
     stream::StreamGateway,
 };
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::discord_real as discord_impl;
 use crate::discord_real::DiscordStorageProvider;
@@ -146,15 +146,12 @@ pub async fn install_discord(input: DiscordInstallInput) -> AppResult<DiscordIns
 
     globals::set_guild_id(guild_id_val);
 
-    // Background active-monitoring task.
+    // Background active-monitoring task with debounce.
     let eb_monitor = Arc::clone(&input.event_bus);
     tokio::spawn(async move {
+        let mut fail_count: u32 = 0;
         loop {
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-            let is_currently_connected = *DISCORD_CONNECTED.read().await;
-            if !is_currently_connected {
-                continue;
-            }
             let tcp_ok = tokio::time::timeout(
                 std::time::Duration::from_secs(2),
                 tokio::net::TcpStream::connect("gateway.discord.gg:443"),
@@ -162,18 +159,37 @@ pub async fn install_discord(input: DiscordInstallInput) -> AppResult<DiscordIns
             .await
             .map(|r| r.is_ok())
             .unwrap_or(false);
-            if !tcp_ok {
+
+            if tcp_ok {
+                fail_count = 0;
                 let mut conn = DISCORD_CONNECTED.write().await;
-                if *conn {
-                    *conn = false;
+                if !*conn {
+                    *conn = true;
                     eb_monitor.emit(
                         omega_drive_gateway::core::events::OmegaEvent::DiscordConnectionStatusChanged(
-                            false,
+                            true,
                         ),
                     );
-                    tracing::warn!(
-                        "[Discord Monitor] TCP ping failed; switching provider state to offline."
+                    info!(
+                        "[Discord Monitor] TCP ping recovered; restoring online state."
                     );
+                }
+            } else {
+                fail_count += 1;
+                if fail_count >= 2 {
+                    let mut conn = DISCORD_CONNECTED.write().await;
+                    if *conn {
+                        *conn = false;
+                        eb_monitor.emit(
+                            omega_drive_gateway::core::events::OmegaEvent::DiscordConnectionStatusChanged(
+                                false,
+                            ),
+                        );
+                        warn!(
+                            "[Discord Monitor] TCP ping failed {} times; switching provider state to offline.",
+                            fail_count
+                        );
+                    }
                 }
             }
         }
@@ -554,7 +570,9 @@ impl RemoteFolderGateway for DiscordRemoteFolderGateway {
                 .await?
                 .id
         };
-        let file_type = file_type_from_filename(file_name);
+        let file_type = omega_drive_gateway::core::services::file_classifier()
+            .map(|c| c.file_type_from_filename(file_name))
+            .unwrap_or(FileType::Unknown);
         let channel_name = match file_type {
             FileType::Unknown => discord_impl::sanitize_name(file_name),
             _ => file_type.shared_drive_channel().to_string(),
@@ -646,44 +664,7 @@ impl RemoteObjectGateway for DiscordRemoteObjectGateway {
     }
 }
 
-// ██ Utility functions (inlined from omega_drive_core to remove that dependency) ██
 
-fn normalize_extension(ext: &str) -> Option<String> {
-    let trimmed = ext.trim().trim_start_matches('.').to_lowercase();
-    if trimmed.is_empty() { None } else { Some(trimmed) }
-}
-
-fn file_type_from_extension(ext: &str) -> Option<FileType> {
-    match ext {
-        "pdf" | "doc" | "docx" | "txt" | "rtf" | "md" | "mdx" | "ppt" | "pptx" | "odt" | "epub"
-        | "srt" | "vtt" | "ass" | "ssa" | "sub" => Some(FileType::Document),
-        "xls" | "xlsx" | "csv" | "tsv" | "ods" => Some(FileType::Sheet),
-        "json" | "jsonc" | "xml" | "html" | "htm" | "css" | "js" | "jsx" | "ts" | "tsx" | "py"
-        | "java" | "c" | "cpp" | "h" | "hpp" | "rs" | "go" | "rb" | "php" | "swift" | "kt"
-        | "dart" | "lua" | "sh" | "bash" | "zsh" | "fish" | "ps1" | "bat" | "cmd" | "ini"
-        | "cfg" | "toml" | "yaml" | "yml" | "vue" | "svelte" | "scss" | "sass" | "less" | "env"
-        | "log" | "conf" | "properties" | "gradle" | "kts" | "stylus" | "styl" | "sql" => Some(FileType::Code),
-        "jpg" | "jpeg" | "png" | "gif" | "webp" | "svg" | "bmp" | "heic" | "avif" | "ico"
-        | "tiff" | "tif" | "raw" | "dng" | "cr2" | "cr3" | "nef" | "arw" | "orf" | "sr2"
-        | "srw" | "pef" | "rw2" | "raf" | "3fr" | "dcr" | "erf" | "fff" | "kdc" | "mos" | "mrw"
-        | "nrw" | "x3f" => Some(FileType::Image),
-        "mp4" | "mkv" | "mov" | "avi" | "webm" | "m4v" | "flv" | "m2ts" | "mpeg" | "mpg"
-        | "3gp" | "3g2" | "asf" | "wmv" | "vob" | "ogv" | "rm" | "rmvb" | "mxf" | "f4v" | "f4p"
-        | "dv" | "nut" | "m3u8" => Some(FileType::Video),
-        "mp3" | "wav" | "flac" | "aac" | "ogg" | "m4a" | "wma" => Some(FileType::Audio),
-        "zip" | "rar" | "7z" | "tar" | "gz" | "bz2" | "xz" => Some(FileType::Archive),
-        _ => None,
-    }
-}
-
-fn file_type_from_filename(filename: &str) -> FileType {
-    std::path::Path::new(filename)
-        .extension()
-        .and_then(|v| v.to_str())
-        .and_then(normalize_extension)
-        .and_then(|ext| file_type_from_extension(&ext))
-        .unwrap_or(FileType::Unknown)
-}
 
 fn parse_discord_expires(url: &str) -> Option<DateTime<Utc>> {
     let query = url.split('?').nth(1)?;

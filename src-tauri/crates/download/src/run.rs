@@ -421,6 +421,7 @@ fn compute_download_parallelism(state: &DownloadContext, parts: &[PartMetadata])
 }
 
 fn verify_part_checksum_from_disk(
+    integrity: &dyn IntegrityService,
     path: &Path,
     part_start: u64,
     part_len: u64,
@@ -434,8 +435,7 @@ fn verify_part_checksum_from_disk(
         .map_err(DownloadJobError::from)?;
 
     let mut remaining = part_len;
-    let mut hasher = blake3::Hasher::new();
-    use omega_drive_gateway::blake3;
+    let mut hasher = integrity.create_hasher();
     let mut buffer = [0u8; 64 * 1024];
 
     while remaining > 0 {
@@ -447,7 +447,7 @@ fn verify_part_checksum_from_disk(
         remaining -= to_read as u64;
     }
 
-    let actual_hash = hasher.finalize().to_hex().to_string();
+    let actual_hash = hasher.finalize_hex();
     if actual_hash != expected_hash {
         return Err(DownloadJobError::Other(anyhow::anyhow!(
             "Chunk integrity failure! Expected {}, got {}",
@@ -471,6 +471,7 @@ fn verify_downloaded_part(
 
     if plan.verify_from_disk {
         return verify_part_checksum_from_disk(
+            integrity,
             temp_path,
             plan.part_start,
             plan.full_size,

@@ -467,7 +467,7 @@ async fn collect_reachable_context(state: &AppState, force_refresh: bool) -> Rea
     let telegram_credentials = read_telegram_credentials();
     let telegram_credentials_present = telegram_credentials.is_some();
 
-    // Trigger background fetch (non-blocking â€” returns immediately)
+    // Trigger background fetch (non-blocking — returns immediately)
     trigger_destinations_fetch(state.base_dir.clone(), force_refresh).await;
 
     // Read from RAM cache immediately

@@ -1,0 +1,17 @@
+[package]
+name = "omega_drive_engine"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+zip = ["dep:zip"]
+
+[dependencies]
+omega_drive_gateway = { path = "../gateway" }
+async-trait = "0.1"
+anyhow = "1"
+bytes = "1"
+tokio = { version = "1.47", features = ["fs", "io-util"] }
+blake3 = "1.8.4"
+zip = { version = "2", optional = true, default-features = false, features = ["zstd", "aes-crypto"] }

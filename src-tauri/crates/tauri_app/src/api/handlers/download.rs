@@ -85,7 +85,7 @@ pub async fn open_download_file(path: String) -> AppResult<Value> {
         wrap_error(
             "download",
             codes::E_IO,
-            "KhĂ´ng thá»ƒ má»Ÿ file táº£i xuá»‘ng.",
+            "Cannot open download file.",
             ctx,
             e,
         )
@@ -105,7 +105,7 @@ pub async fn open_download_folder(path: String) -> AppResult<Value> {
         wrap_error(
             "download",
             codes::E_IO,
-            "KhĂ´ng thá»ƒ má»Ÿ thÆ° má»¥c táº£i xuá»‘ng.",
+            "Cannot open download folder.",
             ctx,
             e,
         )

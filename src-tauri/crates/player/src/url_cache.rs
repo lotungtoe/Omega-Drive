@@ -60,7 +60,7 @@ pub fn list_expired_parts(
     expired
 }
 
-// ponytail: part number có thể kết thúc bằng '.' (cũ) hoặc hết chuỗi (mới)
+// ponytail: part number can end with '.' (legacy) or end of string (new)
 pub fn parse_part_index(filename: &str) -> Option<u32> {
     let marker = ".part";
     let start = filename.find(marker)?;

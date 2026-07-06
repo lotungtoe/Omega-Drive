@@ -5,13 +5,13 @@ use crate::{app_runtime::AppState, core::error::AppResult, db::files as db_files
 
 #[tauri::command]
 pub async fn check_backend_health() -> AppResult<Value> {
-    info!("đŸ“¡ [IPC Audit] Calling handler: check_backend_health");
+    info!("[IPC Audit] Calling handler: check_backend_health");
     Ok(json!({ "ok": true }))
 }
 
 #[tauri::command]
 pub async fn get_connection_status(st: tauri::State<'_, AppState>) -> AppResult<Value> {
-    info!("đŸ“¡ [IPC Audit] Calling handler: get_connection_status");
+    info!("[IPC Audit] Calling handler: get_connection_status");
     let provider_runtime = st.provider_runtime();
     let discord_status = match provider_runtime.provider_admin_registry.get("discord") {
         Some(gateway) => gateway.connection_status().await.ok(),

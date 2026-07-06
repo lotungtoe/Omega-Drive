@@ -1,18 +1,18 @@
 import { useEffect } from 'react';
 
 /**
- * useKeyboardActions Hook: Lắng nghe các phím tắt toàn cục để tăng trải nghiệm người dùng.
+ * useKeyboardActions Hook: Listen for global keyboard shortcuts to enhance user experience.
  */
 export function useKeyboardActions(search, setSearch, refresh, setShowSettings, setShowNewFolder, setPreviewFile) {
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Nhấn "/" hoặc "Ctrl+K" để tập trung vào ô tìm kiếm
+      // Press "/" or "Ctrl+K" to focus search input
       if ((e.key === '/' && document.activeElement.tagName !== 'INPUT') || (e.key === 'k' && (e.ctrlKey || e.metaKey))) {
         e.preventDefault();
         document.getElementById('header-search-input')?.focus();
       }
       
-      // Nhấn "Escape" để đóng tất cả các cửa sổ đang mở hoặc xóa nội dung tìm kiếm
+      // Press "Escape" to close all open windows or clear search input
       if (e.key === 'Escape') {
         if (search) setSearch('');
         setShowSettings(false);
@@ -20,7 +20,7 @@ export function useKeyboardActions(search, setSearch, refresh, setShowSettings, 
         setPreviewFile(null);
       }
       
-      // Nhấn "F5" để làm mới dữ liệu từ server
+      // Press "F5" to refresh data from server
       if (e.key === 'F5') {
         e.preventDefault();
         refresh();

@@ -45,7 +45,7 @@ export function FileDetailsPreview({ file, onClose, onDownload, dark }) {
           {displayName}
         </h3>
         <p className={cn("text-sm mb-6", dark ? "text-slate-500" : "text-gray-400")}>
-          {label} Â· {formatSize(file.size)}
+          {label} · {formatSize(file.size)}
         </p>
 
         <div className={cn("w-full rounded-xl border divide-y text-sm", dark ? "border-white/[0.07] divide-white/[0.05]" : "border-gray-100 divide-gray-100")}>

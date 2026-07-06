@@ -8,8 +8,11 @@ pub enum FileType {
     Audio,
     Document,
     Archive,
-    Code,
     Sheet,
+    Book,
+    Font,
+    App,
+    Text,
     #[serde(alias = "other")]
     Unknown,
 }
@@ -22,8 +25,11 @@ impl FileType {
             FileType::Audio => "audio",
             FileType::Document => "document",
             FileType::Archive => "archive",
-            FileType::Code => "code",
             FileType::Sheet => "sheet",
+            FileType::Book => "book",
+            FileType::Font => "font",
+            FileType::App => "app",
+            FileType::Text => "text",
             FileType::Unknown => "unknown",
         }
     }

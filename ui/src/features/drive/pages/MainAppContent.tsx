@@ -71,7 +71,7 @@ function MorphingDragOverlay({ activeDragData, dark }) {
   const [isPill, setIsPill] = useState(false);
 
   useEffect(() => {
-    // KĂ­ch hoáº¡t morph sau 1 frame Ä‘á»ƒ CSS transition cĂ³ thá»ƒ catch start bounds
+    // Activate morph after 1 frame so CSS transition can catch start bounds
     const frame = requestAnimationFrame(() => {
       requestAnimationFrame(() => setIsPill(true));
     });
@@ -96,7 +96,7 @@ function MorphingDragOverlay({ activeDragData, dark }) {
   const pillStyle = {
     width: Math.min(240, activeDragData.name.length * 8 + 60), // Auto-like width
     height: 38,
-    borderRadius: 10, // Con nhá»™ng
+    borderRadius: 10, // Animation
     backgroundColor: "var(--gd-surface)",
     border: "1px solid var(--gd-outline-variant)",
     boxShadow: "0 8px 16px rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.1)",
@@ -708,7 +708,7 @@ export function MainAppContent() {
           </Suspense>
         )}
         {uiState.onboardingVisible && (
-          <Suspense fallback={<OverlayLoader message={t("onboarding.loading", "Äang táº£i onboarding...")} />}>
+          <Suspense fallback={<OverlayLoader message={t("onboarding.loading", "Loading onboarding...")} />}>
             <LazyProviderOnboardingModal
               state={uiState.onboardingState}
               preferredScope={uiState.onboardingPreferredScope}

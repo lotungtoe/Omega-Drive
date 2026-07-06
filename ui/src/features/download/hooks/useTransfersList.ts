@@ -31,7 +31,7 @@ export function useTransfersList(toast) {
     } catch (err) {
       console.error('Failed to load uploads:', err);
       const msg = toUserMessage(err);
-      toast?.show?.(msg.message || 'Lỗi khi tải danh sách tải lên', 'error');
+      toast?.show?.(msg.message || 'Error loading upload list', 'error');
     } finally {
       setLoading(false);
       loadingMoreRef.current = false;
@@ -58,7 +58,7 @@ export function useTransfersList(toast) {
       await resumeUploadByPath(file);
     } catch (err) {
       const msg = toUserMessage(err);
-      toast?.show?.(msg.message || 'Không thể tiếp tục tải lên', 'error');
+      toast?.show?.(msg.message || 'Could not resume upload', 'error');
     }
   }, [toast]);
 
@@ -68,7 +68,7 @@ export function useTransfersList(toast) {
       void loadUploads(true);
     } catch (err) {
       const msg = toUserMessage(err);
-      toast?.show?.(msg.message || 'Không thể hủy tải lên', 'error');
+      toast?.show?.(msg.message || 'Could not cancel upload', 'error');
     }
   }, [loadUploads, toast]);
 

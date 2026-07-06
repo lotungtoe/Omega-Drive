@@ -4,7 +4,7 @@ import { toUserMessage } from './toUserMessage';
 describe("toUserMessage", () => {
   it("maps known code to friendly message", () => {
     const msg = toUserMessage({ code: "E_DB", message: "db fail" });
-    expect(msg.message).toContain("Hệ thống lưu trữ");
+    expect(msg.message).toContain("Storage system");
     expect(msg.details.code).toBe("E_DB");
   });
 

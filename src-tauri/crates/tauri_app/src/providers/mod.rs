@@ -1,7 +1,6 @@
-﻿//! providers/mod.rs â€” CĂ¡c bĂªn cung cáº¥p dá»‹ch vá»¥ lÆ°u trá»¯ (Storage Providers).
+﻿//! providers/mod.rs — Storage Providers.
 //!
-//! ThÆ° má»¥c nĂ y chá»©a cĂ¡c module xá»­ lĂ½ viá»‡c tÆ°Æ¡ng tĂ¡c trá»±c tiáº¿p vá»›i API cá»§a
-//! cĂ¡c ná»n táº£ng phĂ­a thá»© ba nhÆ° Discord vĂ  Telegram.
+//! This directory contains modules for interacting directly with third-party platform APIs such as Discord and Telegram.
 
 pub mod config;
 pub mod discord_provider;

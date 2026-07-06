@@ -171,6 +171,30 @@ pub fn insert_file(
     Ok(file_id)
 }
 
+pub fn find_filenames_like(
+    conn: &Connection,
+    folder_id: Option<i64>,
+    exact: &str,
+    like_pattern: &str,
+) -> Result<Vec<String>> {
+    let sql = "SELECT filename FROM files \
+               WHERE status IN ('ready', 'error') \
+               AND (filename = ? OR filename LIKE ? ESCAPE '\\')";
+    if let Some(fid) = folder_id {
+        let mut stmt = conn.prepare_cached(
+            &format!("{} AND folder_id = ?", sql),
+        )?;
+        let rows = stmt.query_map(params![exact, like_pattern, fid], |row| row.get(0))?;
+        rows.collect()
+    } else {
+        let mut stmt = conn.prepare_cached(
+            &format!("{} AND folder_id IS NULL", sql),
+        )?;
+        let rows = stmt.query_map(params![exact, like_pattern], |row| row.get(0))?;
+        rows.collect()
+    }
+}
+
 pub fn update_file_checksum(conn: &Connection, file_id: i64, checksum: &str) -> Result<()> {
     conn.execute(
         "UPDATE files SET checksum = ? WHERE id = ?",

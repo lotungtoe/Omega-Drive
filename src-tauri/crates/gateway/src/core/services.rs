@@ -1,5 +1,17 @@
+use std::sync::OnceLock;
+
 use crate::core::file_types::FileType;
 use crate::upload::upload_plan::UploadPlan;
+
+static FILE_CLASSIFIER: OnceLock<Box<dyn FileTypeClassifier>> = OnceLock::new();
+
+pub fn set_file_classifier(c: Box<dyn FileTypeClassifier>) {
+    FILE_CLASSIFIER.set(c).ok();
+}
+
+pub fn file_classifier() -> Option<&'static dyn FileTypeClassifier> {
+    FILE_CLASSIFIER.get().map(|b| b.as_ref())
+}
 
 pub trait FileTypeClassifier: Send + Sync {
     fn normalize_storage_kind(&self, kind: &str) -> &'static str;

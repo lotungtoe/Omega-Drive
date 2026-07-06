@@ -123,7 +123,7 @@ impl BackupServiceTrait for BackupService {
     }
 
     fn try_capture_file(&self, _file_id: i64, _status: &str) {
-        // ponytail: no-op â€” the app layer drives backup capture via the free function
+        // ponytail: no-op — the app layer drives backup capture via the free function
         // which has access to a Connection. Proper capture needs DB access not available
         // in this crate's trait impl.
     }
@@ -216,7 +216,7 @@ fn persist_seq(path: &PathBuf, seq: u64) {
     }
 }
 
-// â”€â”€â”€ Snapshot / Restore â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Snapshot / Restore ───────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct SnapshotInfo {

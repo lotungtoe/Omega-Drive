@@ -13,8 +13,11 @@ fn map_rule(row: &rusqlite::Row) -> rusqlite::Result<UploadProfileRule> {
         "audio" => Some(FileType::Audio),
         "document" => Some(FileType::Document),
         "archive" => Some(FileType::Archive),
-        "code" => Some(FileType::Code),
         "sheet" | "spreadsheet" => Some(FileType::Sheet),
+        "book" => Some(FileType::Book),
+        "font" => Some(FileType::Font),
+        "app" => Some(FileType::App),
+        "text" => Some(FileType::Text),
         "other" | "unknown" => Some(FileType::Unknown),
         _ => None,
     });
@@ -48,8 +51,11 @@ fn file_type_to_text(file_type: Option<FileType>) -> Option<String> {
         FileType::Audio => "audio".to_string(),
         FileType::Document => "document".to_string(),
         FileType::Archive => "archive".to_string(),
-        FileType::Code => "code".to_string(),
         FileType::Sheet => "sheet".to_string(),
+        FileType::Book => "book".to_string(),
+        FileType::Font => "font".to_string(),
+        FileType::App => "app".to_string(),
+        FileType::Text => "text".to_string(),
         FileType::Unknown => "unknown".to_string(),
     })
 }

@@ -23,8 +23,8 @@ use crate::providers::install::{
     ProviderInstallContext,
 };
 
-use omega_drive_gateway::engine::integrity::EngineIntegrityService;
-use omega_drive_gateway::engine::zip_utils::EngineZipService;
+use omega_drive_engine::integrity::EngineIntegrityService;
+use omega_drive_engine::zip_utils::EngineZipService;
 use omega_drive_gateway::core::engine_context::EngineContext;
 use omega_drive_core::services::DefaultDebugLogger;
 use omega_drive_gateway::core::tenant::TenantDescriptor;

@@ -20,7 +20,7 @@ export const UrlImportModal = ({ dark, onClose, onImportStarted }) => {
   }, []);
 
   const browserOptions = [
-    { value: '', label: t('import.cookiesNone', 'Khong dung') },
+    { value: '', label: t('import.cookiesNone', 'None') },
     ...availableBrowsers.map(name => ({ value: name, label: name.charAt(0).toUpperCase() + name.slice(1) })),
   ];
 
@@ -36,7 +36,7 @@ export const UrlImportModal = ({ dark, onClose, onImportStarted }) => {
       setMetadata(data);
     } catch (err) {
       console.error('Failed to fetch metadata:', err);
-      setError(err?.message || 'Có lỗi xảy ra');
+      setError(err?.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -49,7 +49,7 @@ export const UrlImportModal = ({ dark, onClose, onImportStarted }) => {
       await onImportStarted(url, metadata, cb);
       onClose();
     } catch (err) {
-      setError(err?.message || 'Có lỗi xảy ra');
+      setError(err?.message || 'An error occurred');
       setIsImporting(false);
     }
   };
@@ -93,10 +93,10 @@ export const UrlImportModal = ({ dark, onClose, onImportStarted }) => {
             </div>
             <div>
               <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--gd-on-surface)', margin: 0 }}>
-                {t('import.urlTitle', 'Nháº­p tá»« URL')}
+                {t('import.urlTitle', 'Import from URL')}
               </h2>
               <p style={{ fontSize: 13, color: 'var(--gd-on-surface-variant)', margin: 0 }}>
-                {t('import.urlSubtitle', 'Táº£i xuá»‘ng video, Ă¢m thanh hoáº·c tá»‡p trá»±c tiáº¿p vĂ o bá»™ nhá»›')}
+                {t('import.urlSubtitle', 'Download video, audio, or files directly to storage')}
               </p>
             </div>
           </div>
@@ -114,7 +114,7 @@ export const UrlImportModal = ({ dark, onClose, onImportStarted }) => {
           {/* Input Area */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--gd-on-surface-variant)' }}>
-              {t('import.urlLabel', 'LiĂªn káº¿t nguá»“n (YouTube, Facebook, Direct Link...)')}
+              {t('import.urlLabel', 'Source link (YouTube, Facebook, Direct Link...)')}
             </label>
             <div style={{ display: 'flex', gap: 12 }}>
               <div style={{ flex: 1, position: 'relative' }}>
@@ -156,7 +156,7 @@ export const UrlImportModal = ({ dark, onClose, onImportStarted }) => {
                 }}
               >
                 {loading ? <Loader2 size={18} className="animate-spin" /> : <Info size={18} />}
-                {t('import.fetchBtn', 'Kiá»ƒm tra')}
+                {t('import.fetchBtn', 'Check')}
               </button>
             </div>
           </div>
@@ -164,7 +164,7 @@ export const UrlImportModal = ({ dark, onClose, onImportStarted }) => {
           {/* Browser Cookies */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingLeft: 2 }}>
             <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--gd-on-surface-variant)', whiteSpace: 'nowrap' }}>
-              {t('import.cookiesLabel', 'Cookie trinh duyet')}
+              {t('import.cookiesLabel', 'Browser cookies')}
             </label>
             <DropdownSelect
               value={cookiesBrowser}
@@ -282,7 +282,7 @@ export const UrlImportModal = ({ dark, onClose, onImportStarted }) => {
             className="gd-btn-text"
             style={{ padding: '0 20px', height: 40, borderRadius: 20, color: 'var(--gd-on-surface)' }}
           >
-            {t('common.cancel', 'Há»§y')}
+            {t('common.cancel', 'Cancel')}
           </button>
           <button type="button"
             onClick={handleImport}
@@ -302,7 +302,7 @@ export const UrlImportModal = ({ dark, onClose, onImportStarted }) => {
             }}
           >
             {isImporting ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
-            {t('import.importBtn', 'Báº¯t Ä‘áº§u nháº­p')}
+            {t('import.importBtn', 'Start import')}
           </button>
         </div>
       </div>

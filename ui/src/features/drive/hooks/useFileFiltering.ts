@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 
 /**
- * useFileFiltering Hook: Lọc danh sách file theo từ khóa tìm kiếm và trạng thái đánh dấu sao.
+ * useFileFiltering Hook: Filter file list by search keyword and bookmark status.
  */
 export function useFileFiltering(baseFiles, search) {
   const filteredFiles = useMemo(() => {
     return baseFiles
-      // Lọc theo tên file (không phân biệt hoa thường)
+      // Filter by file name (case-insensitive)
       .filter(f => {
         if (!search) return true;
         const name = f.isFolder ? f.name : f.filename;

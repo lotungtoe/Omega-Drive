@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/core",
+    "crates/engine",
     "crates/db",
     "crates/discord",
     "crates/gateway",
@@ -14,6 +15,7 @@ members = [
     "crates/external_import",
     "crates/upload",
     "crates/updater",
+    "crates/extractor",
 ]
 
 [profile.dev]

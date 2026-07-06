@@ -7,7 +7,7 @@ type DownloadableFile = {
 
 export async function selectDownloadPath(file: DownloadableFile): Promise<string | null> {
   const options = {
-    title: "Lưu tệp",
+    title: "Save file",
   };
 
   if (file.filename) {

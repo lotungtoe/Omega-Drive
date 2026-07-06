@@ -265,7 +265,7 @@ function TenantItem({
               color: 'var(--gd-modal-text-secondary)',
             }}
           >
-            {fallbackTenantLabel(tenant)} Â· {tenant.dbFileName}
+            {fallbackTenantLabel(tenant)} · {tenant.dbFileName}
           </div>
         </div>
         <div

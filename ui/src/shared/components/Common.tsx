@@ -82,7 +82,7 @@ export function EmptyState({ onUpload, isDragOver, isTrash }) {
         marginBottom: 4,
         color: 'var(--gd-on-surface)'
       }}>
-        {isDragOver ? t('drive.dragTitle') : isTrash ? 'ThĂ¹ng rĂ¡c trá»‘ng' : t('drive.emptyTitle')}
+        {isDragOver ? t('drive.dragTitle') : isTrash ? 'Trash is empty' : t('drive.emptyTitle')}
       </h3>
       <p style={{ 
         fontSize: 14, 

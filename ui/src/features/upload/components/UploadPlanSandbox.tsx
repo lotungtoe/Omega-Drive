@@ -46,9 +46,9 @@ export function UploadPlanSandbox() {
         </Suspense>
 
         <div className="mt-8 pt-6 border-t border-[#30363d] text-[#8b949e] text-sm">
-          <p>Dùng URL <code>?debug=upload-plan</code> để truy cập trang này.</p>
+          <p>Use URL <code>?debug=upload-plan</code> to access this page.</p>
           <p className="mt-2 text-xs italic opacity-80">
-            * Backend được giả lập qua <code>uploadPlanMocks.js</code>.
+            * Backend is simulated via <code>uploadPlanMocks.js</code>.
           </p>
         </div>
       </div>

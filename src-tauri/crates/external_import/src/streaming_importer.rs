@@ -8,6 +8,16 @@ pub struct ImportResult {
     pub total_bytes: u64,
 }
 
+fn sanitize_filename(s: &str) -> String {
+    let invalid = ['<', '>', ':', '"', '/', '\\', '|', '?', '*', '\0'];
+    let safe: String = s.chars()
+        .map(|c| if invalid.contains(&c) { ' ' } else { c })
+        .collect();
+    let joined = safe.split_whitespace().collect::<Vec<_>>().join(" ");
+    let truncated: String = joined.chars().take(100).collect();
+    if truncated.is_empty() { "untitled".to_string() } else { truncated }
+}
+
 pub async fn start_import_stream(
     url: &str,
     cookies_browser: Option<&str>,
@@ -19,15 +29,13 @@ pub async fn start_import_stream(
     tokio::fs::create_dir_all(&temp_dir).await
         .map_err(|e| format!("Failed to create temp dir: {}", e))?;
 
-    let nonce = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-
-    let video_path = temp_dir.join(format!("{}_video.mp4", nonce));
+    let safe_title = sanitize_filename(&metadata.title);
+    let video_ext = metadata.ext.as_deref().unwrap_or("mp4");
+    let video_path = temp_dir.join(format!("{}.{}", safe_title, video_ext));
     download_single(url, cookies_browser, "bestvideo", &video_path).await?;
 
-    let audio_path = temp_dir.join(format!("{}_audio.m4a", nonce));
+    let audio_ext = if video_ext == "webm" { "webm" } else { "m4a" };
+    let audio_path = temp_dir.join(format!("{}.{}", safe_title, audio_ext));
     let audio_path = match download_single(url, cookies_browser, "bestaudio", &audio_path).await {
         Ok(_) => Some(audio_path),
         Err(e) => {

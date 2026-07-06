@@ -115,7 +115,7 @@ export function AudioPreview({ file, onClose, onDownload }) {
           <div className="flex flex-col overflow-hidden">
             <h2 className="text-sm font-semibold truncate leading-tight">{displayName}</h2>
             <span className="text-[10px] text-white/40 font-mono tracking-wider uppercase">
-              {t('preview.audioFile', 'Audio Archive')} â€¢ {formatSize(file.size)}
+              {t('preview.audioFile', 'Audio Archive')} • {formatSize(file.size)}
             </span>
           </div>
         </div>

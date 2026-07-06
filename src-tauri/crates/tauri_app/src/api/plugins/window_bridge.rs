@@ -20,7 +20,7 @@ pub fn playback_active(
             .player_runtime
             .active_playback_windows
             .lock()
-            .map_err(|_| "Loi lock tráº¡ng thĂ¡i phĂ¡t video (poisoned)".to_string())?;
+            .map_err(|_| "Lock playback state (poisoned)".to_string())?;
 
         if active {
             windows.insert(window_label);
@@ -35,7 +35,7 @@ pub fn playback_active(
         ctx.emit_event("playback-state-changed", serde_json::json!(any_active));
         Ok(())
     } else {
-        let msg = "AppHandle chÆ°a sáºµn sĂ ng Ä‘á»ƒ emit playback-state-changed";
+        let msg = "AppHandle not ready to emit playback-state-changed";
         tracing::error!("{}", msg);
         Err(msg.to_string())
     }

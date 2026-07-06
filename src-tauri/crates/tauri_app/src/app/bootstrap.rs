@@ -25,8 +25,8 @@ use crate::providers::install::{
     render_builtin_bot_env_template, ProviderInstallContext,
 };
 use crate::providers::runtime::ProviderRuntime;
-use omega_drive_gateway::engine::integrity::EngineIntegrityService;
-use omega_drive_gateway::engine::zip_utils::EngineZipService;
+use omega_drive_engine::integrity::EngineIntegrityService;
+use omega_drive_engine::zip_utils::EngineZipService;
 use omega_drive_gateway::core::backup::Op;
 use omega_drive_gateway::core::config::Config;
 use omega_drive_gateway::core::engine_context::EngineContext;
@@ -37,8 +37,8 @@ use super::bridge::{ensure_video_bridge_child, run_video_bridge_process};
 use super::paths::{resolve_base_dir, resolve_startup_tenant, resolve_tenant_db_path};
 use super::tauri_app;
 
-/// PhĂ¢n tĂ­ch cĂ¡c Ä‘á»‘i sá»‘ dĂ²ng lá»‡nh Ä‘á»ƒ xĂ¡c Ä‘á»‹nh xem cĂ³ nĂªn cháº¡y á»Ÿ cháº¿ Ä‘á»™ Video Bridge hay khĂ´ng.
-/// Cháº¿ Ä‘á»™ nĂ y Ä‘Æ°á»£c sá»­ dá»¥ng Ä‘á»ƒ cháº¡y má»™t tiáº¿n trĂ¬nh con riĂªng biá»‡t chuyĂªn xá»­ lĂ½ luá»“ng video (streaming).
+/// Parse command-line arguments to determine whether to run in Video Bridge mode.
+/// This mode runs a separate child process dedicated to video streaming.
 struct VideoBridgeProcessArgs {
     port: u16,
     parent_pid: Option<u32>,
@@ -85,11 +85,11 @@ fn parse_video_bridge_args() -> Option<VideoBridgeProcessArgs> {
 
 pub async fn run() {
     let base_dir = resolve_base_dir();
-    info!("đŸ“‚ ThÆ° má»¥c dá»¯ liá»‡u gá»‘c: {}", base_dir.display());
+    info!(" Data directory: {}", base_dir.display());
 
     if let Err(e) = std::fs::create_dir_all(&base_dir) {
         eprintln!(
-            "âŒ Lá»—i nghiĂªm trá»ng: KhĂ´ng thá»ƒ táº¡o thÆ° má»¥c dá»¯ liá»‡u '{}': {e}",
+            "Error: Cannot create data directory '{}': {e}",
             base_dir.display()
         );
         std::process::exit(1);
@@ -105,7 +105,7 @@ pub async fn run() {
         if let Err(e) =
             run_video_bridge_process(base_dir, bridge_args.port, bridge_args.parent_pid).await
         {
-            eprintln!("âŒ Video bridge child process failed: {e}");
+            eprintln!("Error: Video bridge child process failed: {e}");
             std::process::exit(1);
         }
         return;
@@ -113,15 +113,15 @@ pub async fn run() {
 
     let env_path = base_dir.join("bot.env");
 
-    // Táº¡o file cáº¥u hĂ¬nh provider máº«u náº¿u chÆ°a tá»“n táº¡i
+    // Create sample provider config file if not exists
     if !env_path.exists() {
         let _ = std::fs::write(&env_path, render_builtin_bot_env_template());
     }
 
-    // Náº¡p biáº¿n mĂ´i trÆ°á»ng tá»« file bot.env
+    // Load environment variables from bot.env
     dotenvy::from_path(&env_path).ok();
 
-    // Náº¿u báº­t DEBUG, tá»± Ä‘á»™ng báº­t Backtrace Ä‘á»ƒ debug panic dá»… hÆ¡n
+    // If DEBUG is set, enable backtrace for easier panic debugging
     if std::env::var("DEBUG").is_ok() {
         std::env::set_var("RUST_BACKTRACE", "1");
     }
@@ -133,16 +133,16 @@ pub async fn run() {
     let feature_logs = Arc::new(crate::app_wiring::infrastructure::feature_log::init_tracing(
         &cfg.read().expect("cfg RwLock"), &base_dir,
     ));
-    info!("đŸ“‚ ThÆ° má»¥c dá»¯ liá»‡u gá»‘c: {}", base_dir.display());
+    info!(" Data directory: {}", base_dir.display());
 
-    // Kiá»ƒm tra Deno runtime ngay khi khá»Ÿi Ä‘á»™ng náº¿u báº­t DEBUG
+    // Check Deno runtime on startup if DEBUG is enabled
     if std::env::var("DEBUG").is_ok() {
         let deno = omega_drive_gateway::updater::path::deno_path();
         if deno.exists() {
-            info!("âœ… [Startup] Deno runtime detected at: {}", deno.display());
+            info!("[Startup] Deno runtime detected at: {}", deno.display());
         } else {
             error!(
-                "âŒ [Startup] Deno runtime NOT found! Path: {}",
+                "[Startup] Deno runtime NOT found! Path: {}",
                 deno.display()
             );
         }
@@ -158,19 +158,19 @@ pub async fn run() {
     {
         Ok(prepared) => prepared,
         Err(err) => {
-            eprintln!("âŒ Lá»—i chuáº©n bá»‹ provider: {err}");
+            eprintln!("Error: Provider setup failed: {err}");
             std::process::exit(1);
         }
     };
 
-    // --- Khá»Ÿi táº¡o SQLite â€” LÆ°u trá»¯ cáº¥u trĂºc file vĂ  metadata ---
+    // --- Initialize SQLite — File structure & metadata storage ---
     let db_path = resolve_tenant_db_path(&base_dir, &default_tenant);
 
-    // Má»Ÿ 2 káº¿t ná»‘i riĂªng biá»‡t Ä‘á»ƒ thá»±c hiá»‡n user request: "tĂ¡ch database ra 1 cĂ¡i Ä‘á»ƒ Ä‘á»c cĂ²n 1 cĂ¡i Ä‘á»ƒ ghi"
+    // Open 2 separate connections per user request: "separate DB into one for reading and one for writing"
     let db_write_conn = match Db::open(&db_path) {
         Ok(conn) => conn,
         Err(e) => {
-            eprintln!("âŒ Lá»—i: KhĂ´ng thá»ƒ má»Ÿ cÆ¡ sá»Ÿ dá»¯ liá»‡u SQLite (Ghi): {e}");
+            eprintln!("Error: Cannot open SQLite database (Write): {e}");
             std::process::exit(1);
         }
     };
@@ -191,6 +191,7 @@ pub async fn run() {
     let db_write = Arc::new(DbWriteQueue::new(db_write_conn));
     let db_read = Arc::clone(&drive_db_read);
 
+    omega_drive_core::services::init_file_classifier();
     omega_drive_db::services::init(
         omega_drive_db::services::DbServices::new(
             Box::new(omega_drive_core::services::DefaultFileTypeClassifier),
@@ -203,7 +204,7 @@ pub async fn run() {
     // --- Cloud Backup Service ---
     let backup_service = Arc::new(BackupService::new(base_dir.clone()));
 
-    // --- Khá»Ÿi táº¡o Trá»¥c sá»± kiá»‡n (Internal Event Bus) ---
+    // --- Initialize Event Bus (Internal Event Bus) ---
     let event_bus = Arc::new(omega_drive_gateway::core::events::EventBus::new());
 
     let install_ctx = ProviderInstallContext {
@@ -217,7 +218,7 @@ pub async fn run() {
     let install_results = match install_builtin_providers(install_ctx).await {
         Ok(results) => results,
         Err(err) => {
-            eprintln!("âŒ Lá»—i khá»Ÿi táº¡o provider: {err}");
+            eprintln!("Error: Provider initialization failed: {err}");
             std::process::exit(1);
         }
     };
@@ -263,12 +264,12 @@ pub async fn run() {
                     }
                 },
             ));
-            tracing::info!("âœ… [DB Hook] Registered for files + backup tables.");
+            tracing::info!("[DB Hook] Registered for files + backup tables.");
         });
     }
 
-    // --- Khá»Ÿi táº¡o AppState: Bá»™ nhá»› dĂ¹ng chung toĂ n á»©ng dá»¥ng ---
-    // (Báº£n nĂ y chÆ°a cĂ³ bridge_port vĂ¬ bridge chÆ°a cháº¡y)
+    // --- Initialize AppState: Shared memory for the whole app ---
+    // (This version doesn't have bridge_port yet because bridge hasn't started)
     let download_manager = Arc::new(omega_drive_download::DownloadManager::new());
     let provider_runtime_raw = build_provider_runtime(install_results);
     let provider_runtime = Arc::new(std::sync::RwLock::new(Arc::clone(&provider_runtime_raw)));
@@ -386,7 +387,7 @@ pub async fn run() {
         backup_service.flush_queues();
     }
 
-    // Spawn P1 timer (5 phĂºt) vĂ  P2 timer (30 phĂºt)
+    // Spawn P1 timer (5 min) and P2 timer (30 min)
     {
         let bs1 = Arc::clone(&backup_service);
         tokio::spawn(async move {
@@ -452,7 +453,7 @@ pub async fn run() {
         });
     }
 
-    // --- Khá»Ÿi cháº¡y HTTP Bridge (port Ä‘á»™ng) ---
+    // --- Start HTTP Bridge (dynamic port) ---
     #[cfg(feature = "player")]
     {
         match ensure_video_bridge_child(
@@ -481,11 +482,11 @@ pub async fn run() {
     let download_manager = app_state.download_manager.clone();
     download_manager.start(app_state.download_context());
 
-    // --- Khá»Ÿi cháº¡y Tauri ---
+    // --- Start Tauri ---
     tauri_app::run_tauri(app_state);
 }
 
-/// TĂ¡c vá»¥ cháº¡y ngáº§m Ä‘á»ƒ dá»n dáº¹p cĂ¡c tá»‡p tin cÅ©.
+/// Background task to clean up old files.
 async fn gc_task(
     cfg: Arc<RwLock<Config>>,
     db: Arc<DbWriteQueue>,
@@ -497,11 +498,11 @@ async fn gc_task(
     let trash_ttl_secs: i64 = cfg.read().expect("cfg RwLock").trash_ttl_days * 24 * 3600;
 
     loop {
-        // NghĂ¡Â»â€° ngĂ†Â¡i theo khoĂ¡ÂºÂ£ng thĂ¡Â»i gian cĂ¡ÂºÂ¥u hÄ‚Â¬nh
+        // Sleep according to configured interval
         let gc_interval_s = cfg.read().expect("cfg RwLock").gc_interval_s;
         sleep(Duration::from_secs(gc_interval_s)).await;
 
-        // Luá»“ng 1: TĂ¬m vĂ  xĂ³a vÄ©nh viá»…n cĂ¡c tá»‡p trong Trash Ä‘Ă£ quĂ¡ háº¡n
+        // Thread 1: Find and permanently delete files in Trash past TTL
         let to_purge = {
             let db_lock = db.lock().await;
             let mut stmt = match db_lock.conn().prepare(
@@ -511,7 +512,7 @@ async fn gc_task(
             ) {
                 Ok(s) => s,
                 Err(e) => {
-                    error!("GC: Lá»—i prepare query: {}", e);
+                    error!("GC: Prepare query error: {}", e);
                     continue; // Skip this iteration
                 }
             };
@@ -523,14 +524,14 @@ async fn gc_task(
             match rows {
                 Ok(mapped_rows) => mapped_rows.filter_map(|r| r.ok()).collect::<Vec<_>>(),
                 Err(e) => {
-                    error!("GC: Lá»—i truy váº¥n file cÅ©: {}", e);
+                    error!("GC: Query old files error: {}", e);
                     Vec::new()
                 }
             }
         };
 
         for (id, filename) in to_purge {
-            // Claim trÆ°á»›c Ä‘á»ƒ trĂ¡nh race vá»›i thao tĂ¡c restore tá»« UI.
+            // Claim first to avoid race with restore from UI.
             let claimed =
                 {
                     let db_lock = db.lock().await;
@@ -543,7 +544,7 @@ async fn gc_task(
                 continue;
             }
 
-            info!("GC: Äang dá»n rĂ¡c vÄ©nh viá»…n file '{}'", filename);
+            info!("GC: Purging file '{}'", filename);
             let mut remote_failed = false;
 
             let provider_parts = {
@@ -564,7 +565,7 @@ async fn gc_task(
                 };
                 let Some(gateway) = runtime.remote_object_registry.get(&platform) else {
                     error!(
-                        "GC: Khong tim thay remote-object gateway '{}' cho file {}",
+                        "GC: Remote-object gateway '{}' not found for file {}",
                         platform, id
                     );
                     remote_failed = true;
@@ -572,7 +573,7 @@ async fn gc_task(
                 };
                 if let Err(e) = gateway.delete_file_artifacts(id, &parts).await {
                     error!(
-                        "GC: Khong the xoa artifacts tren provider '{}' cho file {}: {}",
+                        "GC: Cannot delete artifacts on provider '{}' for file {}: {}",
                         platform, id, e
                     );
                     remote_failed = true;
@@ -580,7 +581,7 @@ async fn gc_task(
             }
 
             if remote_failed {
-                // Tráº£ láº¡i tráº¡ng thĂ¡i trashed Ä‘á»ƒ láº§n GC sau thá»­ láº¡i.
+                // Revert to trashed status so next GC can retry.
                 let db_lock = db.lock().await;
                 let _ = db_lock.conn().execute(
                     "UPDATE files SET status = 'trashed' WHERE id = ? AND status = 'purging'",
@@ -610,7 +611,7 @@ async fn gc_task(
                 }
             }
 
-            // XĂ³a báº£n ghi trong DB cá»¥c bá»™ náº¿u váº«n lĂ  báº£n ghi Ä‘Ă£ claim.
+            // Delete local DB record if it's still the claimed record.
             let db_lock = db.lock().await;
             let _ = db_lock.conn().execute(
                 "DELETE FROM files WHERE id = ? AND status = 'purging'",

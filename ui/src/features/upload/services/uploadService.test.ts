@@ -59,7 +59,7 @@ describe("uploadService", () => {
     open.mockResolvedValueOnce(null);
     expect(await selectFiles()).toBeNull();
     expect(open).toHaveBeenLastCalledWith(
-      expect.objectContaining({ title: "Chọn tệp tin để tải lên" })
+      expect.objectContaining({ title: "Select files to upload" })
     );
 
     open.mockResolvedValueOnce("C:/a.mp4");
@@ -78,9 +78,9 @@ describe("uploadService", () => {
     expect(result).toBe(true);
     expect(ask).toHaveBeenCalledTimes(1);
     const [message, options] = ask.mock.calls[0];
-    expect(message).toContain("Phát hiện 2 tệp trùng lặp");
+    expect(message).toContain("Detected 2 duplicate files");
     expect(message).toContain("\"a.mp4\"");
-    expect(options).toMatchObject({ kind: "warning", title: "Ghi đè tệp trùng lặp" });
+    expect(options).toMatchObject({ kind: "warning", title: "Overwrite duplicate files" });
   });
 
   it("processPurge dedupes by file id and collects failures", async () => {
@@ -156,10 +156,10 @@ describe("uploadService", () => {
       skipped: 1,
       failedToStart: ["a.mp4", "b.mp4", "c.mp4", "d.mp4"],
     });
-    expect(toast.show).toHaveBeenCalledWith("Đã bắt đầu tải lên 2 tệp.", "success");
-    expect(toast.show).toHaveBeenCalledWith("Đã bỏ qua 1 tệp trùng lặp.", "info");
+    expect(toast.show).toHaveBeenCalledWith("Started uploading 2 file(s).", "success");
+    expect(toast.show).toHaveBeenCalledWith("Skipped 1 duplicate file(s).", "info");
     expect(toast.show).toHaveBeenCalledWith(
-      expect.stringContaining("Không thể tải lên 4 tệp"),
+      expect.stringContaining("Could not upload 4 file(s)"),
       "error"
     );
   });

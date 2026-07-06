@@ -7,6 +7,7 @@
     "loading": "Loading...",
     "refresh": "Refresh",
     "new": "New",
+    "apply": "Apply",
     "applyAll": "Apply to all",
     "proceed": "Proceed",
     "saveProceed": "Save & Proceed",
@@ -76,9 +77,15 @@
     "rust": "Rust",
     "excel": "Excel",
     "csv": "CSV",
+    "tsv": "TSV",
+    "ods": "ODS",
+    "odp": "ODP",
     "document": "Document",
     "code": "Code",
     "sheet": "Spreadsheet",
+    "book": "E-Book",
+    "font": "Font",
+    "app": "Application",
     "other": "Other"
   },
   "drive": {
@@ -120,8 +127,11 @@
       "uploading": "Uploading",
       "downloading": "Downloading",
       "hashing": "Hashing",
-      "preparing": "Preparing"
-    }
+      "preparing": "Preparing",
+      "checksum": "Verifying"
+    },
+    "uploadingNItems_one": "Uploading {{count}} item",
+    "uploadingNItems_other": "Uploading {{count}} items"
   },
   "downloads": {
     "title": "Downloads",
@@ -146,6 +156,7 @@
     "retryFailed": "Failed to retry download"
   },
   "upload": {
+    "failed": "Upload failed.",
     "planTitle": "Upload Plan",
     "planSubtitle": "Choose profile and rules before uploading.",
     "summary": "Summary",
@@ -177,7 +188,19 @@
     "alwaysUseSelected": "Always use profile: {{name}}",
     "dropToUpload": "Drop files to upload",
     "defaultProfile": "Balanced (default)",
-    "summaryLine": "{{count}} files ? {{samples}}",
+    "summaryLine": "{{count}} files @ {{samples}}",
+    "profiles": "Profiles",
+    "createNew": "Create new profile",
+    "profileList": "Profile list",
+    "deleteProfile": "Delete profile",
+    "deleteProfileFailed": "Failed to delete profile",
+    "none": "None",
+    "safe": "Safe",
+    "fast": "Fast",
+    "strategy": "Storage Strategy",
+    "fastDesc": "Optimizes speed by splitting files and storing across providers.",
+    "safeDesc": "Maximizes data safety by creating redundant copies across all platforms.",
+    "noneDesc": "Uploads the original file directly without splitting.",
     "loadProfilesFailed": "Failed to load upload profiles.",
     "savePrefsFailed": "Cannot save upload preferences.",
     "tabGeneral": "General",
@@ -239,6 +262,8 @@
     "safeRatioDesc": "Discord safe ratio.",
     "resetUploadPrefs": "Reset upload preferences",
     "loadFailed": "Failed to load settings",
+    "applySuccess": "Applied",
+    "applyFailed": "Failed to apply settings",
     "saveSuccess": "Settings saved successfully!",
     "saveFailed": "Failed to save settings",
     "logCreateSuccess": "Log created for {{feature}}.",
@@ -252,8 +277,8 @@
       "vi": "Vietnamese",
       "en": "English"
     },
-    "uploadModeSafe": "??? Safe (dual storage)",
-    "uploadModeSpeed": "?? Speed (split upload)",
+    "uploadModeSafe": "Safe (dual storage)",
+    "uploadModeSpeed": "Speed (split upload)",
     "zipLevel": "Zip level",
     "zipLevelDesc": "ZIP compression level.",
     "discordChunkSize": "Discord Chunk Size (MB)",
@@ -359,6 +384,18 @@
     "newFolder": {
       "title": "Create new folder",
       "placeholder": "Enter folder name"
+    },
+    "deleteFile": {
+      "title": "Delete file?",
+      "warning": "Are you sure you want to move \"{{name}}\" to the trash?"
+    },
+    "deleteFolder": {
+      "title": "Delete folder?",
+      "warning": "Are you sure you want to delete folder \"{{name}}\" and all its contents?"
+    },
+    "deleteForever": {
+      "title": "Delete forever?",
+      "warning": "Are you sure you want to permanently delete \"{{name}}\"? This action cannot be undone."
     }
   },
   "player": {
@@ -436,6 +473,8 @@
     "urlTitle": "Import from URL",
     "urlSubtitle": "Download video, audio or files directly to storage",
     "urlLabel": "Source link (YouTube, Facebook, Direct Link...)",
+    "cookiesNone": "None",
+    "cookiesLabel": "Browser cookies",
     "fetchBtn": "Fetch",
     "importBtn": "Start import"
   },

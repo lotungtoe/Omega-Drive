@@ -231,7 +231,7 @@ export default function NativePlayerOverlay() {
             onClick={() => void runAction("mpv_play_pause", () => toggleMpvPlayPause())}
             title={status.paused ? "Phat" : "Tam dung"}
           >
-            {status.paused ? "â–¶" : "â¸"}
+            {status.paused ? "\u25B6" : "\u23F8"}
           </button>
 
           <div
@@ -243,7 +243,7 @@ export default function NativePlayerOverlay() {
               className="mpv-btn"
               onClick={() => void runAction("mpv_set_volume", () => setMpvVolume(status.volume > 0 ? 0 : 100))}
             >
-              {status.volume === 0 ? "đŸ”‡" : status.volume < 50 ? "đŸ”‰" : "đŸ”"}
+              {status.volume === 0 ? "\uD83D\uDD07" : status.volume < 50 ? "\uD83D\uDD09" : "\uD83D\uDD0A"}
             </button>
             {showVolume ? (
               <input
@@ -297,7 +297,7 @@ export default function NativePlayerOverlay() {
             onClick={() => void runAction("mpv_toggle_fullscreen", () => toggleMpvFullscreen())}
             title={status.fullscreen ? "Thoat toan man hinh" : "Toan man hinh"}
           >
-            â›¶
+            ⛶
           </button>
         </div>
       </div>

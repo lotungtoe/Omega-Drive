@@ -151,7 +151,8 @@
   - **HTTP/2 adaptive window**: `http_client()` trong `segmentgen.rs` dùng cho Discord CDN đã bật `http2_adaptive_window(true)`.
   - **Prefetch defaults tăng**: `prefetch_chunks` 1→5, `prefetch_concurrency` 1→2, `max_chunks` 10→20 để cache trước Discord part.
   - **Phát hiện bottleneck**: CDN thực tế nhanh (8.77 MB/s = 70 Mbps qua .NET WebClient), nhưng bridge chỉ đạt 1.1 MB/s (9 Mbps). Nguyên nhân: `fetch_attachment_url` gọi Discord REST API (`ChannelId::new().message().await`) mỗi part, và code path `download_part_bytes` trong `discord_real.rs` dùng `reqwest::get()` (default HTTP/1.1) thay vì custom HTTP/2 client.
-  - **Chưa fix**: 2 bottleneck trong `discord_real.rs` — (1) `fetch_attachment_url` không cache URL, (2) `download_part` dùng `reqwest::get()`.
+  - **Đã fix (1)**: `fetch_attachment_url` giờ có `msg_attachment_cache()` — cache URL theo `(thread_id, message_id)`.
+  - **Chưa fix (2)**: `download_part` vẫn dùng `reqwest::get()` (HTTP/1.1 mặc định).
 
 ## Main Commands
 - Root:

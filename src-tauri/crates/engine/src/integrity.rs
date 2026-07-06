@@ -1,9 +1,27 @@
-use anyhow::{Context, Result};
+﻿use anyhow::{Context, Result};
 use std::path::Path;
 use tokio::io::AsyncReadExt;
 
-use crate::blake3;
-use crate::upload::upload_plan::HashAlgorithm;
+use omega_drive_gateway::engine::Blake3Hasher;
+use omega_drive_gateway::upload::upload_plan::HashAlgorithm;
+
+pub struct EngineBlake3Hasher(blake3::Hasher);
+
+impl EngineBlake3Hasher {
+    pub fn new() -> Self {
+        Self(blake3::Hasher::new())
+    }
+}
+
+impl Blake3Hasher for EngineBlake3Hasher {
+    fn update(&mut self, data: &[u8]) {
+        self.0.update(data);
+    }
+
+    fn finalize_hex(self: Box<Self>) -> String {
+        self.0.finalize().to_hex().to_string()
+    }
+}
 
 pub const BLAKE3_PREFIX: &str = "";
 
@@ -56,7 +74,7 @@ pub fn calculate_bytes_hash(data: &[u8], _algorithm: HashAlgorithm) -> String {
 pub struct EngineIntegrityService;
 
 #[async_trait::async_trait]
-impl crate::core::engine_context::IntegrityService for EngineIntegrityService {
+impl omega_drive_gateway::core::engine_context::IntegrityService for EngineIntegrityService {
     fn calculate_bytes_blake3(&self, data: &[u8]) -> String {
         calculate_bytes_blake3(data)
     }
@@ -73,5 +91,9 @@ impl crate::core::engine_context::IntegrityService for EngineIntegrityService {
         verify_file_integrity(path, expected_hash)
             .await
             .map_err(|e| e.to_string())
+    }
+
+    fn create_hasher(&self) -> Box<dyn Blake3Hasher> {
+        Box::new(EngineBlake3Hasher::new())
     }
 }

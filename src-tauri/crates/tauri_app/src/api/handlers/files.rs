@@ -1,4 +1,7 @@
-﻿use crate::core::error::wrap_error;
+﻿use omega_drive_extractor as kreuzberg_extractor;
+use omega_drive_extractor::KreuzbergResult;
+
+use crate::core::error::wrap_error;
 use rxing::multi::MultipleBarcodeReader;
 use rxing::{
     common::HybridBinarizer, BinaryBitmap, BufferedImageLuminanceSource, DecodeHintType,
@@ -360,25 +363,25 @@ pub async fn retrieve_full_file(
 }
 
 async fn scan_qr_internal(bytes: Vec<u8>) -> AppResult<Value> {
-    // Sá»­ dá»¥ng spawn_blocking Ä‘á»ƒ trĂ¡nh block async runtime vĂ¬ giáº£i mĂ£ áº£nh vĂ  quĂ©t QR tá»‘n CPU
+    // Use spawn_blocking to avoid blocking async runtime since image decoding and QR scanning are CPU-intensive
     let results: Result<Vec<Value>, String> = task::spawn_blocking(move || {
         let img =
-            image::load_from_memory(&bytes).map_err(|e| format!("Lá»—i táº£i áº£nh tá»« bytes: {e}"))?;
+            image::load_from_memory(&bytes).map_err(|e| format!("Error loading image from bytes: {e}"))?;
 
-        // Chuyá»ƒn sang DynamicImage (rxing BufferedImageLuminanceSource cáº§n DynamicImage hoáº·c Luma Image)
+        // Convert to DynamicImage (rxing BufferedImageLuminanceSource needs DynamicImage or Luma Image)
         let luminance_source = BufferedImageLuminanceSource::new(img);
         let binarizer = HybridBinarizer::new(luminance_source);
         let mut bitmap = BinaryBitmap::new(binarizer);
 
         let reader = MultiFormatReader::default();
-        // Wrap reader Ä‘á»ƒ quĂ©t Ä‘Æ°á»£c nhiá»u mĂ£ cĂ¹ng lĂºc
+        // Wrap reader to scan multiple barcodes at once
         let mut multi_reader = rxing::multi::GenericMultipleBarcodeReader::new(reader);
 
-        // Cáº¥u hĂ¬nh hint Ä‘á»ƒ thá»­ quĂ©t ká»¹ hÆ¡n (try_harder)
+        // Configure hint for more thorough scanning (try_harder)
         let mut hints = DecodingHintDictionary::new();
         hints.insert(DecodeHintType::TRY_HARDER, DecodeHintValue::TryHarder(true));
 
-        // QuĂ©t táº¥t cáº£ cĂ¡c mĂ£ cĂ³ thá»ƒ tĂ¬m tháº¥y
+        // Scan all detectable barcodes
         match multi_reader.decode_multiple_with_hints(&mut bitmap, &hints) {
             Ok(scan_results) => {
                 let mapped: Vec<Value> = scan_results
@@ -393,13 +396,13 @@ async fn scan_qr_internal(bytes: Vec<u8>) -> AppResult<Value> {
                 Ok::<Vec<Value>, String>(mapped)
             }
             Err(_) => {
-                // Náº¿u khĂ´ng tĂ¬m tháº¥y mĂ£ nĂ o, tráº£ vá» máº£ng rá»—ng
+                // If no barcodes found, return empty array
                 Ok::<Vec<Value>, String>(vec![])
             }
         }
     })
     .await
-    .map_err(|e| AppError::new(codes::E_UNKNOWN, format!("Lá»—i há»‡ thá»‘ng khi quĂ©t QR: {}", e)))?;
+    .map_err(|e| AppError::new(codes::E_UNKNOWN, format!("System error scanning QR: {}", e)))?;
 
     results
         .map(|v| json!(v))
@@ -424,12 +427,38 @@ pub async fn scan_qr_by_file_id(st: tauri::State<'_, AppState>, file_id: i64) ->
 }
 
 #[tauri::command]
+pub async fn extract_file_text(
+    st: tauri::State<'_, AppState>,
+    file_id: i64,
+    filename: String,
+) -> AppResult<KreuzbergResult> {
+    let ctx = st.inner().drive_command_context();
+    let bytes = ctx
+        .service
+        .retrieve_full_file(file_id)
+        .await
+        .map_err(|e| AppError::new(codes::E_UNKNOWN, e))?;
+
+    let ext = filename.rsplit('.').next().unwrap_or("").to_lowercase();
+    let result = kreuzberg_extractor::extract_text(&bytes, &ext)
+        .await
+        .map_err(|e| {
+            AppError::new(
+                codes::E_UNKNOWN,
+                format!("Text extraction failed: {}", e),
+            )
+        })?;
+
+    Ok(result)
+}
+
+#[tauri::command]
 pub async fn open_external_url(url: String) -> AppResult<()> {
-    // Chá»‰ cho phĂ©p http vĂ  https
+    // Only allow http and https
     if !url.starts_with("http://") && !url.starts_with("https://") {
         return Err(AppError::new(
             codes::E_INVALID_INPUT,
-            "Chá»‰ há»— trá»£ má»Ÿ liĂªn káº¿t http hoáº·c https",
+            "Only supports opening http or https links",
         ));
     }
 
@@ -443,7 +472,7 @@ pub async fn open_external_url(url: String) -> AppResult<()> {
         wrap_error(
             "drive",
             crate::core::error_codes::E_IO,
-            "Khá»•ng thá»ƒ má»Ÿ liĂªn káº¿t ngoáº¡i.",
+            "Cannot open external link.",
             ctx,
             e,
         )

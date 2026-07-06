@@ -78,7 +78,7 @@ export function DocxPreview({ file, onClose: _onClose, onDownload }) {
         <button type="button"
           onClick={() => onDownload(file)}
           className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors shrink-0"
-          title={t('common.download', 'Táº£i xuá»‘ng')}
+          title={t('common.download', 'Download')}
         >
           <Download className="w-5 h-5" />
         </button>
@@ -98,7 +98,7 @@ export function DocxPreview({ file, onClose: _onClose, onDownload }) {
               <AlertCircle className="w-8 h-8 text-red-500" />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-              {t('preview.errorTitle', 'KhĂ´ng thá»ƒ xem trÆ°á»›c')}
+              {t('preview.errorTitle', 'Cannot preview')}
             </h3>
             <p className="text-slate-500 max-w-sm mb-6 text-sm">{error}</p>
             <button type="button"
@@ -106,7 +106,7 @@ export function DocxPreview({ file, onClose: _onClose, onDownload }) {
               className="flex items-center gap-2 px-6 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors"
             >
               <Download className="w-4 h-4" />
-              {t('common.download', 'Táº£i xuá»‘ng tá»‡p')}
+              {t('common.download', 'Download file')}
             </button>
           </div>
         ) : (

@@ -12,8 +12,8 @@ pub async fn get_bootstrap_status(st: tauri::State<'_, AppState>) -> AppResult<V
     Ok(serde_json::to_value(snapshot)?)
 }
 
-/// ÄÆ°á»£c gá»i tá»« frontend CHá»ˆ khi tráº¡ng thĂ¡i visibility/focus thay Ä‘á»•i.
-/// KhĂ´ng spam log â€” chá»‰ ghi nhá»› Ä‘á»ƒ quyáº¿t Ä‘á»‹nh cĂ³ hiá»ƒn thá»‹ system notification khĂ´ng.
+/// Called from frontend ONLY when visibility/focus state changes.
+/// No log spam — only remembers state to decide whether to show system notification.
 #[tauri::command]
 pub async fn report_ui_visibility(
     state: tauri::State<'_, AppState>,

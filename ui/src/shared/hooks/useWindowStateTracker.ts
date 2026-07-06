@@ -3,15 +3,15 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { reportUiVisibility } from "../../features/diagnostics/services/diagnosticsService";
 
 /**
- * Hook theo dõi trạng thái của cửa sổ (Visible, Focused, Minimized).
- * Chỉ gửi thông tin cho Backend khi trạng thái THAY ĐỔI để tránh spam request.
+ * Hook tracking window state (Visible, Focused, Minimized).
+ * Only sends info to Backend when state CHANGES to avoid request spam.
  */
 export function useWindowStateTracker() {
   const lastState = useRef({ visible: null, focused: null });
   const windowRef = useRef(null);
 
   useEffect(() => {
-    // Lấy window instance từ Tauri
+    // Get window instance from Tauri
     try {
       windowRef.current = getCurrentWindow();
     } catch (e) {
@@ -21,23 +21,23 @@ export function useWindowStateTracker() {
     const label = windowRef.current?.label || "main";
 
     const checkAndReport = async () => {
-      // 1. Kiểm tra Focused (Dựa trên DOM focus)
+      // 1. Check Focused (Based on DOM focus)
       const focused = document.hasFocus();
       
-      // 2. Kiểm tra Visibility (Dựa trên Tab Visibility API)
+      // 2. Check Visibility (Based on Tab Visibility API)
       const isHidden = document.visibilityState === "hidden";
       
-      // 3. Kiểm tra Minimized (Dựa trên Tauri API)
-      // Dùng promise chain thay vì try/catch để tránh empty catch block
+      // 3. Check Minimized (Based on Tauri API)
+      // Use promise chain instead of try/catch to avoid empty catch block
       let isMinimized = false;
       if (windowRef.current) {
         isMinimized = await windowRef.current.isMinimized().catch(() => false);
       }
 
-      // Một cửa sổ được coi là "Visible" đối với người dùng nếu nó không bị ẩn tab và không bị thu nhỏ
+      // A window is considered "Visible" to the user if it is not tab-hidden and not minimized
       const visible = !isHidden && !isMinimized;
 
-      // CHỈ gửi request nếu có sự thay đổi thực sự so với trạng thái trước đó
+      // ONLY send request if there's an actual change from previous state
       if (visible !== lastState.current.visible || focused !== lastState.current.focused) {
         lastState.current = { visible, focused };
         
@@ -46,23 +46,23 @@ export function useWindowStateTracker() {
           visible, 
           focused 
         }).catch(() => {
-          // Silent fail để tránh làm bẩn log console/file của user khi mất kết nối tạm thời
+          // Silent fail to avoid polluting user console/file logs on temporary disconnect
         });
       }
     };
 
-    // Đăng ký các event listeners
+    // Register event listeners
     const handleVisibilityChange = () => checkAndReport();
     const handleFocus = () => checkAndReport();
     const handleBlur = () => checkAndReport();
-    const handleResize = () => checkAndReport(); // Resize event thường bắn khi Minimize/Restore trên Windows
+    const handleResize = () => checkAndReport(); // Resize event often fires on Minimize/Restore on Windows
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("focus", handleFocus);
     window.addEventListener("blur", handleBlur);
     window.addEventListener("resize", handleResize);
 
-    // Gửi báo cáo trạng thái ban đầu ngay khi mount
+    // Send initial state report on mount
     checkAndReport();
 
     return () => {

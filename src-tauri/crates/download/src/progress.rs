@@ -1,7 +1,7 @@
 ﻿use omega_drive_gateway::provider::app_context::AppContext;
 use std::sync::Arc;
 
-// ponytail: inline progress emission â€” no shared progress module needed
+// ponytail: inline progress emission — no shared progress module needed
 pub(crate) fn emit_progress(
     app_ctx: Arc<dyn AppContext>,
     event_name: &str,

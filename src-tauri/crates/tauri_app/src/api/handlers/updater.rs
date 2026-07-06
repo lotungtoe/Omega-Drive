@@ -2,7 +2,6 @@ use serde::Serialize;
 use omega_drive_updater::manifest::UpdaterManifest;
 use omega_drive_updater::downloader::download_file;
 use omega_drive_updater::verifier::verify_blake3;
-use omega_drive_updater::extractor::extract_archive;
 use std::path::PathBuf;
 
 // ponytail: hardcoded URL, make configurable when multi-env support needed
@@ -111,19 +110,14 @@ pub async fn download_binary_update(name: String) -> Result<String, String> {
     std::fs::create_dir_all(&bin_dir)
         .map_err(|e| format!("Cannot create binaries dir: {e}"))?;
 
-    let ext = entry.url.rsplit('.').next().unwrap_or("tmp");
-    let tmp_path = bin_dir.join(format!(".{name}.download.{ext}"));
+    let bin_path = bin_dir.join(&name);
 
-    download_file(&entry.url, &tmp_path, |_, _| {})
+    download_file(&entry.url, &bin_path, |_, _| {})
         .await
         .map_err(|e| format!("Download failed for {name}: {e}"))?;
 
-    verify_blake3(&tmp_path, &entry.checksum)
+    verify_blake3(&bin_path, &entry.checksum)
         .map_err(|e| format!("Checksum failed for {name}: {e}"))?;
 
-    extract_archive(&tmp_path, &bin_dir)
-        .map_err(|e| format!("Extract failed for {name}: {e}"))?;
-
-    let _ = std::fs::remove_file(&tmp_path);
     Ok(format!("{name} updated to version {}", platform_info.version))
 }

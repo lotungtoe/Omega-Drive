@@ -99,6 +99,7 @@ macro_rules! tauri_feature_handler {
             $crate::api::handlers::check_binary_updates,
             $crate::api::handlers::download_binary_update,
 
+            $crate::api::handlers::extract_file_text,
             $crate::api::handlers::open_external_url,
             $crate::api::handlers::open_discord_auth,
             $crate::api::handlers::open_bot_env,

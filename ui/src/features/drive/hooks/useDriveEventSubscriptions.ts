@@ -218,10 +218,10 @@ export function useDriveEventSubscriptions({
       try {
         unlistenFn = await listen("omega-event", (event) => {
           const payload = event.payload;
-          // In ra chuĂ¡i JSON Ă„â€˜Ă¡Â»Æ’ biĂ¡t chÄ‚Â­nh xÄ‚Â¡c cĂ¡ÂºÂ¥u trÄ‚Âºc
+          // Print JSON string to know exact structure
           console.info("[AutoRefresh] omega-event payload:", payload);
           
-          // KiĂ¡m tra cĂ¡ÂºÂ£ trĂ†Â°Ă¡Â» ng hĂ¡Â»Â£p chuĂ¡i hoĂ¡ÂºÂ·c Object cÄ‚Â³ field type
+          // Check both string and Object cases with type field
           const isFilesChanged = 
             payload === "FilesTableChanged" || 
             payload?.type === "FilesTableChanged";

@@ -143,4 +143,11 @@ pub trait FileRepository: Send + Sync {
     ) -> AppResult<()>;
     async fn set_file_kind(&self, file_id: i64, kind: &str) -> AppResult<()>;
     async fn get_file_kind(&self, file_id: i64) -> AppResult<Option<String>>;
+
+    async fn find_filenames_like(
+        &self,
+        folder_id: Option<i64>,
+        exact: &str,
+        like_pattern: &str,
+    ) -> AppResult<Vec<String>>;
 }

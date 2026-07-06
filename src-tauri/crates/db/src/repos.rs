@@ -271,6 +271,16 @@ impl FileRepository for DbFileRepository {
         ).optional()?;
         Ok(kind)
     }
+
+    async fn find_filenames_like(
+        &self,
+        folder_id: Option<i64>,
+        exact: &str,
+        like_pattern: &str,
+    ) -> AppResult<Vec<String>> {
+        let db = self.db_read.lock().await;
+        Ok(crate::files::find_filenames_like(db.conn(), folder_id, exact, like_pattern)?)
+    }
 }
 
 pub struct DbFolderRepository {

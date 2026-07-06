@@ -74,7 +74,8 @@ pub async fn run_upload(
 
     session.emit_preparing();
 
-    let prepared = plan::build_execution_plan(&state, &source_info, &upload_plan).await?;
+    let mut prepared = plan::build_execution_plan(&state, &source_info, &upload_plan).await?;
+    prepared.filename = auto_rename_filename(&state, &prepared.filename, folder_id).await?;
     session.configure(
         prepared.total_parts,
         prepared.total_bytes,
@@ -374,8 +375,7 @@ async fn run_original_upload(
     };
 
     let mut bytes_left = prepared.total_bytes;
-    use omega_drive_gateway::blake3;
-    let mut file_hasher = blake3::Hasher::new();
+    let mut file_hasher = state.engine.integrity.create_hasher();
     let mut dispatch_error = None;
 
     for idx in 0..prepared.total_base_parts {
@@ -552,7 +552,7 @@ async fn run_original_upload(
         return Err(err);
     }
 
-    Ok(file_hasher.finalize().to_hex().to_string())
+    Ok(file_hasher.finalize_hex())
 }
 
 async fn emit_telegram_backed_manifest_note(
@@ -1327,6 +1327,62 @@ async fn upload_hidden_audio_file(
         .map_err(|e| UploadError::db("Failed to mark audio file ready", e))?;
 
     Ok(audio_file_id)
+}
+
+async fn auto_rename_filename(
+    state: &UploadContext,
+    filename: &str,
+    folder_id: Option<i64>,
+) -> UploadResult<String> {
+    let stem = match filename.rfind('.') {
+        Some(pos) if pos > 0 => &filename[..pos],
+        _ => filename,
+    };
+    let ext = match filename.rfind('.') {
+        Some(pos) if pos > 0 => &filename[pos..],
+        _ => "",
+    };
+
+    let escaped: String = stem.replace('\\', "\\\\").replace('_', "\\_").replace('%', "\\%");
+    let like_pattern = if ext.is_empty() {
+        format!("{}\\_%", escaped)
+    } else {
+        let ext_escaped = ext.replace('\\', "\\\\").replace('_', "\\_").replace('%', "\\%");
+        format!("{}\\_%{}", escaped, ext_escaped)
+    };
+
+    let existing = state
+        .file_repo
+        .find_filenames_like(folder_id, filename, &like_pattern)
+        .await
+        .map_err(|e| UploadError::db("Failed to check filename conflict", e))?;
+
+    let has_exact = existing.iter().any(|n| n == filename);
+    if !has_exact {
+        return Ok(filename.to_string());
+    }
+
+    let mut max_n = 0u32;
+    let prefix = format!("{}_", stem);
+    for name in &existing {
+        if !name.starts_with(&prefix) {
+            continue;
+        }
+        let suffix = &name[prefix.len()..];
+        let num_part = if ext.is_empty() {
+            suffix
+        } else if let Some(rest) = suffix.strip_suffix(ext) {
+            rest
+        } else {
+            continue;
+        };
+        if let Ok(n) = num_part.parse::<u32>() {
+            if n > max_n {
+                max_n = n;
+            }
+        }
+    }
+    Ok(format!("{}_{}{}", stem, max_n + 1, ext))
 }
 
 async fn send_webhook_notification(url: &str, content: &str) {

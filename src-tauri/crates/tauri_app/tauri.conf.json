@@ -1,58 +1,67 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Omega Drive",
+  "version": "1.0.0",
+  "identifier": "com.omegadrive",
+  "build": {
+    "frontendDist": "../../../ui/dist",
+    "beforeDevCommand": "npm --prefix ../../ui run dev",
+    "beforeBuildCommand": "npm --prefix ../../ui run build",
+    "devUrl": "http://localhost:1420"
+  },
   "app": {
-    "security": {
-      "csp": null
-    },
+    "withGlobalTauri": true,
     "windows": [
       {
+        "title": "Omega Drive",
+        "width": 1024,
+        "height": 768,
+        "minWidth": 800,
+        "minHeight": 600,
         "center": true,
         "dragDropEnabled": true,
-        "height": 768,
-        "minHeight": 600,
-        "minWidth": 800,
-        "title": "Omega Drive",
         "visible": false,
-        "width": 1024
+        "additionalBrowserArgs": "--disable-gpu --renderer-process-limit=1 --disable-features=RendererCodeIntegrity"
       }
     ],
-    "withGlobalTauri": true
+    "security": {
+      "csp": null
+    }
   },
-  "build": {
-    "beforeBuildCommand": "npm --prefix ui run build",
-    "beforeDevCommand": "npm --prefix ../../ui run dev",
-    "devUrl": "http://localhost:1420",
-    "frontendDist": "../../../ui/dist"
+  "plugins": {
+    "deep-link": {
+      "schemes": ["omegadrive"]
+    },
+    "updater": {
+      "active": true,
+      "dialog": true,
+      "pubkey": "",
+      "endpoints": [
+        "https://api.github.com/repos/lotungtoe/Omega-Drive/releases/latest"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   },
   "bundle": {
     "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "icon": [
+      "../../icons/icon.ico"
+    ],
+    "resources": [
+      "../../binaries/mpv.dll",
+      "../../binaries/mpv-1.dll",
+      "../../resources/player/player_ui.lua"
+    ],
     "externalBin": [
       "../../binaries/ffmpeg",
       "../../binaries/ffprobe",
       "../../binaries/yt-dlp",
       "../../binaries/deno"
-    ],
-    "icon": [
-      "icons/icon.ico"
-    ],
-    "resources": [
-      "../../../config.json",
-      "../../binaries/mpv.dll",
-      "../../binaries/mpv-1.dll",
-      "../../resources/player/player_ui.lua"
-    ],
-    "targets": [
-      "nsis"
     ]
-  },
-  "identifier": "com.omegadrive",
-  "plugins": {
-    "deep-link": {
-      "schemes": [
-        "omegadrive"
-      ]
-    }
-  },
-  "productName": "Omega Drive",
-  "version": "1.0.0"
+  }
 }

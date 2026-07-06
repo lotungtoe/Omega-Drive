@@ -10,6 +10,7 @@ use tracing::{error, info};
 use omega_drive_gateway::{
     core::{
         config::DEFAULT_DISCORD_PARTS_PER_MESSAGE,
+        engine_context::IntegrityService,
         file_types::FileType,
         scope::DriveScope,
     },
@@ -124,6 +125,7 @@ fn shared_batch_sizing(entry: &SharedBatchEntry) -> SharedBatchSizing {
 }
 
 async fn read_shared_batch_file_payload(
+    integrity: &dyn IntegrityService,
     path: &PathBuf,
     expected_bytes: u64,
 ) -> UploadResult<(Vec<u8>, String)> {
@@ -132,8 +134,7 @@ async fn read_shared_batch_file_payload(
         .map_err(|err| UploadError::io("Failed to open small file for batch upload", err))?;
     let mut reader = BufReader::new(file);
     let mut bytes = Vec::with_capacity(expected_bytes.min(usize::MAX as u64) as usize);
-    use omega_drive_gateway::blake3;
-    let mut hasher = blake3::Hasher::new();
+    let mut hasher = integrity.create_hasher();
     let mut buffer = vec![0u8; SHARED_BATCH_READ_BUFFER_BYTES];
 
     loop {
@@ -156,7 +157,7 @@ async fn read_shared_batch_file_payload(
         )));
     }
 
-    Ok((bytes, hasher.finalize().to_hex().to_string()))
+    Ok((bytes, hasher.finalize_hex()))
 }
 
 async fn cleanup_failed_shared_batch_upload(
@@ -391,6 +392,7 @@ async fn run_upload_batch(
 
                     for entry in batch {
                         let (bytes, checksum) = read_shared_batch_file_payload(
+                            ctx.engine.integrity.as_ref(),
                             &entry.file_path,
                             entry.prepared.total_bytes,
                         )

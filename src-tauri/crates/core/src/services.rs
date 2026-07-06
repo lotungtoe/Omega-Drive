@@ -15,6 +15,10 @@ use crate::upload_plan::default_system_profiles;
 use crate::upload_plan::validate_upload_plan;
 use crate::upload_rules::normalize_extensions;
 
+pub fn init_file_classifier() {
+    omega_drive_gateway::core::services::set_file_classifier(Box::new(DefaultFileTypeClassifier));
+}
+
 pub struct DefaultFileTypeClassifier;
 
 impl FileTypeClassifier for DefaultFileTypeClassifier {

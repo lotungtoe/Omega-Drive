@@ -32,7 +32,7 @@ export function useDeepLink(handlePlay, driveFiles) {
           urls.forEach(processUrl);
         });
 
-        // Lắng nghe thêm event thủ công từ single-instance để đảm bảo không miss
+        // Also listen for manual event from single-instance to ensure no misses
         const unlistenManual = await listen("omegadrive-deep-link", (event) => {
           if (!isMounted) return;
           if (event.payload) {

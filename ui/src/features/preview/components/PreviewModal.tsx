@@ -7,6 +7,7 @@ import { PdfPreview } from './PdfPreview'
 import { TextPreview } from './TextPreview'
 import { DocxPreview } from './DocxPreview'
 import { SheetPreview } from './SheetPreview'
+import { KreuzbergPreview } from './KreuzbergPreview'
 
 export function PreviewModal({ file, onClose, onDownload, dark }) {
   const displayName = file.filename || file.name || ''
@@ -17,8 +18,9 @@ export function PreviewModal({ file, onClose, onDownload, dark }) {
   const isAudio = fileType.group === 'audio'
   const isPdf = ext === 'pdf'
   const isDocx = ext === 'docx'
-  const isSheet = ['xlsx', 'xls', 'csv'].includes(ext)
-  const isTextOrCode = fileType.group === 'code' || ['txt', 'md', 'json', 'log'].includes(ext)
+  const isSheet = ['xlsx', 'xls', 'csv', 'tsv', 'ods', 'odp'].includes(ext)
+  const isBinaryDoc = ['doc', 'ppt', 'pptx', 'odt', 'rtf', 'epub', 'mobi'].includes(ext)
+  const isTextOrCode = fileType.group === 'doc'
 
   const renderContent = () => {
     if (isImage) {
@@ -76,6 +78,18 @@ export function PreviewModal({ file, onClose, onDownload, dark }) {
       )
     }
 
+    if (isBinaryDoc) {
+      return (
+        <KreuzbergPreview 
+          key="kreuzberg-preview" 
+          file={file} 
+          onClose={onClose} 
+          onDownload={onDownload} 
+          dark={dark} 
+        />
+      )
+    }
+
     if (isTextOrCode) {
       return (
         <TextPreview 
@@ -88,8 +102,8 @@ export function PreviewModal({ file, onClose, onDownload, dark }) {
     }
 
     return (
-      <FileDetailsPreview 
-        key="meta-preview" 
+      <KreuzbergPreview 
+        key="kreuzberg-preview" 
         file={file} 
         onClose={onClose} 
         onDownload={onDownload} 

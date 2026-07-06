@@ -944,7 +944,7 @@ pub async fn bridge_open_native_player(
     // causes the window to break when the thread is recycled.
     let mut init_error = None::<String>;
     let mpv = libmpv2::Mpv::with_initializer(|init| {
-        // gpu-next: cần cho RTX Video Smoothing + VSR của NVIDIA
+        // gpu-next: required for RTX Video Smoothing + NVIDIA VSR
         let _ = init.set_option("vo", "gpu-next");
 
         let has_adapter = state.cfg.d3d11_adapter != "Auto";

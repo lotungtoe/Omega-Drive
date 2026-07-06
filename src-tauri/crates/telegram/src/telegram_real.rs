@@ -1,9 +1,9 @@
-﻿//! telegram.rs — Điều khiển việc gửi/nhận dữ liệu qua Telegram.
+﻿//! telegram.rs — Send/receive data via Telegram.
 //!
-//! Phiên bản Omega:
-//! - Sử dụng thư viện `grammers` (MTProto) để giao tiếp trực tiếp với Telegram.
-//! - Hỗ trợ đăng nhập bằng OTP và mật khẩu 2FA.
-//! - Tự động quản lý phiên làm việc (Session) qua SQLite.
+//! Omega version:
+//! - Uses `grammers` library (MTProto) for direct Telegram communication.
+//! - Supports login via OTP and 2FA password.
+//! - Automatically manages sessions via SQLite.
 
 use omega_drive_gateway::provider::{
     file_repository::FileRepository,
@@ -41,7 +41,7 @@ const TELEGRAM_MAX_DOWNLOAD_CHUNK: i32 = 512 * 1024;
 
 // ─── ProgressReader ──────────────────────────────────────────────────────────
 
-/// Bộ lọc để theo dõi tiến độ đọc dữ liệu (dùng để hiển thị % tải lên trong các khối lớn).
+/// Filter to track read progress (used to show upload % in large chunks).
 pub struct ProgressReader<R> {
     inner: R,
     tx: Option<tokio::sync::mpsc::UnboundedSender<usize>>,
@@ -110,7 +110,7 @@ struct DiskCacheEntry {
 fn parse_chat_id(id_str: &str) -> Result<i64> {
     id_str
         .parse::<i64>()
-        .map_err(|e| anyhow!("ID Telegram không hợp lệ: {}. Lỗi: {}", id_str, e))
+        .map_err(|e| anyhow!("Invalid Telegram ID: {}. Error: {}", id_str, e))
 }
 
 fn slice_range_bytes(data: &[u8], range: ByteRange) -> Vec<u8> {
@@ -193,7 +193,7 @@ impl<R: AsyncRead + Unpin> AsyncRead for ProgressReader<R> {
 // ─── DownloadRateLimiter ──────────────────────────────────────────────────────
 
 /// Token bucket rate limiter cho Telegram download requests.
-/// Refill 1 permit mỗi interval, giới hạn sustained rate.
+/// Refill 1 permit per interval, limits sustained rate.
 /// Max burst = initial `max_permits`.
 struct DownloadRateLimiter {
     sem: tokio::sync::Semaphore,
@@ -226,7 +226,7 @@ impl DownloadRateLimiter {
 
 // ─── TelegramClient ──────────────────────────────────────────────────────────
 
-/// TelegramClient: Đối tượng trung tâm xử lý mọi giao tiếp với Telegram API.
+/// TelegramClient: Central object handling all Telegram API communication.
 pub struct TelegramClient {
     client: Client,
     chat_id: String,
@@ -239,7 +239,7 @@ pub struct TelegramClient {
 }
 
 impl TelegramClient {
-    /// Khởi tạo kết nối và thiết lập trình điều khiển Telegram.
+    /// Initialize connection and set up Telegram controller.
     pub async fn connect(
         api_id: i32,
         _api_hash: &str,
@@ -248,7 +248,7 @@ impl TelegramClient {
         session_path: &str,
         cache_dir: &Path,
     ) -> Result<Arc<Self>> {
-        // Mở file SQLite lưu trữ Session để không phải đăng nhập lại nhiều lần.
+        // Open SQLite session file to avoid re-login.
         let session = Arc::new(
             FileTelegramSession::open(session_path)
                 .with_context(|| format!("Khong the mo/tao file session: {session_path}"))?,
@@ -257,18 +257,18 @@ impl TelegramClient {
         let pool = SenderPool::new(Arc::clone(&session), api_id);
         let fat_handle = pool.handle.clone();
 
-        // Chạy runner xử lý các gói tin MTProto ngầm.
+        // Run background MTProto packet handler.
         tokio::spawn(async move { pool.runner.run().await });
 
         let client = Client::new(fat_handle);
 
-        // Kiểm tra xem ứng dụng đã được cấp quyền chưa.
+        // Check if the application is authorized.
         if !client.is_authorized().await? {
             tracing::info!(
-                "🔐 Telegram: Chưa có phiên đăng nhập hợp lệ. Hãy sử dụng CLI để đăng nhập."
+                "🔐 Telegram: No valid login session. Use CLI to log in."
             );
         } else {
-            tracing::info!("✅ Telegram: Đã khôi phục phiên đăng nhập cũ thành công.");
+            tracing::info!("✅ Telegram: Successfully restored previous session.");
         }
 
         const RATE_LIMITER_BURST: usize = 4;
@@ -287,7 +287,7 @@ impl TelegramClient {
         }))
     }
 
-    /// Trói buộc FileRepository vào instance sau khi đã khởi tạo kết nối.
+    /// Bind FileRepository to instance after connection is initialized.
     pub fn bind_file_repo(&self, file_repo: Arc<dyn FileRepository>) {
         let _ = self.file_repo.set(file_repo);
     }
@@ -397,15 +397,15 @@ impl TelegramClient {
         Ok(())
     }
 
-    /// Kiểm tra xem client đã được ủy quyền (đăng nhập) hay chưa.
+    /// Check if client is authorized (logged in).
     pub async fn is_authorized(&self) -> Result<bool> {
         self.client
             .is_authorized()
             .await
-            .context("Lỗi kiểm tra trạng thái đăng nhập")
+            .context("Error checking login status")
     }
 
-    /// Lấy thông tin đích (Peer) để gửi/nhận dữ liệu.
+    /// Get peer info for sending/receiving data.
     async fn get_chat(&self) -> Result<PeerRef> {
         let chat = self
             .cached_chat
@@ -418,7 +418,7 @@ impl TelegramClient {
         tracing::warn!(target: "feature::player", "🔍 Telegram: Resolving downloadable for message {}", message_id);
         let debug_mode = std::env::var("DEBUG").is_ok();
 
-        // 1. Kiểm tra Memory Cache
+        // 1. Check Memory Cache
         if let Some(cached) = self
             .downloadable_cache
             .read()
@@ -439,7 +439,7 @@ impl TelegramClient {
             );
         }
 
-        // 3. Fallback: Hỏi Telegram API
+        // 3. Fallback: Query Telegram API
         let chat = self.get_chat().await?;
         let message_id_i32 = i32::try_from(message_id)
             .map_err(|_| anyhow!("ID Telegram {message_id} vuot pham vi i32"))?;
@@ -466,7 +466,7 @@ impl TelegramClient {
             size: media.size(),
         };
 
-        // Lưu vào Memory Cache
+        // Save to Memory Cache
         let t_write = Instant::now();
         self.downloadable_cache
             .write()
@@ -802,11 +802,11 @@ impl TelegramClient {
         receiver_provider_stream(rx)
     }
 
-    /// Tìm kiếm thông tin kênh/người dùng thực tế từ ID hoặc Username.
+    /// Look up actual channel/user info by ID or Username.
     async fn resolve_chat(&self) -> Result<PeerRef> {
         let raw_id = parse_chat_id(&self.chat_id)?;
 
-        // Xử lý ID người dùng bình thường
+        // Handle regular user IDs
         if raw_id > 0 {
             return Ok(PeerRef {
                 id: PeerId::user(raw_id).expect("Invalid User ID"),
@@ -814,7 +814,7 @@ impl TelegramClient {
             });
         }
 
-        // Xử lý ID nhóm/chat cũ
+        // Handle legacy group/chat IDs
         if raw_id > -1_000_000_000_000 {
             let bare_id = raw_id.abs();
             return Ok(PeerRef {
@@ -823,7 +823,7 @@ impl TelegramClient {
             });
         }
 
-        // Xử lý ID Kênh (Channel) hoặc Siêu nhóm (Supergroup) - Thường bắt đầu bằng -100...
+        // Handle Channel or Supergroup IDs - Usually starts with -100...
         let channel_id = raw_id.abs() - 1_000_000_000_000;
 
         let result = self
@@ -835,7 +835,7 @@ impl TelegramClient {
                 })],
             })
             .await
-            .context("Không tìm thấy kênh Telegram. Hãy đảm bảo bạn đã tham gia kênh này.")?;
+            .context("Telegram channel not found. Make sure you have joined this channel.")?;
 
         let chats = match &result {
             tl::enums::messages::Chats::Chats(c) => &c.chats,
@@ -858,7 +858,7 @@ impl TelegramClient {
         })
     }
 
-    /// Gửi một mảnh dữ liệu nhị phân lên Telegram dưới dạng file đính kèm.
+    /// Send a binary data part to Telegram as a file attachment.
     pub async fn send_part_internal(
         &self,
         data: Vec<u8>,
@@ -872,7 +872,7 @@ impl TelegramClient {
         let size = data.len();
 
         tracing::info!(
-            "  📨 Telegram: Đang tải lên phần {part_num} ({:.1} MB)",
+            "  📨 Telegram: Uploading part {part_num} ({:.1} MB)",
             size as f64 / 1_048_576.0
         );
 
@@ -883,26 +883,26 @@ impl TelegramClient {
         };
         let mut reader = tokio::io::BufReader::new(progress_reader);
 
-        // Upload stream dữ liệu lên máy chủ Telegram
+        // Upload data stream to Telegram server
         let uploaded = self
             .client
             .upload_stream(&mut reader, size, part_name)
             .await
-            .context("Lỗi luồng upload lên Telegram")?;
+            .context("Error uploading stream to Telegram")?;
 
-        // Gửi tin nhắn thực tế kèm theo file đã upload
+        // Send actual message with uploaded file
         let msg = self
             .client
             .send_message(chat, InputMessage::new().text(caption).document(uploaded))
             .await
-            .context("Lỗi gửi tin nhắn kèm file Telegram")?;
+            .context("Error sending message with Telegram file")?;
 
         tracing::info!(
-            "  ✅ Telegram: Đã gửi xong phần {part_num}. ID tin nhắn: {}",
+            "  ✅ Telegram: Sent part {part_num}. Message ID: {}",
             msg.id()
         );
 
-        // Serialize metadata để lưu vào DB ngay lập tức
+        // Serialize metadata to save to DB immediately
         let mut meta_json = None;
         if let Some(media) = msg.media() {
             if let Some(loc) = media.to_raw_input_location() {
@@ -915,20 +915,20 @@ impl TelegramClient {
         Ok((i64::from(msg.id()), meta_json))
     }
 
-    /// Tải một file từ Telegram dựa trên ID tin nhắn.
+    /// Download a file from Telegram by message ID.
     pub async fn download_part_internal(&self, message_id: i64) -> Result<Vec<u8>> {
         let downloadable = self.resolve_downloadable(message_id).await?;
         let mut buf = Vec::with_capacity(downloadable.size().unwrap_or_default());
         let mut dl = self.client.iter_download(&downloadable);
 
-        // Tải từng khối dữ liệu về bộ nhớ.
-        while let Some(chunk) = dl.next().await.context("Lỗi khi tải dữ liệu từ Telegram")?
+        // Load data chunks into memory.
+        while let Some(chunk) = dl.next().await.context("Error downloading data from Telegram")?
         {
             buf.extend_from_slice(&chunk);
         }
 
         tracing::info!(
-            "  ✅ Telegram: Đã tải xong {:.1} MB từ tin nhắn ID {message_id}",
+            "  ✅ Telegram: Downloaded {:.1} MB from message ID {message_id}",
             buf.len() as f64 / 1_048_576.0
         );
         Ok(buf)
@@ -947,7 +947,7 @@ impl TelegramClient {
             let mut dl = self.client.iter_download(&downloadable);
             while let Some(chunk) = match dl.next().await {
                 Ok(c) => c,
-                Err(e) => { let _ = tx.send(Err(anyhow!("Lỗi khi tải dữ liệu từ Telegram: {e}"))).await; return; }
+                Err(e) => { let _ = tx.send(Err(anyhow!("Error downloading data from Telegram: {e}"))).await; return; }
             } {
                 if tx.send(Ok(Bytes::from(chunk))).await.is_err() {
                     return;
@@ -993,7 +993,7 @@ impl TelegramClient {
         self.download_range_segment(location, effective_range).await
     }
 
-    /// Tải part Telegram vào RAM cho đến khi vượt ngưỡng, sau đó spool ra file tạm.
+    /// Load Telegram part into RAM until threshold, then spool to temp file.
     pub async fn download_part_to_temp_or_bytes(
         &self,
         message_id: i64,
@@ -1017,7 +1017,7 @@ impl TelegramClient {
         }
 
         let mut dl = self.client.iter_download(&downloadable);
-        while let Some(chunk) = dl.next().await.context("Lỗi khi tải dữ liệu từ Telegram")?
+        while let Some(chunk) = dl.next().await.context("Error downloading data from Telegram")?
         {
             if let Some(f) = file.as_mut() {
                 f.write_all(&chunk).await?;
@@ -1048,13 +1048,13 @@ impl TelegramClient {
         Ok(TelegramDownload::InMemory(buf))
     }
 
-    /// Xóa một tin nhắn trên Telegram (khi người dùng xóa file vĩnh viễn).
+    /// Delete a Telegram message (when user permanently deletes a file).
     pub async fn delete_message(&self, message_id: i64) -> Result<()> {
         self.delete_messages_bulk(vec![message_id]).await
     }
 
-    /// Xóa nhiều tin nhắn trên Telegram theo lô (Batch Delete).
-    /// Giúp tránh Rate Limit và lỗi deserialization khi xóa file lớn.
+    /// Batch delete multiple Telegram messages.
+    /// Helps avoid Rate Limits and deserialization errors when deleting large files.
     pub async fn delete_messages_bulk(&self, message_ids: Vec<i64>) -> Result<()> {
         if message_ids.is_empty() {
             return Ok(());
@@ -1062,23 +1062,23 @@ impl TelegramClient {
 
         let chat = self.get_chat().await?;
 
-        // Chuyển sang i32 (Telegram Message ID là i32) và lọc lỗi
+        // Convert to i32 (Telegram Message ID is i32) and filter errors
         let ids: Vec<i32> = message_ids
             .into_iter()
             .filter_map(|id| i32::try_from(id).ok())
             .collect();
 
-        // Telegram cho phép xóa tối đa 100 tin nhắn mỗi request
+        // Telegram allows deleting up to 100 messages per request
         for chunk in ids.chunks(100) {
             if let Err(e) = self.client.delete_messages(chat, chunk).await {
                 tracing::error!(
-                    "❌ Telegram: Lỗi khi xóa lô {} tin nhắn: {}",
+                    "❌ Telegram: Error deleting batch of {} messages: {}",
                     chunk.len(),
                     e
                 );
             } else {
                 tracing::info!(
-                    "🗑️  Telegram: Đã xóa lô {} tin nhắn thành công.",
+                    "🗑️  Telegram: Successfully deleted batch of {} messages.",
                     chunk.len()
                 );
             }
@@ -1087,8 +1087,8 @@ impl TelegramClient {
         Ok(())
     }
 
-    /// Chuyển tiếp tin nhắn (forward) sang một chat khác (ví dụ: Shared Channel).
-    /// Đây là cách cực nhanh để sao chép file mà không cần download/upload.
+    /// Forward a message to another chat (e.g. Shared Channel).
+    /// This is a fast way to copy a file without download/upload.
     pub async fn forward_message_internal(
         &self,
         message_id: i64,
@@ -1098,7 +1098,7 @@ impl TelegramClient {
 
         // Parse target chat
         let target_raw_id = parse_chat_id(target_chat_id)?;
-        // Resolve target peer (tạm thời giả định là channel nếu bắt đầu bằng -100)
+        // Resolve target peer (assume channel if starts with -100)
         let target_peer = if target_chat_id.starts_with("-100") {
             let channel_id = target_raw_id.abs() - 1_000_000_000_000;
             PeerRef {
@@ -1113,19 +1113,19 @@ impl TelegramClient {
         };
 
         let message_id_i32 = i32::try_from(message_id)
-            .map_err(|_| anyhow!("ID Telegram {message_id} vượt phạm vi i32"))?;
+            .map_err(|_| anyhow!("Telegram ID {message_id} exceeds i32 range"))?;
 
         let forwarded = self
             .client
             .forward_messages(target_peer, &[message_id_i32], from_chat)
             .await
-            .context("Lỗi chuyển tiếp tin nhắn Telegram")?;
+            .context("Error forwarding Telegram message")?;
 
         let msg = forwarded
             .into_iter()
             .flatten()
             .next()
-            .ok_or_else(|| anyhow!("Chuyển tiếp thất bại, không nhận được tin nhắn mới."))?;
+            .ok_or_else(|| anyhow!("Forward failed, did not receive a new message."))?;
 
         Ok(i64::from(msg.id()))
     }
@@ -1138,7 +1138,7 @@ impl StorageProvider for TelegramClient {
             id: "telegram".to_string(),
             display_name: "Telegram Storage".to_string(),
             icon: "mdi-telegram".to_string(),
-            description: "Lưu trữ dung lượng lớn thông qua Telegram MTProto.".to_string(),
+            description: "Large file storage via Telegram MTProto.".to_string(),
         }
     }
 

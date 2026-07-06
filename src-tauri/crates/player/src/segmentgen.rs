@@ -174,8 +174,8 @@ async fn download_part_stream(
     Err("Khong xac dinh duoc duong dan tai".to_string())
 }
 
-/// Láº¥y dá»¯ liá»‡u cá»§a má»™t máº£nh (part) cá»§a file video.
-/// Æ¯u tiÃªn: 1. RAM Buffer, 2. SSD Cache, 3. Táº£i tá»« nguá»“n gá»‘c (Discord/Telegram).
+/// Get data for a part of a video file.
+/// Priority: 1. RAM Buffer, 2. SSD Cache, 3. Fetch from source (Discord/Telegram).
 pub async fn get_file_part_internal(
     st: &PlayerContext,
     file_id: i64,
@@ -190,16 +190,16 @@ pub async fn get_file_part_internal(
     let part = {
         let _file = st.file_repo.get_file_by_id(file_id)
             .await
-            .map_err(|e| format!("Lá»—i DB: {e}"))?
-            .ok_or_else(|| "KhÃ´ng tÃ¬m tháº¥y file".to_string())?;
+            .map_err(|e| format!("DB error: {e}"))?
+            .ok_or_else(|| "File not found".to_string())?;
 
         let chunk_parts = st.file_repo.get_parts_for_file_by_type(file_id, "chunk")
             .await
-            .map_err(|e| format!("Lá»—i DB Chunks: {e}"))?;
+            .map_err(|e| format!("DB Chunks error: {e}"))?;
         let selected = chunk_parts
             .into_iter()
             .find(|p| p.part_index == part_num)
-            .ok_or_else(|| format!("KhÃ´ng tÃ¬m tháº¥y máº£nh {part_num}"))?;
+            .ok_or_else(|| format!("Part {part_num} not found"))?;
 
         PartMetadata {
             id: selected.id,
@@ -221,7 +221,7 @@ pub async fn get_file_part_internal(
         .await
         .map_err(|err| {
             tracing::error!(
-                "Ã¢ÂŒ [get_file_part_internal] Download FAILED: file_id={}, part={}, error={}",
+                "[get_file_part_internal] Download FAILED: file_id={}, part={}, error={}",
                 file_id,
                 part_num,
                 err

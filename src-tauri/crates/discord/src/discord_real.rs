@@ -34,7 +34,7 @@ pub struct Handler {
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, _ctx: serenity::prelude::Context, ready: Ready) {
-        info!("Bot Discord đã online: {}", ready.user.name);
+        info!("Discord bot is online: {}", ready.user.name);
         *crate::DISCORD_CONNECTED
             .write()
             .await = true;
@@ -51,7 +51,7 @@ impl EventHandler for Handler {
         _ctx: serenity::prelude::Context,
         _: serenity::model::event::ResumedEvent,
     ) {
-        info!("Discord bot đã kết nối lại (resumed).");
+        info!("Discord bot reconnected (resumed).");
         *crate::DISCORD_CONNECTED
             .write()
             .await = true;
@@ -67,7 +67,7 @@ impl EventHandler for Handler {
         use serenity::gateway::ConnectionStage;
         match event.new {
             ConnectionStage::Connected => {
-                info!("Discord shard {} đã kết nối.", event.shard_id);
+                info!("Discord shard {} connected.", event.shard_id);
                 *crate::DISCORD_CONNECTED
                     .write()
                     .await = true;
@@ -75,7 +75,7 @@ impl EventHandler for Handler {
                     .emit(omega_drive_gateway::core::events::OmegaEvent::DiscordConnectionStatusChanged(true));
             }
             ConnectionStage::Disconnected => {
-                info!("Discord shard {} mất kết nối.", event.shard_id);
+                info!("Discord shard {} disconnected.", event.shard_id);
                 *crate::DISCORD_CONNECTED
                     .write()
                     .await = false;
@@ -94,9 +94,9 @@ impl EventHandler for Handler {
     ) {
         let ch_id_str = channel.id.get().to_string();
         if let Err(e) = self.file_repo.set_files_error_by_thread_id(&ch_id_str).await {
-            error!("Lỗi cập nhật DB sau khi xóa kênh Discord: {e}");
+            error!("Error updating DB after deleting Discord channel: {e}");
         } else {
-            info!("🗑️ Kênh #{} đã bị xóa trên Discord -> Đã đồng bộ trạng thái vào DB.", channel.name);
+            info!("🗑️ Channel #{} deleted on Discord -> Synced state to DB.", channel.name);
         }
     }
 
@@ -145,7 +145,7 @@ impl StorageProvider for DiscordStorageProvider {
             id: "discord".to_string(),
             display_name: "Discord Cloud".to_string(),
             icon: "mdi-discord".to_string(),
-            description: "Lưu trữ qua nền tảng Discord (Sử dụng các kênh văn bản).".to_string(),
+            description: "Store via Discord platform (using text channels).".to_string(),
         }
     }
 
@@ -173,15 +173,15 @@ impl StorageProvider for DiscordStorageProvider {
         let size = data.len() as i64;
         let (thread_id, filename) = {
             let file = self.file_repo.get_file_by_id(file_id).await?
-                .ok_or_else(|| anyhow!("Không tìm thấy file ID: {}", file_id))?;
+                .ok_or_else(|| anyhow!("File ID not found: {}", file_id))?;
             let thread_id = file
                 .thread_id
                 .parse::<u64>()
-                .map_err(|_| anyhow!("ID thread không hợp lệ: {}", file.thread_id))?;
+                .map_err(|_| anyhow!("Invalid thread ID: {}", file.thread_id))?;
             (ChannelId::new(thread_id), file.filename)
         };
 
-        let caption = format!("**{}** • Phần {}", filename, part_idx);
+        let caption = format!("**{}** • Part {}", filename, part_idx);
         let zip_name = format!("{}.part{:04}.zip", filename, part_idx);
         let attachment_name = zip_name.clone();
 
@@ -206,7 +206,7 @@ impl StorageProvider for DiscordStorageProvider {
             let file =
                 self.file_repo.get_file_by_id(part.file_id).await?.ok_or_else(|| {
                     anyhow!(
-                        "Không tìm thấy file trong DB cho mảnh này: {}",
+                        "File not found in DB for this part: {}",
                         part.file_id
                     )
                 })?;
@@ -229,7 +229,7 @@ impl StorageProvider for DiscordStorageProvider {
         let bytes = response.bytes().await?.to_vec();
         tracing::debug!("[dl] discord download: idx={} status={} bytes={}", part.part_index, status, bytes.len());
         if !status.is_success() {
-            return Err(anyhow!("Lỗi tải từ Discord: {}", status));
+            return Err(anyhow!("Error downloading from Discord: {}", status));
         }
         Ok(bytes)
     }
@@ -238,7 +238,7 @@ impl StorageProvider for DiscordStorageProvider {
         let thread_id: u64 = {
             let file =
                 self.file_repo.get_file_by_id(part.file_id).await?.ok_or_else(|| {
-                    anyhow!("Không tìm thấy file trong DB để xóa mảnh: {}", part.file_id)
+                    anyhow!("File not found in DB to delete part: {}", part.file_id)
                 })?;
             file.thread_id.parse()?
         };
@@ -412,7 +412,7 @@ pub async fn create_forum_thread(
     Ok(thread.id.get())
 }
 
-// ─── Các hàm tiện ích tương tác với Discord API ──────────────────────────
+// ─── Discord API utility functions ──────────────────────────────────────
 
 pub fn sanitize_name(name: &str) -> String {
     use std::path::Path;
@@ -456,11 +456,11 @@ pub async fn get_or_create_category(
     let guild = guild_id
         .to_partial_guild(http)
         .await
-        .context("Không thể lấy thông tin Server")?;
+        .context("Cannot get server info")?;
     let channels = guild
         .channels(http)
         .await
-        .context("Không thể lấy danh sách kênh")?;
+        .context("Cannot get channel list")?;
 
     for ch in channels.values() {
         if ch.kind == serenity::model::channel::ChannelType::Category
@@ -477,8 +477,8 @@ pub async fn get_or_create_category(
                 .kind(serenity::model::channel::ChannelType::Category),
         )
         .await
-        .context("Lỗi tạo Category Discord")?;
-    info!("📌 Đã tạo Category mới trên Discord: {safe}");
+        .context("Error creating Discord Category")?;
+    info!("📌 Created new Category on Discord: {safe}");
     Ok(cat)
 }
 
@@ -492,11 +492,11 @@ pub async fn get_or_create_fixed_channel(
     let guild = guild_id
         .to_partial_guild(http)
         .await
-        .context("Không thể lấy thông tin Server")?;
+        .context("Cannot get server info")?;
     let channels = guild
         .channels(http)
         .await
-        .context("Không thể lấy danh sách kênh")?;
+        .context("Cannot get channel list")?;
 
     for ch in channels.values() {
         if ch.kind == serenity::model::channel::ChannelType::Text
@@ -515,8 +515,8 @@ pub async fn get_or_create_fixed_channel(
     let ch = guild
         .create_channel(http, builder)
         .await
-        .context("Lỗi tạo kênh cố định")?;
-    info!("🔗 Đã tạo kênh cố định: {safe}");
+        .context("Error creating fixed channel")?;
+    info!("🔗 Created fixed channel: {safe}");
     Ok(ch)
 }
 
@@ -526,12 +526,12 @@ pub async fn create_file_thread(
     file_name: &str,
 ) -> Result<ChannelId> {
     let content =
-        format!("📄 **File Store**: `{file_name}`\n*Dữ liệu được lưu trữ trong thread này.*");
+        format!("📄 **File Store**: `{file_name}`\n*Data is stored in this thread.*");
     let builder = serenity::builder::CreateMessage::new().content(content);
     let msg = thread_id
         .send_message(http, builder)
         .await
-        .context("Lỗi gửi tin nhắn khởi tạo thread")?;
+        .context("Error sending thread init message")?;
 
     let thread_name = if file_name.len() > 100 {
         &file_name[..100]
@@ -546,9 +546,9 @@ pub async fn create_file_thread(
             serenity::builder::CreateThread::new(thread_name),
         )
         .await
-        .context("Lỗi tạo thread từ tin nhắn")?;
+        .context("Error creating thread from message")?;
 
-    info!("🧵 Đã tạo thread mới cho file: {}", thread.name);
+    info!("🧵 Created new thread for file: {}", thread.name);
     Ok(thread.id)
 }
 
@@ -556,8 +556,8 @@ pub async fn archive_thread(http: &Arc<Http>, thread_id: u64) -> Result<()> {
     let payload = serde_json::json!({ "archived": true });
     http.edit_channel(thread_id.into(), &payload, None)
         .await
-        .context("Lỗi lưu trữ (archive) thread")?;
-    info!("📦 Đã hoàn tất lưu trữ thread: {}", thread_id);
+        .context("Error archiving thread")?;
+    info!("📦 Finished archiving thread: {}", thread_id);
     Ok(())
 }
 
@@ -579,7 +579,7 @@ pub async fn delete_file_thread(http: &Arc<Http>, thread_id: u64) -> Result<()> 
         let _ = http.delete_message(pid, thread_id.into(), None).await;
     }
 
-    info!("Đã dọn dẹp sạch cả Thread và Tin nhắn gốc: {}", thread_id);
+    info!("Cleaned up both Thread and original message: {}", thread_id);
     Ok(())
 }
 
@@ -591,11 +591,11 @@ pub async fn delete_category(
     let guild = guild_id
         .to_partial_guild(http)
         .await
-        .context("Không thể lấy thông tin Server")?;
+        .context("Cannot get server info")?;
     let channels = guild
         .channels(http)
         .await
-        .context("Không thể lấy danh sách kênh")?;
+        .context("Cannot get channel list")?;
     let cat_id = ChannelId::new(category_id);
 
     for ch in channels.values().filter(|c| c.parent_id == Some(cat_id)) {
@@ -603,7 +603,7 @@ pub async fn delete_category(
             .await
             .with_context(|| {
                 format!(
-                    "Lỗi đưa kênh {} ra khỏi category {}",
+                    "Error moving channel {} out of category {}",
                     ch.id.get(),
                     category_id
                 )
@@ -613,7 +613,7 @@ pub async fn delete_category(
     cat_id
         .delete(http)
         .await
-        .context("Lỗi xóa Category Discord")?;
+        .context("Error deleting Discord Category")?;
     Ok(())
 }
 
@@ -628,7 +628,7 @@ pub async fn rename_category(
     serenity::model::id::ChannelId::new(category_id)
         .edit(http, builder)
         .await
-        .context("Lỗi đổi tên Category Discord")?;
+        .context("Error renaming Discord Category")?;
     Ok(())
 }
 
@@ -646,14 +646,14 @@ pub async fn send_part(
         .add_file(attachment);
     let msg = thread_id.send_message(http, builder).await.map_err(|e| {
         anyhow!(
-            "Lỗi gửi tin nhắn kèm file Discord: {:?} (Dung lượng: {} bytes)",
+            "Error sending file message Discord: {:?} (Size: {} bytes)",
             e,
             len
         )
     })?;
     let raw_id = msg.id.get();
     let msg_id = i64::try_from(raw_id)
-        .map_err(|_| anyhow!("Discord message id {raw_id} vượt quá phạm vi i64"))?;
+        .map_err(|_| anyhow!("Discord message id {raw_id} exceeds i64 range"))?;
     Ok((msg_id, msg.link()))
 }
 
@@ -675,7 +675,7 @@ pub async fn send_part_batch(
 
     let msg = thread_id.send_message(http, builder).await.map_err(|e| {
         anyhow!(
-            "Lỗi gửi batch {} file lên Discord: {:?} (Tổng dung lượng: {} bytes)",
+            "Error sending batch of {} files to Discord: {:?} (Total size: {} bytes)",
             parts_count,
             e,
             total_len
@@ -684,7 +684,7 @@ pub async fn send_part_batch(
 
     let raw_id = msg.id.get();
     let msg_id = i64::try_from(raw_id)
-        .map_err(|_| anyhow!("Discord message id {raw_id} vượt quá phạm vi i64"))?;
+        .map_err(|_| anyhow!("Discord message id {raw_id} exceeds i64 range"))?;
     Ok((msg_id, msg.link()))
 }
 
@@ -700,7 +700,7 @@ pub async fn post_thread_note(
         .context("Failed to send manifest note into Discord thread")?;
     let raw_id = msg.id.get();
     let msg_id = i64::try_from(raw_id)
-        .map_err(|_| anyhow!("Discord message id {raw_id} vượt quá phạm vi i64"))?;
+        .map_err(|_| anyhow!("Discord message id {raw_id} exceeds i64 range"))?;
     Ok(msg_id)
 }
 
@@ -737,7 +737,7 @@ pub async fn fetch_attachment_url(
     let entries = fetch_message_attachments(http, thread_id, message_id).await?;
     find_msg_attachment(&entries, part_index)
         .cloned()
-        .ok_or_else(|| anyhow!("Tin nhắn không chứa file đính kèm với: {}", marker))
+        .ok_or_else(|| anyhow!("Message does not contain file attachment matching: {}", marker))
 }
 
 pub async fn fetch_message_attachments(
@@ -748,7 +748,7 @@ pub async fn fetch_message_attachments(
     let msg = ChannelId::new(thread_id)
         .message(http, message_id)
         .await
-        .context("Lỗi tìm tin nhắn Discord")?;
+        .context("Error finding Discord message")?;
     let entries: Vec<_> = msg
         .attachments
         .iter()
@@ -768,13 +768,13 @@ pub async fn move_channel_to_category(
             let payload = serde_json::json!({ "parent_id": cat.to_string() });
             http.edit_channel(thread_id.into(), &payload, None)
                 .await
-                .context("Lỗi di chuyển kênh vào thư mục")?;
+                .context("Error moving channel to folder")?;
         }
         None => {
             let payload = serde_json::json!({ "parent_id": null });
             http.edit_channel(thread_id.into(), &payload, None)
                 .await
-                .context("Lỗi khôi phục kênh về thư mục gốc")?;
+                .context("Error restoring channel to root folder")?;
         }
     }
     Ok(())

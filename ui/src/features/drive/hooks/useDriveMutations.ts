@@ -36,7 +36,7 @@ export function useDriveMutations({
           await refresh();
         } catch (error) {
           const message = toUserMessage(error);
-          console.error("Loi khi xoa file:", error);
+          console.error("Error deleting file:", error);
           toast?.show(message.message, "error");
         }
         return;
@@ -53,7 +53,7 @@ export function useDriveMutations({
         refreshInBackground();
       } catch (error) {
         const message = toUserMessage(error);
-        console.error("Loi khi xoa file:", error);
+        console.error("Error deleting file:", error);
         toast?.show(message.message, "error");
         await refresh();
       }
@@ -68,7 +68,7 @@ export function useDriveMutations({
           if (requestDeleteConfirmation) {
             const confirmed = await requestDeleteConfirmation(item);
             if (!confirmed) return;
-          } else if (!globalThis.confirm(`Ban co chac chan muon xoa thu muc "${item.name}" va toan bo noi dung ben trong?`)) {
+          } else if (!globalThis.confirm(`Are you sure you want to delete folder "${item.name}" and all its contents?`)) {
             return;
           }
 
@@ -89,7 +89,7 @@ export function useDriveMutations({
             if (!confirmed) return;
           } else if (
             !globalThis.confirm(
-              `Bạn có chắc chắn muốn xóa tệp "${item.filename}"? Thao tác này không thể hoàn tác.`
+              `Are you sure you want to delete file "${item.filename}"? This action cannot be undone.`
             )
           ) {
             return;
@@ -109,7 +109,7 @@ export function useDriveMutations({
         await deleteFile(item.id);
       } catch (error) {
         const message = toUserMessage(error);
-        console.error("Lỗi khi xóa item:", error);
+        console.error("Error deleting item:", error);
         toast?.show(message.message, "error");
         await refresh();
       }
@@ -126,7 +126,7 @@ export function useDriveMutations({
         refreshInBackground();
       } catch (error) {
         const message = toUserMessage(error);
-        console.error("Loi khi khoi phuc tep:", error);
+        console.error("Error restoring file:", error);
         toast?.show(message.message, "error");
         await refresh();
       }
@@ -149,7 +149,7 @@ export function useDriveMutations({
         await refresh();
       } catch (error) {
         const message = toUserMessage(error);
-        console.error("Loi khi tao thu muc:", error);
+        console.error("Error creating folder:", error);
         toast?.show(message.message, "error");
       }
     },
@@ -180,7 +180,7 @@ export function useDriveMutations({
         refreshInBackground();
       } catch (error) {
         const message = toUserMessage(error);
-        console.error("Loi khi di chuyen file:", error);
+        console.error("Error moving file:", error);
         toast?.show(message.message, "error");
         await refresh();
       }
@@ -199,7 +199,7 @@ export function useDriveMutations({
         refreshInBackground();
       } catch (error) {
         const message = toUserMessage(error);
-        console.error("Loi khi di chuyen thu muc:", error);
+        console.error("Error moving folder:", error);
         toast?.show(message.message, "error");
         await refresh();
       }
@@ -209,15 +209,15 @@ export function useDriveMutations({
   
   const forwardFileToShared = useCallback(
     async (fileId) => {
-      const loadingToastId = toast?.show("Đang di chuyển tệp sang Drive công cộng...", "loading");
+      const loadingToastId = toast?.show("Moving files to Shared Drive...", "loading");
       try {
         await forwardFileToSharedService(fileId);
-        toast?.show("Đã di chuyển tệp thành công!", "success", { id: loadingToastId });
+        toast?.show("Files moved successfully!", "success", { id: loadingToastId });
         await refresh();
       } catch (error) {
         const message = toUserMessage(error);
-        console.error("Lỗi khi di chuyển sang Drive công cộng:", error);
-        toast?.show(message.message || "Không thể di chuyển tệp.", "error", { id: loadingToastId });
+        console.error("Error moving to Shared Drive:", error);
+        toast?.show(message.message || "Could not move file.", "error", { id: loadingToastId });
         await refresh();
       }
     },
@@ -246,7 +246,7 @@ export function useDriveMutations({
         refreshInBackground();
       } catch (error) {
         const message = toUserMessage(error);
-        console.error("Lỗi khi cập nhật star:", error);
+        console.error("Error updating star:", error);
         toast?.show(message.message, "error");
         await refresh();
       }

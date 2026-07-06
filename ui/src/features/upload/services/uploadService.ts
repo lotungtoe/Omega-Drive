@@ -174,7 +174,7 @@ export async function selectFiles(): Promise<string[] | null> {
   const selected = await open({
     multiple: true,
     directory: false,
-    title: "Chọn tệp tin để tải lên",
+    title: "Select files to upload",
   });
   if (!selected) return null;
   return Array.isArray(selected) ? selected : [selected];
@@ -184,8 +184,8 @@ export async function confirmOverwrite(collisions: UploadEntry[]): Promise<boole
   const sample = collisions.slice(0, 5).map((c) => `"${c.filename}"`).join(", ");
   const suffix = collisions.length > 5 ? ", ..." : "";
   return ask(
-    `Phát hiện ${collisions.length} tệp trùng lặp: ${sample}${suffix}. Ghi đè tất cả tệp trùng lặp?`,
-    { title: "Ghi đè tệp trùng lặp", kind: "warning" },
+    `Detected ${collisions.length} duplicate files: ${sample}${suffix}. Overwrite all duplicates?`,
+    { title: "Overwrite duplicate files", kind: "warning" },
   );
 }
 
@@ -235,12 +235,12 @@ export function showUploadSummary(
   toast: ToastLike,
   { started, skipped, failedToStart }: UploadSummary,
 ): void {
-  if (started > 0) toast.show(`Đã bắt đầu tải lên ${started} tệp.`, "success");
-  if (skipped > 0) toast.show(`Đã bỏ qua ${skipped} tệp trùng lặp.`, "info");
+  if (started > 0) toast.show(`Started uploading ${started} file(s).`, "success");
+  if (skipped > 0) toast.show(`Skipped ${skipped} duplicate file(s).`, "info");
   if (failedToStart.length > 0) {
     const sample = failedToStart.slice(0, 3).map((name) => `"${name}"`).join(", ");
     const suffix = failedToStart.length > 3 ? "..." : "";
-    toast.show(`Không thể tải lên ${failedToStart.length} tệp: ${sample}${suffix}`, "error");
+    toast.show(`Could not upload ${failedToStart.length} file(s): ${sample}${suffix}`, "error");
   }
 }
 

@@ -4,22 +4,22 @@ pub mod debug;
 pub mod bridge;
 pub mod stream;
 pub mod sparse;
-pub mod download;           // MĂ¡y chá»§ Axum â€” nháº­n request tá»« mpv, táº£i dá»¯ liá»‡u tá»« Discord/Telegram/DB
-pub mod nativeplayer;     // Điều khiển mpv qua IPC — mở, play/pause, seek, volume, speed, fullscreen
-pub mod playlistbuild;    // Kiểm tra trạng thái video trong DB đã "ready" chưa trước khi phát
+pub mod download;           // Axum server — receives requests from mpv, loads data from Discord/Telegram/DB
+pub mod nativeplayer;     // Controls mpv via IPC — open, play/pause, seek, volume, speed, fullscreen
+pub mod playlistbuild;    // Checks if video in DB is "ready" before playback
 
-pub mod url_cache;        // Discord CDN URL cache â€” lookup, resolve, persist
-pub mod range_stream;     // XĂ¢y dá»±ng range plan â€” chia byte range thĂ nh danh sĂ¡ch máº£nh nhá»
-pub mod runtime;          // Quáº£n lĂ½ toĂ n bá»™ runtime state â€” cache part, keyframe, seek targets, bridge child
-pub mod segment_telemetry;// Thu tháº­p sá»‘ liá»‡u táº£i segment â€” TTFB, bytes, retries â€” Ä‘á» xuáº¥t Ä‘á»™ song song
-pub mod segmentgen;       // Sinh segment tá»« cache/cloud cho streaming â€” slice byte range tá»« part gá»‘c
-pub mod singleflight;     // Gá»™p request trĂ¹ng â€” nhiá»u luá»“ng cĂ¹ng táº£i 1 part/block thĂ¬ chá»‰ gá»i 1 láº§n
+pub mod url_cache;        // Discord CDN URL cache — lookup, resolve, persist
+pub mod range_stream;     // Builds range plan — splits byte range into small part lists
+pub mod runtime;          // Manages all runtime state — caches parts, keyframes, seek targets, bridge child
+pub mod segment_telemetry;// Collects segment load telemetry — TTFB, bytes, retries — suggests parallelism
+pub mod segmentgen;       // Generates segments from cache/cloud for streaming — slices byte range from original part
+pub mod singleflight;     // Deduplicates concurrent requests — multiple threads loading same part/block call API once
 pub mod idx_cache;
-pub mod video_indexer;    // DĂ² vĂ  cache index hint â€” loáº¡i container, part quan trá»ng â€” tá»‘i Æ°u seek
+pub mod video_indexer;    // Scans and caches index hints — container type, critical parts — optimizes seek
 pub mod hwdec;            // Enumerate GPU adapter cho hardware decode
-pub mod infrastructure;   // ÄÆ°á»ng dáº«n ffmpeg/mpv theo ná»n táº£ng, kiá»ƒm tra runtime mpv
+pub mod infrastructure;   // Platform-specific ffmpeg/mpv paths, checks mpv runtime
 
-// â”€â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Public API ────────────────────────────────────────────
 
 use std::{
     collections::HashMap,

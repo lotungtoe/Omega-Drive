@@ -43,7 +43,7 @@ pub async fn get_playback_position(
         wrap_error(
             "player",
             codes::E_DB,
-            "Lá»—i DB khi láº¥y vá»‹ trĂ­ phĂ¡t láº¡i.",
+            "DB error fetching playback position.",
             ctx.clone(),
             e,
         )
@@ -87,7 +87,7 @@ pub async fn save_playback_position(
         wrap_error(
             "player",
             codes::E_DB,
-            "Lá»—i DB khi lÆ°u playback history.",
+            "DB error saving playback history.",
             ctx.clone(),
             e,
         )
@@ -110,7 +110,7 @@ pub async fn clear_playback_position(
         wrap_error(
             "player",
             codes::E_DB,
-            "Lá»—i DB khi xĂ³a playback history.",
+            "DB error deleting playback history.",
             ctx.clone(),
             e,
         )
@@ -223,13 +223,13 @@ pub async fn update_video_player_config(
         wrap_error(
             "player",
             codes::E_IO,
-            "KhĂ´ng thá»ƒ lÆ°u cáº¥u hĂ¬nh player.",
+            "Cannot save player configuration.",
             ctx.clone(),
             e,
         )
     })?;
 
-    info!("ÄĂ£ cáº­p nháº­t vĂ  lÆ°u cáº¥u hĂ¬nh Video Player má»›i.");
+    info!("Video Player configuration updated and saved.");
     Ok(())
 }
 
@@ -249,7 +249,7 @@ pub async fn prepare_audio_bridge(st: tauri::State<'_, AppState>) -> AppResult<(
     bridge_res.map_err(|e| {
         AppError::new(
             codes::E_PLAYER_INIT_FAILED,
-            "KhĂ´ng thá»ƒ khá»Ÿi Ä‘á»™ng audio bridge.",
+            "Cannot start audio bridge.",
         )
         .with_source(e)
     })?;

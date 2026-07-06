@@ -44,7 +44,7 @@ const CircularProgress = ({ value }) => {
 const SessionItem = ({ s, onCancel }) => {
   const [hovered, setHovered] = useState(false)
   const progress = s.overallProgress || s.percentage || 0
-  const displayName = s.fileName || s.detail || "Äang xá»­ lĂ½..."
+  const displayName = s.fileName || s.detail || "Processing..."
   const isDone = s.phase === 'done'
   
   return (
@@ -63,7 +63,7 @@ const SessionItem = ({ s, onCancel }) => {
         {hovered && !isDone ? (
           <button type="button"
             onClick={() => onCancel?.(s.sessionId, s)}
-            title="Huá»·"
+            title="Cancel"
             style={{
               width: 24, height: 24,
               borderRadius: '50%',
@@ -123,7 +123,7 @@ export const ProgressOverlay = memo(function ProgressOverlay({ progressMap, onCl
         onClick={() => setIsMinimized(!isMinimized)}
       >
         <h3 style={{ fontSize: 14, fontWeight: 500, margin: 0, color: 'var(--gd-on-surface)' }}>
-          {t('progress.uploadingNItems', { count: sessions.length, defaultValue: `Äang táº£i ${sessions.length} má»¥c lĂªn` })}
+          {t('progress.uploadingNItems', { count: sessions.length, defaultValue: `Uploading ${sessions.length} item(s)` })}
         </h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button type="button" 

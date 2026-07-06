@@ -3,8 +3,8 @@ import { listen } from "@tauri-apps/api/event";
 import { getConnectionStatus } from '../../diagnostics/services/diagnosticsService';
 
 /**
- * useStatusMonitor Hook: Giám sát trạng thái kết nối tới Discord và Telegram.
- * Sử dụng cơ chế Event-driven (Tauri events) kết hợp Polling định kỳ.
+ * useStatusMonitor Hook: Monitor connection status to Discord and Telegram.
+ * Uses Event-driven mechanism (Tauri events) combined with periodic Polling.
  */
 export function useStatusMonitor(isLite = false) {
   const [discordOnline, setDiscordOnline] = useState(true);
@@ -13,17 +13,17 @@ export function useStatusMonitor(isLite = false) {
   useEffect(() => {
     if (isLite) return;
 
-    // 1. Lắng nghe sự kiện chủ động đẩy từ Backend (Instant feedback)
+    // 1. Listen for events pushed from Backend (Instant feedback)
     let unlisten;
     const setupListener = async () => {
       unlisten = await listen("omega-event", (event) => {
         const payload = event.payload;
-        // Xử lý variant DiscordConnectionStatusChanged(bool)
+        // Handle variant DiscordConnectionStatusChanged(bool)
         if (payload?.type === "DiscordConnectionStatusChanged") {
           const isConnected = payload.data;
           setDiscordOnline(isConnected);
         }
-        // Xử lý variant TelegramConnectionStatusChanged(bool)
+        // Handle variant TelegramConnectionStatusChanged(bool)
         if (payload?.type === "TelegramConnectionStatusChanged") {
           const isConnected = payload.data;
           setTelegramOnline(isConnected);
@@ -32,14 +32,14 @@ export function useStatusMonitor(isLite = false) {
     };
     setupListener();
 
-    // 2. Polling định kỳ (Fallback) - Tăng interval lên 10s để giảm tải
+    // 2. Periodic Polling (Fallback) - Increased interval to 10s to reduce load
     const check = async () => {
       try {
         const st = await getConnectionStatus();
         setDiscordOnline(st?.discord?.connected ?? false);
         setTelegramOnline(st?.telegram?.authorized ?? false);
       } catch (err) {
-        console.warn("Kiểm tra trạng thái kết nối thất bại", err);
+        console.warn("Failed to check connection status", err);
       }
     };
     

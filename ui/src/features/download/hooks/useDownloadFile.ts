@@ -3,27 +3,27 @@ import { selectDownloadPath, startDownload } from '../services/downloadService';
 import { toUserMessage } from '../../../shared/services/errors/toUserMessage';
 
 /**
- * useDownloadFile Hook: Xử lý việc tải file từ Cloud về máy tính cá nhân.
+ * useDownloadFile Hook: Handle downloading files from Cloud to local machine.
  */
 export function useDownloadFile(toast) {
   /**
-   * handleDownload: Mở hộp thoại chọn nơi lưu và bắt đầu tải.
-   * @param {object} file - Đối tượng file cần tải.
+   * handleDownload: Open save dialog and start download.
+   * @param {object} file - The file object to download.
    */
   const handleDownload = useCallback(async (file) => {
     try {
-      // 1. Mở cửa sổ hệ thống để người dùng chọn vị trí lưu file (Dùng save thay vì open)
+      // 1. Open system dialog to select save location (use save instead of open)
       const savePath = await selectDownloadPath(file);
       
-      if (!savePath) return; // Người dùng hủy bỏ việc chọn
+      if (!savePath) return; // User cancelled the selection
       
-      toast.show(`Bắt đầu tải xuống "${file.filename}"...`, 'info');
+      toast.show(`Starting download "${file.filename}"...`, 'info');
       
-      // 2. Gọi API để Backend thực hiện việc tải và ghép các mảnh file
+      // 2. Call API for Backend to download and reassemble file chunks
       await startDownload(file.id, savePath);
     } catch (err) {
       const msg = toUserMessage(err);
-      console.error("Tải xuống thất bại:", err);
+      console.error("Download failed:", err);
       toast.show(msg.message, 'error');
     }
   }, [toast]);

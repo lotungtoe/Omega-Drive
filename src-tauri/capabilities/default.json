@@ -5,6 +5,7 @@
   "windows": ["*"],
   "permissions": [
     "core:default",
+    "autostart:default",
     "dialog:default",
     "dialog:allow-ask",
     "dialog:allow-confirm",

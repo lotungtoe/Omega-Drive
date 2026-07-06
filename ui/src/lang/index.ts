@@ -11,7 +11,7 @@ export function setLanguage(lang = "") {
 }
 
 export const LANG_OPTIONS = [
-  { value: "vi", label: "Tiếng Việt" },
+  { value: "vi", label: "Vietnamese" },
   { value: "en", label: "English" },
 ];
 

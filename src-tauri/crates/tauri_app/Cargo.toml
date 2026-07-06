@@ -13,12 +13,14 @@ path = "src/main.rs"
 
 [dependencies]
 omega_drive_core = { path = "../core" }
+omega_drive_extractor = { path = "../extractor" }
 omega_drive_gateway = { path = "../gateway" }
 omega_drive_db = { path = "../db" }
 omega_drive_discord = { path = "../discord" }
 omega_drive_telegram = { path = "../telegram" }
 omega_drive_player = { path = "../player" }
 omega_drive_drive = { path = "../drive" }
+omega_drive_engine = { path = "../engine", features = ["zip"] }
 omega_drive_backup = { path = "../backup" }
 omega_drive_download = { path = "../download" }
 omega_drive_external_import = { path = "../external_import" }

@@ -1,6 +1,6 @@
 type ClassNameValue = string | false | null | undefined;
-type FileGroup = "doc" | "image" | "video" | "audio" | "archive" | "code" | "sheet" | "other";
-type FileKind = "image" | "video" | "audio" | "document" | "archive" | "code" | "sheet" | "unknown" | "other";
+type FileGroup = "doc" | "image" | "video" | "audio" | "archive" | "sheet" | "other";
+type FileKind = "image" | "video" | "audio" | "document" | "archive" | "sheet" | "book" | "font" | "app" | "text" | "unknown" | "other";
 
 type FileTypeInfo = {
   labelKey: string;
@@ -43,8 +43,11 @@ const KIND_MAP: Record<FileKind, { labelKey: string; group: FileGroup }> = {
   audio: { labelKey: "fileType.audio", group: "audio" },
   document: { labelKey: "fileType.document", group: "doc" },
   archive: { labelKey: "fileType.archive", group: "archive" },
-  code: { labelKey: "fileType.code", group: "code" },
   sheet: { labelKey: "fileType.sheet", group: "sheet" },
+  book: { labelKey: "fileType.book", group: "doc" },
+  font: { labelKey: "fileType.font", group: "other" },
+  app: { labelKey: "fileType.app", group: "other" },
+  text: { labelKey: "fileType.text", group: "doc" },
   unknown: { labelKey: "fileType.unknown", group: "other" },
   other: { labelKey: "fileType.unknown", group: "other" },
 };
@@ -80,15 +83,18 @@ const FILE_TYPE_MAP: Record<string, { labelKey: string; group: FileGroup }> = {
   rar: { labelKey: "fileType.archive", group: "archive" },
   "7z": { labelKey: "fileType.archive", group: "archive" },
   tar: { labelKey: "fileType.archive", group: "archive" },
-  js: { labelKey: "fileType.js", group: "code" },
-  ts: { labelKey: "fileType.ts", group: "code" },
-  jsx: { labelKey: "fileType.jsx", group: "code" },
-  tsx: { labelKey: "fileType.tsx", group: "code" },
-  py: { labelKey: "fileType.python", group: "code" },
-  rs: { labelKey: "fileType.rust", group: "code" },
+  js: { labelKey: "fileType.js", group: "doc" },
+  ts: { labelKey: "fileType.ts", group: "doc" },
+  jsx: { labelKey: "fileType.jsx", group: "doc" },
+  tsx: { labelKey: "fileType.tsx", group: "doc" },
+  py: { labelKey: "fileType.python", group: "doc" },
+  rs: { labelKey: "fileType.rust", group: "doc" },
   xls: { labelKey: "fileType.excel", group: "sheet" },
   xlsx: { labelKey: "fileType.excel", group: "sheet" },
   csv: { labelKey: "fileType.csv", group: "sheet" },
+  tsv: { labelKey: "fileType.tsv", group: "sheet" },
+  ods: { labelKey: "fileType.ods", group: "sheet" },
+  odp: { labelKey: "fileType.odp", group: "sheet" },
 };
 
 export const getFileType = (filename?: string | null, kind?: FileKind): FileTypeInfo => {
@@ -110,7 +116,7 @@ export const FILE_COLORS: Record<FileGroup, string> = {
   video: "#f43f5e",
   audio: "#a855f7",
   archive: "#f97316",
-  code: "#eab308",
+
   sheet: "#16a34a",
   other: "#6366f1",
 };

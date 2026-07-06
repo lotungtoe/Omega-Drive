@@ -18,7 +18,7 @@ use crate::{
     build_temp_path, run_download_job, DownloadCompletion, DownloadContext, DownloadJobError,
 };
 
-// â”€â”€ PowerGuard (inlined â€” original: src/infrastructure/power_guard.rs) â”€â”€
+// ─── PowerGuard (inlined — original: src/infrastructure/power_guard.rs) ───
 
 struct PowerGuard {
     count: AtomicUsize,
@@ -69,7 +69,7 @@ fn set_sleep_block(block: bool) {
 #[cfg(not(target_os = "windows"))]
 fn set_sleep_block(_block: bool) {}
 
-// â”€â”€ DownloadManager â”€â”€
+// ─── DownloadManager ───
 
 pub struct DownloadManager {
     inflight_file_ids: Mutex<HashSet<i64>>,

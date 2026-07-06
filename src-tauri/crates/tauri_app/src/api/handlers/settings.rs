@@ -20,16 +20,13 @@ pub async fn get_settings(st: tauri::State<'_, AppState>) -> AppResult<Value> {
 
     // Read raw file (preserves exact user structure for upload/general, etc.)
     let mut config_val: Value = if path.exists() {
-        let s = tokio::fs::read_to_string(&path).await.map_err(|e| {
-            wrap_error(
-                "settings",
-                codes::E_IO,
-                "KhĂ´ng thá»ƒ Ä‘á»c config.json.",
-                ctx.clone(),
-                e,
-            )
-        })?;
-        serde_json::from_str(&s).unwrap_or(json!({}))
+        match tokio::fs::read_to_string(&path).await {
+            Ok(s) => serde_json::from_str(&s).unwrap_or(json!({})),
+            Err(e) => {
+                eprintln!("Warning: cannot read config.json ({}), using defaults", e);
+                json!({})
+            }
+        }
     } else {
         json!({})
     };
@@ -43,7 +40,7 @@ pub async fn get_settings(st: tauri::State<'_, AppState>) -> AppResult<Value> {
             wrap_error(
                 "settings",
                 codes::E_UNKNOWN,
-                "Lá»—i táº£i cáº¥u hĂ¬nh.",
+                "Error loading configuration.",
                 ctx.clone(),
                 e,
             )
@@ -53,7 +50,7 @@ pub async fn get_settings(st: tauri::State<'_, AppState>) -> AppResult<Value> {
         wrap_error(
             "settings",
             codes::E_JSON,
-            "Lá»—i serialize cáº¥u hĂ¬nh.",
+            "Error serializing configuration.",
             ctx.clone(),
             e,
         )
@@ -129,7 +126,7 @@ pub async fn apply_settings(st: tauri::State<'_, AppState>, config: Value) -> Ap
             wrap_error(
                 "settings",
                 codes::E_UNKNOWN,
-                "Lá»—i táº£i láº¡i cáº¥u hĂ¬nh.",
+                "Error reloading configuration.",
                 ctx.clone(),
                 e,
             )
@@ -150,7 +147,7 @@ async fn write_config_file(base_dir: &std::path::Path, config: &Value) -> AppRes
         wrap_error(
             "settings",
             codes::E_JSON,
-            "Lá»—i Ä‘á»‹nh dáº¡ng cáº¥u hĂ¬nh.",
+            "Error formatting configuration.",
             ctx.clone(),
             e,
         )
@@ -160,7 +157,7 @@ async fn write_config_file(base_dir: &std::path::Path, config: &Value) -> AppRes
         wrap_error(
             "settings",
             codes::E_IO,
-            "KhĂ´ng thá»ƒ ghi file config.json.",
+            "Cannot write config.json file.",
             ctx.clone(),
             e,
         )

@@ -134,7 +134,7 @@ export function MiniAudioPlayer() {
                 {fileName}
               </span>
               <span className="text-[11px] text-zinc-500 font-medium hover:text-zinc-300 cursor-pointer transition-colors">
-                Nghá»‡ sÄ© chÆ°a rĂµ
+                Unknown artist
               </span>
             </div>
             <div className="flex items-center gap-1 shrink-0">

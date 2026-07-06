@@ -210,8 +210,8 @@ pub(super) fn run_tauri(app_state: AppState) {
                 }
             });
 
-            let quit_i = MenuItem::with_id(app, "quit", "Thoát ứng dụng", true, None::<&str>)?;
-            let show_i = MenuItem::with_id(app, "show", "Mở giao diện", true, None::<&str>)?;
+            let quit_i = MenuItem::with_id(app, "quit", "Quit Application", true, None::<&str>)?;
+            let show_i = MenuItem::with_id(app, "show", "Show Window", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
 
             let mut tray_builder = TrayIconBuilder::new();
@@ -318,12 +318,12 @@ pub(super) fn run_tauri(app_state: AppState) {
                 }
             });
 
-            // --- KIá»‚M TRA CĂC TĂC Vá»¤ UPLOAD Dá» DANG ---
+            // --- CHECK STALLED UPLOAD TASKS ---
             let st = state_in_tauri.inner().clone();
             tokio::spawn(async move {
                 use omega_drive_db::files as db_files;
 
-                // Nghá»‰ ngÆ¡i má»™t chĂºt Ä‘á»ƒ há»‡ thá»‘ng khá»Ÿi Ä‘á»™ng hoĂ n táº¥t
+                // Wait a bit for the system to finish starting up
                 tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
 
                 let files = {
@@ -341,13 +341,13 @@ pub(super) fn run_tauri(app_state: AppState) {
 
                 if !stalled.is_empty() {
                     info!(
-                        "PhĂ¡t hiá»‡n {} tĂ¡c vá»¥ upload chÆ°a hoĂ n táº¥t. NgÆ°á»i dĂ¹ng cĂ³ thá»ƒ tiáº¿p tá»¥c thá»§ cĂ´ng tá»« danh sĂ¡ch file.",
+                        "Detected {} stalled upload task(s). Users can resume manually from the file list.",
                         stalled.len()
                     );
                 }
             });
 
-            // --- WV MONITOR: phát hiện WebView2 ngừng gửi window event ---
+            // --- WV MONITOR: detect WebView2 stopped sending window events ---
             let lwe_mon = last_window_event.clone();
             tokio::spawn(async move {
                 loop {
@@ -362,13 +362,13 @@ pub(super) fn run_tauri(app_state: AppState) {
                         .as_secs();
                     if now.saturating_sub(last) > 15 {
                         warn!(
-                            "🚨 [WV MONITOR] WebView2 không gửi window event >15s (last={last}) — webview đã chết"
+                            "🚨 [WV MONITOR] WebView2 hasn't sent window event >15s (last={last}) — webview is dead"
                         );
                         let _ = std::fs::write(
                             std::env::temp_dir().join("omega_drive_wv_dead.txt"),
                             format!("WebView2 silent at {now}"),
                         );
-                        lwe_mon.store(0, Ordering::Relaxed); // chỉ warn 1 lần
+                        lwe_mon.store(0, Ordering::Relaxed); // warn only once
                     }
                 }
             });
@@ -455,7 +455,7 @@ pub(super) fn run_tauri(app_state: AppState) {
         })
         .invoke_handler(crate::tauri_feature_handler!())
         .run(tauri::generate_context!())
-        .unwrap_or_else(|err| panic!("Lỗi khi khởi chạy giao diện Tauri: {err}"));
+        .unwrap_or_else(|err| panic!("Error launching Tauri UI: {err}"));
 }
 
 struct TauriAppContext(tauri::AppHandle);

@@ -10,6 +10,7 @@ pub trait IntegrityService: Send + Sync {
         path: &Path,
         expected_hash: &str,
     ) -> Result<bool, String>;
+    fn create_hasher(&self) -> Box<dyn crate::engine::Blake3Hasher>;
 }
 
 #[async_trait::async_trait]

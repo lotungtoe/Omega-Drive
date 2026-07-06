@@ -24,7 +24,7 @@ describe("downloadService", () => {
     save.mockResolvedValueOnce("C:/out.mp4");
     const res = await selectDownloadPath({ filename: "a.mp4" });
     expect(save).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Lưu tệp", defaultPath: "a.mp4" })
+      expect.objectContaining({ title: "Save file", defaultPath: "a.mp4" })
     );
     expect(res).toBe("C:/out.mp4");
   });

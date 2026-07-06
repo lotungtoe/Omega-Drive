@@ -10,6 +10,4 @@ tokio = { version = "1.47", features = ["fs", "io-util"] }
 futures-util = "0.3"
 reqwest = { version = "0.12", features = ["stream"] }
 blake3 = "1"
-zip = "2"
-tar = "0.4"
-flate2 = "1"
+

@@ -309,12 +309,12 @@ pub fn load_config(
             }) {
             Ok(r) => r,
             Err(e) => {
-                eprintln!("Error reading config.json: {e} ? Using defaults");
+                eprintln!("Error reading config.json: {e} → Using defaults");
                 RawConfig::default()
             }
         }
     } else {
-        eprintln!("config.json not found ? Using defaults");
+        eprintln!("config.json not found → Using defaults");
         RawConfig::default()
     };
     config_from_raw(raw, provider_descriptors)

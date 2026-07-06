@@ -2,23 +2,23 @@ import { ERROR_CODES } from "./types";
 import type { AppError } from "./types";
 
 const FRIENDLY: Record<string, string> = {
-  [ERROR_CODES.INVALID_INPUT]: "Dữ liệu nhập không hợp lệ.",
-  [ERROR_CODES.NOT_FOUND]: "Không tìm thấy dữ liệu yêu cầu.",
-  [ERROR_CODES.CONFLICT]: "Dữ liệu đang bị xung đột, vui lòng thử lại.",
-  [ERROR_CODES.PERMISSION]: "Bạn không có quyền thực hiện thao tác này.",
-  [ERROR_CODES.DB]: "Hệ thống lưu trữ gặp sự cố.",
-  [ERROR_CODES.IO]: "Không thể đọc/ghi dữ liệu trên máy.",
-  [ERROR_CODES.JSON]: "Dữ liệu cấu hình bị lỗi định dạng.",
-  [ERROR_CODES.NETWORK]: "Không thể kết nối tới dịch vụ.",
-  [ERROR_CODES.TIMEOUT]: "Yêu cầu bị timeout, vui lòng thử lại.",
-  [ERROR_CODES.UNAVAILABLE]: "Dịch vụ tạm thời không sẵn sàng.",
-  [ERROR_CODES.NOT_READY]: "Tài nguyên chưa sẵn sàng.",
-  [ERROR_CODES.UPLOAD_FAILED]: "Tải lên thất bại.",
-  [ERROR_CODES.UPLOAD_CONFLICT]: "Tệp trùng lặp, cần xác nhận ghi đè.",
-  [ERROR_CODES.DOWNLOAD_FAILED]: "Tải xuống thất bại.",
-  [ERROR_CODES.PLAYER_UNSUPPORTED]: "Video không hỗ trợ phát trên WebView.",
-  [ERROR_CODES.PLAYER_INIT_FAILED]: "Không thể khởi tạo trình phát.",
-  [ERROR_CODES.SETTINGS_INVALID]: "Cấu hình không hợp lệ.",
+  [ERROR_CODES.INVALID_INPUT]: "Invalid input data.",
+  [ERROR_CODES.NOT_FOUND]: "Requested data not found.",
+  [ERROR_CODES.CONFLICT]: "Data conflict, please try again.",
+  [ERROR_CODES.PERMISSION]: "You do not have permission to perform this action.",
+  [ERROR_CODES.DB]: "Storage system encountered an error.",
+  [ERROR_CODES.IO]: "Cannot read/write data on this machine.",
+  [ERROR_CODES.JSON]: "Configuration data has a format error.",
+  [ERROR_CODES.NETWORK]: "Cannot connect to service.",
+  [ERROR_CODES.TIMEOUT]: "Request timed out, please try again.",
+  [ERROR_CODES.UNAVAILABLE]: "Service is temporarily unavailable.",
+  [ERROR_CODES.NOT_READY]: "Resource not ready yet.",
+  [ERROR_CODES.UPLOAD_FAILED]: "Upload failed.",
+  [ERROR_CODES.UPLOAD_CONFLICT]: "Duplicate file, needs overwrite confirmation.",
+  [ERROR_CODES.DOWNLOAD_FAILED]: "Download failed.",
+  [ERROR_CODES.PLAYER_UNSUPPORTED]: "Video does not support playback on WebView.",
+  [ERROR_CODES.PLAYER_INIT_FAILED]: "Cannot initialize player.",
+  [ERROR_CODES.SETTINGS_INVALID]: "Invalid configuration.",
 };
 
 type UserMessage = {
@@ -30,14 +30,14 @@ type UserMessage = {
 export function toUserMessage(appError: AppError | string | null | undefined): UserMessage {
   if (typeof appError === "string") {
     return {
-      title: "Có lỗi xảy ra",
+      title: "An error occurred",
       message: appError,
       details: {},
     };
   }
 
   const code = appError?.code || ERROR_CODES.UNKNOWN;
-  const message = FRIENDLY[code] || appError?.message || "Đã xảy ra lỗi không xác định.";
+  const message = FRIENDLY[code] || appError?.message || "An unknown error has occurred.";
   const details = {
     code,
     message: appError?.message,
@@ -48,7 +48,7 @@ export function toUserMessage(appError: AppError | string | null | undefined): U
   };
 
   return {
-    title: "Có lỗi xảy ra",
+    title: "An error occurred",
     message,
     details,
   };

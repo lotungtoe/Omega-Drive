@@ -20,7 +20,7 @@ const getLanguage = (ext) => {
   return map[ext] || 'text'
 }
 
-export function TextPreview({ file, onClose: _onClose, onDownload }) {
+export function TextPreview({ file, onClose: _onClose, onDownload, preloadedContent = undefined }) {
   const { t } = useTranslation()
   const displayName = file.filename || file.name || ''
   const color = getColor(displayName, file.kind)
@@ -39,7 +39,13 @@ export function TextPreview({ file, onClose: _onClose, onDownload }) {
       try {
         setLoading(true)
         setError(null)
-        
+
+        if (preloadedContent) {
+          setContent(preloadedContent)
+          setLoading(false)
+          return
+        }
+
         // Check size limit (e.g. 1MB = 1048576 bytes)
         if (file.size > 1048576) {
           throw new Error('File is too large to preview (> 1MB)')
@@ -59,7 +65,7 @@ export function TextPreview({ file, onClose: _onClose, onDownload }) {
     }
 
     loadText()
-  }, [file.id, file.size])
+  }, [file.id, file.size, preloadedContent])
 
   return (
     <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-slate-900 overflow-hidden relative">
@@ -83,7 +89,7 @@ export function TextPreview({ file, onClose: _onClose, onDownload }) {
           <button type="button"
             onClick={() => onDownload(file)}
             className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors"
-            title={t('common.download', 'Táº£i xuá»‘ng')}
+            title={t('common.download', 'Download')}
           >
             <Download className="w-5 h-5" />
           </button>
@@ -104,7 +110,7 @@ export function TextPreview({ file, onClose: _onClose, onDownload }) {
               <AlertCircle className="w-8 h-8 text-red-500" />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-              {t('preview.errorTitle', 'KhĂ´ng thá»ƒ xem trÆ°á»›c')}
+              {t('preview.errorTitle', 'Cannot preview')}
             </h3>
             <p className="text-slate-500 max-w-sm mb-6">
               {error}
@@ -114,7 +120,7 @@ export function TextPreview({ file, onClose: _onClose, onDownload }) {
               className="flex items-center gap-2 px-6 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-medium transition-colors"
             >
               <Download className="w-4 h-4" />
-              {t('common.download', 'Táº£i xuá»‘ng tá»‡p')}
+              {t('common.download', 'Download file')}
             </button>
           </div>
         ) : (

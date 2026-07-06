@@ -13,12 +13,12 @@ export function StrategySelector({ strategy, onChange }) {
   const getStrategyDescription = (id) => {
     switch (id) {
       case "fast":
-        return t("upload.fastDesc", "Tá»‘i Æ°u hĂ³a tá»‘c Ä‘á»™ báº±ng cĂ¡ch chia nhá» file vĂ  lÆ°u trá»¯ phĂ¢n tĂ¡n.");
+        return t("upload.fastDesc", "Optimizes speed by splitting files and storing across providers.");
       case "safe":
-        return t("upload.safeDesc", "Äáº£m báº£o an toĂ n dá»¯ liá»‡u tá»‘i Ä‘a báº±ng cĂ¡ch táº¡o báº£n sao trĂªn má»i ná»n táº£ng.");
+        return t("upload.safeDesc", "Maximizes data safety by creating redundant copies across all platforms.");
       case "none":
       default:
-        return t("upload.noneDesc", "Táº£i trá»±c tiáº¿p file gá»‘c mĂ  khĂ´ng qua xá»­ lĂ½ phĂ¢n máº£nh.");
+        return t("upload.noneDesc", "Uploads the original file directly without splitting.");
     }
   };
 

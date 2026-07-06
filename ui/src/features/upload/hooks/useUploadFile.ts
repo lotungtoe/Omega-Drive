@@ -45,7 +45,7 @@ export function useUploadFile(
 
       const entries = buildUploadEntries(paths, files, trash, currentFolderId);
       const collisions = entries.filter((e) => Boolean(e.collidingFile));
-      toast.show(`Đang chuẩn bị ${entries.length} tệp để tải lên...`, 'info');
+      toast.show(`Preparing ${entries.length} file(s) for upload...`, 'info');
 
       let overwriteConfirmed = true;
       if (collisions.length > 0) {
@@ -116,7 +116,7 @@ export function useUploadFile(
         uploadPlan
       });
 
-      toast.show(`Đã bắt đầu nhập "${entry.filename}"...`, 'success');
+      toast.show(`Started importing "${entry.filename}"...`, 'success');
       await refresh();
     } catch (err) {
       const msg = toUserMessage(err);
@@ -127,16 +127,16 @@ export function useUploadFile(
 
   const resumeUpload = useCallback(async (fileObj) => {
     if (!fileObj.local_path) {
-      toast.show("Không tìm thấy đường dẫn tệp cục bộ để tải lại.", "error");
+      toast.show("Could not find local file path to reload.", "error");
       return;
     }
     try {
-      toast.show(`Đang tiếp tục xử lý "${fileObj.filename}"...`, 'info');
+      toast.show(`Continuing processing "${fileObj.filename}"...`, 'info');
       await resumeUploadByPath(fileObj);
       await refresh();
     } catch (err) {
       const msg = toUserMessage(err);
-      console.error('Tiếp tục tải lên thất bại:', err);
+      console.error('Resume upload failed:', err);
       toast.show(msg.message, 'error');
     }
   }, [refresh, toast]);

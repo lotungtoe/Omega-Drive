@@ -104,13 +104,13 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
     { group: t('settings.groupGeneral', 'CHUNG') },
     { id: 'appearance', label: t('settings.appearance') },
     { id: 'startup', label: t('settings.startup') },
-    { group: t('settings.groupConnection', 'Káº¾T Ná»I') },
+    { group: t('settings.groupConnection', 'CONNECTION') },
     { id: 'server', label: t('settings.server') },
     { id: 'upload', label: t('settings.upload') },
     { id: 'download', label: t('settings.download') },
     { id: 'decode', label: t('settings.decode') },
     { id: 'telegram', label: t('settings.telegram') },
-    { group: t('settings.groupAdvanced', 'NĂ‚NG CAO') },
+    { group: t('settings.groupAdvanced', 'ADVANCED') },
     { id: 'logging', label: t('settings.logging') },
     { id: 'update', label: 'Update' },
   ]
@@ -266,7 +266,7 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
     try {
       await saveSettings(config)
       setDirty(false)
-      toast.show(t('settings.saveSuccess', 'ÄĂ£ lÆ°u'), 'success')
+      toast.show(t('settings.saveSuccess', 'Saved'), 'success')
     } catch (err) {
       const msg = toUserMessage(err)
       console.error('settings.save_failed', err)
@@ -278,7 +278,7 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
     try {
       await applySettings(config)
       setDirty(false)
-      toast.show(t('settings.applySuccess', 'ÄĂ£ Ă¡p dá»¥ng'), 'success')
+      toast.show(t('settings.applySuccess', 'Applied'), 'success')
     } catch (err) {
       const msg = toUserMessage(err)
       console.error('settings.apply_failed', err)
@@ -288,7 +288,7 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
 
   const handleClose = async () => {
     if (dirty) {
-      const confirmed = confirm(t('settings.unsavedConfirm', 'Báº¡n cĂ³ thay Ä‘á»•i chÆ°a lÆ°u. ÄĂ³ng?'))
+      const confirmed = confirm(t('settings.unsavedConfirm', 'You have unsaved changes. Close?'))
       if (!confirmed) return
     }
     onClose()
@@ -441,8 +441,8 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
                   <div className="gd-settings-divider" style={{ margin: '16px 0', borderTop: '1px solid var(--gd-outline)', opacity: 0.5 }} />
                   
                   <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--gd-on-surface)', marginBottom: 12, opacity: 0.8 }}>DISCORD SETTINGS</h4>
-                  <InputRow label={t('settings.discordChunkSize', 'Discord Chunk Size (MB)')} description={t('settings.discordChunkSizeDesc', 'KĂ­ch thÆ°á»›c máº£nh tá»‘i Æ°u cho Discord.')} path="providers.discord.transfer.chunk_mb" {...commonProps} />
-                  <InputRow label={t('settings.discordBatchSize', 'Discord Batch Size')} description={t('settings.discordBatchSizeDesc', 'Sá»‘ lÆ°á»£ng máº£nh sáº½ gom láº¡i gá»­i cĂ¹ng lĂºc.')} path="providers.discord.transfer.batch_size" {...commonProps} />
+                  <InputRow label={t('settings.discordChunkSize', 'Discord Chunk Size (MB)')} description={t('settings.discordChunkSizeDesc', 'Optimal chunk size for Discord.')} path="providers.discord.transfer.chunk_mb" {...commonProps} />
+                  <InputRow label={t('settings.discordBatchSize', 'Discord Batch Size')} description={t('settings.discordBatchSizeDesc', 'Number of chunks to batch together.')} path="providers.discord.transfer.batch_size" {...commonProps} />
                   <InputRow label={t('settings.discordParallel')} description={t('settings.discordParallelDesc')} path="providers.discord.transfer.parallel_sends" {...commonProps} />
                   <InputRow label={t('settings.retryCount')} description={t('settings.retryCountDesc')} path="providers.discord.retry.send_retries" {...commonProps} />
                   <InputRow label={t('settings.retryDelay')} description={t('settings.retryDelayDesc')} path="providers.discord.retry.retry_base_delay_s" {...commonProps} />
@@ -450,7 +450,7 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
                   <div className="gd-settings-divider" style={{ margin: '16px 0', borderTop: '1px solid var(--gd-outline)', opacity: 0.5 }} />
 
                   <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--gd-on-surface)', marginBottom: 12, opacity: 0.8 }}>TELEGRAM SETTINGS</h4>
-                  <InputRow label={t('settings.telegramChunkSize', 'Telegram Chunk Size (MB)')} description={t('settings.telegramChunkSizeDesc', 'KĂ­ch thÆ°á»›c máº£nh tá»‘i Æ°u cho Telegram.')} path="providers.telegram.transfer.chunk_mb" {...commonProps} />
+                  <InputRow label={t('settings.telegramChunkSize', 'Telegram Chunk Size (MB)')} description={t('settings.telegramChunkSizeDesc', 'Optimal chunk size for Telegram.')} path="providers.telegram.transfer.chunk_mb" {...commonProps} />
                   <InputRow label={t('settings.telegramParallel')} description={t('settings.telegramParallelDesc')} path="providers.telegram.transfer.parallel_sends" {...commonProps} />
                 </SettingsSection>
               )}
@@ -617,7 +617,7 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
             disabled={!dirty}
             className="rounded-2xl bg-blue-500 px-8 py-3 text-[11px] font-bold uppercase text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-600 disabled:opacity-50 focus:ring-2 focus:ring-blue-500/50"
           >
-            {t('common.apply', 'Ăp dá»¥ng')}
+            {t('common.apply', 'Apply')}
           </button>
         </div>
 

@@ -47,7 +47,7 @@ const EXT_KIND: Record<string, string> = {
   pdf: 'pdf',
   doc: 'word', docx: 'word',
   xls: 'excel', xlsx: 'excel',
-  js: 'code', ts: 'code', tsx: 'code', jsx: 'code', py: 'code', rs: 'code',
+  js: 'doc', ts: 'doc', tsx: 'doc', jsx: 'doc', py: 'doc', rs: 'doc',
   zip: 'archive', rar: 'archive', '7z': 'archive', tar: 'archive', gz: 'archive',
 };
 
@@ -199,10 +199,10 @@ export function TransfersPage({ toast }: { toast: unknown }) {
         paddingBottom: 12, marginBottom: 20,
       }}>
         <button type="button" style={tabBtn(activeTab === 'uploads')} onClick={() => setActiveTab('uploads')}>
-          <Upload size={15} /> Táº£i lĂªn
+          <Upload size={15} /> Upload
         </button>
         <button type="button" style={tabBtn(activeTab === 'downloads')} onClick={() => setActiveTab('downloads')}>
-          <Download size={15} /> Táº£i xuá»‘ng
+          <Download size={15} /> Download
         </button>
       </div>
 
@@ -210,14 +210,14 @@ export function TransfersPage({ toast }: { toast: unknown }) {
       {activeTab === 'uploads' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {uploadsLoading && uploads.length === 0 && (
-            <TransferEmptyState title="Äang táº£i danh sĂ¡ch..." icon={Upload} />
+            <TransferEmptyState title="Loading list..." icon={Upload} />
           )}
           {!uploadsLoading && uploads.length === 0 && (
-            <TransferEmptyState title="ChÆ°a cĂ³ tá»‡p nĂ o Ä‘ang táº£i lĂªn hoáº·c xá»­ lĂ½" icon={Upload} />
+            <TransferEmptyState title="No files uploading or processing" icon={Upload} />
           )}
           {uploads.map((file) => {
             const isProcessing = file.status === 'processing';
-            const statusLabel = isProcessing ? 'Äang xá»­ lĂ½...' : 'Äang táº£i lĂªn...';
+            const statusLabel = isProcessing ? 'Processing...' : 'Uploading...';
 
             return (
               <div key={file.id} style={{
@@ -249,7 +249,7 @@ export function TransfersPage({ toast }: { toast: unknown }) {
                   <ThinProgressBar percent={0} indeterminate={!isProcessing} />
                   {isProcessing && (
                     <span style={{ fontSize: 11, color: 'var(--gd-on-surface-variant)' }}>
-                      Äang xá»­ lĂ½ (dáº«n xuáº¥t, mp4, mĂ£ hĂ³a)...
+                      Processing (export, mp4, encode)...
                     </span>
                   )}
                 </div>
@@ -293,12 +293,12 @@ export function TransfersPage({ toast }: { toast: unknown }) {
             const canCancel = ['queued', 'downloading', 'paused', 'failed'].includes(job.state);
 
             const stateLabel = {
-              downloading: 'Äang táº£i xuá»‘ng',
-              paused: 'ÄĂ£ táº¡m dá»«ng',
-              failed: 'Tháº¥t báº¡i',
-              queued: 'Äang chá»',
-              completed: 'HoĂ n táº¥t',
-              done: 'HoĂ n táº¥t',
+              downloading: 'Downloading',
+              paused: 'Paused',
+              failed: 'Failed',
+              queued: 'Queued',
+              completed: 'Completed',
+              done: 'Completed',
             }[job.state] ?? job.state;
 
             return (
