@@ -1,9 +1,6 @@
 *
 
-!config.json
 !updater.json
-!TASKS.md
-!PLAN.md
 !.cargo/
 !.cargo/**
 
