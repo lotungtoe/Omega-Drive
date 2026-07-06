@@ -1,0 +1,6 @@
+id = "diagnostics.snapshot"
+version = "1.0.0"
+description = "Aggregate version and bootstrap diagnostics"
+frontend = true
+commands = ["read"]
+dependencies = ["diagnostics"]

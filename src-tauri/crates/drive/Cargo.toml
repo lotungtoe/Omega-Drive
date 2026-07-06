@@ -1,0 +1,15 @@
+﻿[package]
+name = "omega_drive_drive"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+omega_drive_gateway = { path = "../gateway" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+futures-util = "0.3"
+tokio = { version = "1.47", features = ["sync", "macros"] }
+base64 = "0.22"
+
+

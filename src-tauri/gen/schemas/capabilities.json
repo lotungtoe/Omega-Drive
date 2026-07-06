@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"Default capabilities","local":true,"windows":["*"],"permissions":["core:default","dialog:default","dialog:allow-ask","dialog:allow-confirm","core:event:default","core:window:default","shell:default","fs:default","allow-app-commands"]}}

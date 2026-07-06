@@ -1,0 +1,903 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   Hệ thống thiết kế Google Drive (Material Design 3)
+   Bao gồm: Bảng màu, Khoảng cách, Bóng đổ (Elevation) và Bo góc.
+   ========================================================================== */
+
+@layer base {
+  :root {
+    /* Bảng màu đặc trưng của Google Drive */
+    --gd-blue: #1a73e8;
+    --gd-blue-hover: #1765cc;
+    --gd-blue-light: #d2e3fc;
+    --gd-blue-surface: #e8f0fe;
+
+    /* Giao diện sáng (Light Theme) */
+    --gd-bg: #FFFFFF;               /* Màu nền trang */
+    --gd-surface: #ffffff;          /* Màu nền các thẻ/panel */
+    --gd-surface-variant: #f1f3f4;  /* Màu nền phụ */
+    --gd-on-surface: #202124;       /* Màu chữ chính */
+    --gd-on-surface-variant: #5f6368; /* Màu chữ phụ/nhạt hơn */
+    --gd-outline: #dadce0;          /* Màu viền ngoài */
+    --gd-outline-variant: #e8eaed;  /* Màu viền mờ */
+
+    /* Cấu hình Sidebar (Thanh bên) */
+    --gd-sidebar-bg: #F8FAFD;
+    --gd-sidebar-hover: #e8eaed;
+    --gd-sidebar-active-bg: #d2e3fc;
+    --gd-sidebar-active-text: #1967d2;
+
+    /* Kích thước cơ bản */
+    --gd-header-height: 64px;
+    --gd-sidebar-width: 256px;
+
+    /* Độ cao/Bóng đổ (Material Design 3 Elevation) */
+    --gd-shadow-1: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+    --gd-shadow-2: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 2px 6px 2px rgba(60, 64, 67, 0.15);
+    --gd-shadow-3: 0 4px 8px 3px rgba(60, 64, 67, 0.15), 0 1px 3px rgba(60, 64, 67, 0.3);
+
+    /* Bo góc (Border Radius) */
+    --gd-radius-sm: 8px;
+    --gd-radius-md: 16px;
+    --gd-radius-lg: 24px;
+    --gd-radius-full: 9999px;
+
+    /* Toast notifications (success / error / info) */
+    --gd-toast-success-bg: #e6f4ea;
+    --gd-toast-success-text: #137333;
+    --gd-toast-success-border: #ceead6;
+    --gd-toast-error-bg: #fce8e6;
+    --gd-toast-error-text: #c5221f;
+    --gd-toast-error-border: #f5c6c0;
+    --gd-toast-info-bg: #e8f0fe;
+    --gd-toast-info-text: #1967d2;
+    --gd-toast-info-border: #d2e3fc;
+
+    /* Modal / overlay surfaces */
+    --gd-overlay: rgba(0, 0, 0, 0.5);
+    --gd-modal-surface: #ffffff;
+    --gd-modal-border: rgba(15, 23, 42, 0.08);
+    --gd-modal-text: #111827;
+    --gd-modal-text-secondary: #64748b;
+    --gd-modal-close-bg: #f8fafc;
+
+    /* Input fields */
+    --gd-input-bg: #ffffff;
+    --gd-input-border: rgba(15, 23, 42, 0.1);
+
+    /* Brand colors */
+    --gd-discord: #5865F2;
+    --gd-telegram: #24A1DE;
+
+    /* File type icon accents */
+    --gd-video: #f28b82;
+    --gd-audio: #f48fb1;
+    --gd-image: #81c995;
+    --gd-document: #8ab4f8;
+    --gd-archive: #fcd663;
+    --gd-code: #fcd663;
+
+    /* Settings modal backgrounds */
+    --gd-settings-sidebar-bg: #F8FAFD;
+    --gd-settings-content-bg: #FFFFFF;
+
+    /* shadcn-style theme tokens (Tailwind v4 maps --color-* → utility classes) */
+    --color-primary: var(--gd-blue);
+    --color-primary-foreground: #fff;
+    --color-border: var(--gd-outline);
+    --color-muted-foreground: var(--gd-on-surface-variant);
+    --color-card: var(--gd-surface);
+  }
+}
+
+/* Bảng màu Giao diện tối (Dark Theme) - Chuẩn Google Drive */
+.dark {
+  --gd-bg: #131314;
+  --gd-surface: #1e1f20;
+  --gd-surface-variant: #28292a;
+  --gd-on-surface: #e3e3e3;
+  --gd-on-surface-variant: #c4c7c5;
+  --gd-outline: #444746;
+  --gd-outline-variant: #333537;
+
+  --gd-sidebar-bg: #131314;
+  --gd-sidebar-hover: #28292a;
+  --gd-sidebar-active-bg: #004a77;
+  --gd-sidebar-active-text: #c2e7ff;
+
+  --gd-shadow-1: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+  --gd-shadow-2: 0 2px 6px 0 rgba(0, 0, 0, 0.4);
+  --gd-shadow-3: 0 4px 12px 0 rgba(0, 0, 0, 0.5);
+
+  --gd-toast-success-bg: #1f3527;
+  --gd-toast-success-text: #81c995;
+  --gd-toast-success-border: #2a4a35;
+  --gd-toast-error-bg: #3c1f1f;
+  --gd-toast-error-text: #f28b82;
+  --gd-toast-error-border: #5c2a2a;
+  --gd-toast-info-bg: #1c2a3a;
+  --gd-toast-info-text: #8ab4f8;
+  --gd-toast-info-border: #2a3f5a;
+
+  --gd-overlay: rgba(0, 0, 0, 0.6);
+  --gd-modal-surface: #111318;
+  --gd-modal-border: rgba(255, 255, 255, 0.1);
+  --gd-modal-text: #e2e2e9;
+  --gd-modal-text-secondary: #94a3b8;
+  --gd-modal-close-bg: #171b24;
+
+  --gd-input-bg: #1e1f20;
+  --gd-input-border: rgba(255, 255, 255, 0.1);
+
+  --gd-settings-sidebar-bg: #28292a;
+  --gd-settings-content-bg: #1e1f20;
+
+  select {
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  /* Font chữ ưu tiên Google Sans cho giống Google Drive */
+  font-family: 'Google Sans', 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--gd-bg);
+  color: var(--gd-on-surface);
+}
+
+/* ==========================================================================
+   Thanh cuộn phong cách Google Drive
+   ========================================================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #dadce0;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #bdc1c6;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* ==========================================================================
+   Nút FAB (Floating Action Button) - Nút "Mới"
+   ========================================================================== */
+.gd-fab {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px 0 16px;
+  height: 56px;
+  border-radius: var(--gd-radius-md);
+  background-color: var(--gd-surface);
+  border: none;
+  cursor: pointer;
+  font-family: 'Google Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gd-on-surface);
+  box-shadow: var(--gd-shadow-2);
+  transition: box-shadow 0.2s ease, background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.gd-fab:hover {
+  box-shadow: var(--gd-shadow-3);
+  background-color: #f6fafe;
+}
+
+.gd-fab:active {
+  background-color: #e8f0fe;
+}
+
+/* ==========================================================================
+   Thanh tìm kiếm (Search Bar)
+   ========================================================================== */
+.gd-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  border-radius: var(--gd-radius-full);
+  background-color: var(--gd-surface-variant);
+  padding: 0 16px;
+  transition: background-color 0.2s ease, box-shadow 0.3s ease;
+  flex: 1;
+  max-width: 720px;
+}
+
+.gd-search:focus-within {
+  background-color: var(--gd-surface);
+  box-shadow: var(--gd-shadow-2);
+}
+
+.gd-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: 'Google Sans', 'Roboto', sans-serif;
+  font-size: 16px;
+  color: var(--gd-on-surface);
+  padding: 0;
+}
+
+.gd-search input::placeholder {
+  color: var(--gd-on-surface-variant);
+}
+
+/* ==========================================================================
+   Mục điều hướng thanh bên (Sidebar nav item)
+   ========================================================================== */
+.gd-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  height: 32px;
+  /* Bo góc phải giống Google Drive khi được chọn */
+  border-radius: 0 var(--gd-radius-full) var(--gd-radius-full) 0;
+  font-family: 'Google Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gd-on-surface);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.gd-nav-item:hover {
+  background-color: var(--gd-sidebar-hover);
+}
+
+.gd-nav-item.active {
+  background-color: var(--gd-sidebar-active-bg);
+  color: var(--gd-sidebar-active-text);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Thẻ Tệp tin (File Card - Chế độ lưới)
+   ========================================================================== */
+.gd-file-card {
+  width: 180px;
+  box-sizing: border-box;
+  border-radius: var(--gd-radius-sm);
+  border: 1px solid var(--gd-outline);
+  background: var(--gd-surface);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.2s ease;
+  /* overflow: hidden; -- Bị loại bỏ để không che khuất menu con */
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  height: 100%;
+}
+
+.gd-file-card:hover {
+  border-color: transparent;
+  box-shadow: var(--gd-shadow-2);
+}
+
+.gd-file-card.is-selected {
+  background-color: var(--gd-blue-surface);
+  border-color: var(--gd-blue);
+}
+
+/* ==========================================================================
+   Hàng danh sách (List Row - Chế độ danh sách)
+   ========================================================================== */
+.gd-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  height: 48px;
+  border-bottom: 1px solid var(--gd-outline-variant);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.gd-list-row:hover {
+  background-color: var(--gd-surface-variant);
+}
+
+.gd-list-row.selected {
+  background-color: var(--gd-blue-surface);
+}
+
+/* ==========================================================================
+   Nút Icon (Icon Button)
+   ========================================================================== */
+.gd-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--gd-radius-full);
+  border: none;
+  background: transparent;
+  color: var(--gd-on-surface-variant);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.gd-icon-btn:hover {
+  background-color: rgba(60, 64, 67, 0.08); /* Màu xám mờ Google */
+}
+
+.gd-icon-btn:active {
+  background-color: rgba(60, 64, 67, 0.12);
+}
+
+/* ==========================================================================
+   Menu Thả xuống (Dropdown Menu)
+   ========================================================================== */
+.gd-menu {
+  background: var(--gd-surface);
+  border-radius: 4px;
+  box-shadow: var(--gd-shadow-3);
+  padding: 8px 0;
+  min-width: 200px;
+  z-index: 500; /* Tăng cao để nổi lên trên mọi thứ */
+}
+
+.gd-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  color: var(--gd-on-surface);
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+  text-align: left;
+}
+
+.gd-menu-item:hover {
+  background-color: var(--gd-surface-variant);
+}
+
+.gd-menu-item.danger {
+  color: #d93025; /* Màu đỏ Google */
+}
+
+.gd-menu-divider {
+  height: 1px;
+  background: var(--gd-outline-variant);
+  margin: 4px 0;
+}
+
+/* ==========================================================================
+   Thanh Breadcrumbs (Đường dẫn thư mục)
+   ========================================================================== */
+.gd-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 18px;
+  font-weight: 500;
+  font-family: 'Google Sans', sans-serif;
+  color: var(--gd-on-surface);
+}
+
+.gd-breadcrumb button {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  border-radius: var(--gd-radius-sm);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: background-color 0.15s ease;
+}
+
+.gd-breadcrumb button:hover {
+  background-color: var(--gd-surface-variant);
+}
+
+/* ==========================================================================
+   Thanh trạng thái bộ nhớ (Storage Bar)
+   ========================================================================== */
+/* ==========================================================================
+   Chỉ báo trạng thái Online/Offline
+   ========================================================================== */
+.gd-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.gd-status-dot.online {
+  background-color: #34a853; /* Xanh lá Google */
+}
+
+.gd-status-dot.offline {
+  background-color: #ea4335; /* Đỏ Google */
+}
+
+/* ==========================================================================
+   Cửa sổ Cài đặt (Settings Modal) - Thiết kế dạng thẻ nền tối -> Chuyển sang Fullscreen Discord-style
+   ========================================================================== */
+.gd-settings-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: flex;
+  background-color: var(--gd-bg);
+  color: var(--gd-on-surface);
+}
+
+.gd-settings-sidebar-wrapper {
+  width: 256px;
+  background-color: var(--gd-settings-sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  border-right: 1px solid var(--gd-outline);
+}
+
+.gd-settings-sidebar {
+  width: 220px;
+  padding: 60px 16px 60px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gd-settings-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--gd-on-surface-variant);
+  margin: 16px 8px 6px 12px;
+}
+
+.gd-settings-tab {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gd-on-surface-variant);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  background: transparent;
+  text-align: left;
+}
+
+.gd-settings-tab:hover {
+  background-color: rgba(120, 120, 120, 0.1);
+  color: var(--gd-on-surface);
+}
+
+.gd-settings-tab.active {
+  background-color: rgba(120, 120, 120, 0.2);
+  color: var(--gd-on-surface);
+}
+
+/* Vùng cuộn nội dung */
+.gd-settings-content-wrapper {
+  flex: 1;
+  background-color: var(--gd-settings-content-bg);
+  padding: 60px 40px;
+  overflow-y: auto;
+}
+
+.gd-settings-content {
+  max-width: 680px;
+}
+
+/* Thẻ nhóm cài đặt (Section) */
+.gd-settings-section {
+  margin-bottom: 32px;
+}
+
+.gd-settings-section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gd-on-surface);
+  margin: 0 0 16px 0;
+  font-family: 'Google Sans', 'Inter', sans-serif;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--gd-outline-variant);
+}
+
+.gd-settings-section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+}
+
+/* Hàng cài đặt (Setting Row) */
+.gd-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--gd-outline-variant);
+  transition: background 0.15s ease;
+}
+
+.gd-settings-row:last-child {
+  border-bottom: none;
+}
+
+.gd-settings-row-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gd-on-surface);
+}
+
+.gd-settings-row-desc {
+  font-size: 13px;
+  color: var(--gd-on-surface-variant);
+  margin-top: 4px;
+}
+
+/* Nút gạt (Toggle Switch) - Giống Discord bật xanh dương */
+.gd-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  border: none;
+  background-color: var(--gd-outline);
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.gd-toggle.active {
+  background-color: var(--gd-sidebar-active-text); /* Màu xanh của app */
+}
+
+.gd-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.gd-toggle.active .gd-toggle-thumb {
+  transform: translateX(20px);
+}
+
+/* Ô nhập liệu (Input Field) */
+.gd-settings-input {
+  width: 140px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--gd-outline-variant);
+  background: var(--gd-surface-variant);
+  color: var(--gd-on-surface);
+  font-size: 14px;
+  font-family: 'Google Sans', 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  flex-shrink: 0;
+}
+
+.gd-settings-input:focus {
+  border-color: var(--gd-blue);
+}
+
+.gd-settings-input::placeholder {
+  color: var(--gd-on-surface-variant);
+}
+
+
+
+/* Action Area (Escape Box) */
+.gd-settings-escape {
+  position: absolute;
+  top: 40px;
+  right: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.gd-settings-escape-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--gd-outline);
+  color: var(--gd-outline);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gd-settings-escape-icon:hover {
+  background-color: rgba(255,255,255,0.1);
+  color: var(--gd-on-surface);
+  border-color: var(--gd-on-surface);
+}
+
+.gd-settings-escape-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gd-outline);
+}
+
+/* Footer: Nút Lưu / Hủy trong form Discord */
+.gd-settings-footer {
+  display: none; /* Discord auto saves, we can auto save or keep a floating bar */
+}
+
+.gd-settings-floating-action {
+  position: fixed;
+  bottom: 30px;
+  right: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-radius: 8px;
+  background-color: var(--gd-surface);
+  box-shadow: var(--gd-shadow-3);
+  z-index: 200;
+}
+
+.gd-settings-btn-cancel {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--gd-on-surface-variant);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  font-family: inherit;
+}
+
+.gd-settings-btn-cancel:hover {
+  color: var(--gd-on-surface);
+}
+
+.gd-settings-btn-save {
+  padding: 10px 24px;
+  border-radius: 12px;
+  border: none;
+  background: var(--gd-blue);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(26, 115, 232, 0.25);
+  transition: all 0.2s ease;
+  font-family: 'Google Sans', 'Inter', sans-serif;
+}
+
+.gd-settings-btn-save:hover {
+  background: var(--gd-blue-hover);
+  box-shadow: 0 6px 20px rgba(26, 115, 232, 0.35);
+}
+
+.gd-settings-btn-save:active {
+  transform: scale(0.97);
+}
+
+.gd-settings-btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+@keyframes dragOverlayShrink {
+  0% { transform: scale(1.3) translateY(15px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+.drag-overlay-pill {
+  animation: dragOverlayShrink 2.4s cubic-bezier(0.9, 0.8, 0.5, 0.2) forwards;
+}
+
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Highlight (Bôi xanh) khi chọn File/Folder */
+.gd-list-row.is-selected, .gd-file-card.is-selected {
+  background-color: #c2e7ff !important;
+  border-bottom-color: transparent !important;
+}
+
+.gd-file-card.is-selected > div:first-child {
+  background-color: #c2e7ff !important;
+}
+
+.dark .gd-list-row.is-selected, .dark .gd-file-card.is-selected {
+  background-color: #004a77 !important;
+  border-bottom-color: transparent !important;
+}
+
+.dark .gd-file-card.is-selected > div:first-child {
+  background-color: #004a77 !important;
+}
+
+/* Hover logic cho trạng thái selected */
+.gd-list-row.is-selected:hover, .gd-file-card.is-selected:hover {
+  background-color: #b3d1ff !important;
+}
+
+.dark .gd-list-row.is-selected:hover, .dark .gd-file-card.is-selected:hover {
+  background-color: #005a92 !important;
+}
+
+/* --- Upload Plan Dashboard --- */
+.upload-plan-dashboard {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.profile-sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  padding-right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dark .profile-sidebar {
+  border-right-color: rgba(255, 255, 255, 0.05);
+}
+
+.profile-card-mini {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.dark .profile-card-mini {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.profile-card-mini:hover {
+  background: rgba(59, 130, 246, 0.05);
+  transform: translateX(4px);
+}
+
+.profile-card-mini.active {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.config-group {
+  padding: 20px;
+  border-radius: 24px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dark .config-group {
+  background: rgba(255, 255, 255, 0.015);
+  border-color: rgba(255, 255, 255, 0.03);
+}
+
+.config-group-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  opacity: 0.4;
+  margin-bottom: 4px;
+}
+
+.provider-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.dark .provider-chip {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.provider-chip.active {
+  background: #2563eb !important;
+  color: white !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3) !important;
+}
+
+.strategy-toggle {
+  display: flex;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  padding: 4px;
+  position: relative;
+  cursor: pointer;
+}
+
+.dark .strategy-toggle {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.strategy-toggle-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: calc(50% - 4px);
+}
+
+.dark .strategy-toggle-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.strategy-desc {
+  font-size: 11px;
+  line-height: 1.5;
+  opacity: 0.5;
+  font-weight: 500;
+  padding: 0 8px;
+}

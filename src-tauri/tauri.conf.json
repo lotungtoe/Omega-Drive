@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Omega Drive",
+  "version": "1.0.0",
+  "identifier": "com.omegadrive",
+  "build": {
+    "frontendDist": "../ui/dist",
+    "beforeDevCommand": "npm --prefix ui run dev",
+    "beforeBuildCommand": "npm --prefix ui run build",
+    "devUrl": "http://localhost:1420"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Omega Drive",
+        "width": 1024,
+        "height": 768,
+        "minWidth": 800,
+        "minHeight": 600,
+        "center": true,
+        "dragDropEnabled": true,
+        "visible": false,
+        "additionalBrowserArgs": "--disable-gpu --renderer-process-limit=1 --disable-features=RendererCodeIntegrity --enable-logging=file --v=1 --log-file=%TEMP%\\wv2.log"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "schemes": ["omegadrive"]
+    },
+    "updater": {
+      "active": true,
+      "dialog": true,
+      "pubkey": "",
+      "endpoints": [
+        "https://api.github.com/repos/<owner>/<repo>/releases/latest"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "icon": [
+      "icons/icon.ico"
+    ],
+    "resources": [
+      "../config.json",
+      "binaries/mpv.dll",
+      "binaries/mpv-1.dll",
+      "resources/player/player_ui.lua"
+    ],
+    "externalBin": [
+      "binaries/ffmpeg",
+      "binaries/ffprobe",
+      "binaries/yt-dlp",
+      "binaries/deno"
+    ]
+  }
+}

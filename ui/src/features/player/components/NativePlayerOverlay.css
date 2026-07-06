@@ -1,0 +1,233 @@
+/**
+ * NativePlayerOverlay.css
+ * Styling for the floating controls shown above the native MPV window.
+ */
+
+.mpv-overlay {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  padding: 0 0 8px;
+  background: linear-gradient(transparent 0%, rgba(0, 0, 0, 0.75) 100%);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  color: #fff;
+  user-select: none;
+}
+
+.mpv-overlay.mpv-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mpv-overlay.mpv-hidden {
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+}
+
+.mpv-seek-bar {
+  width: 100%;
+  height: 20px;
+  cursor: pointer;
+  padding: 6px 12px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+.mpv-seek-track {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  overflow: visible;
+  transition: height 0.15s ease;
+}
+
+.mpv-seek-bar:hover .mpv-seek-track {
+  height: 6px;
+}
+
+.mpv-seek-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  background: #e040fb;
+  border-radius: 2px 0 0 2px;
+  transition: width 0.1s ease;
+}
+
+.mpv-seek-thumb {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.15s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.mpv-seek-bar:hover .mpv-seek-thumb {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.mpv-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.mpv-error-banner {
+  margin: 6px 12px 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(160, 32, 32, 0.88);
+  color: #fff5f5;
+  font-size: 12px;
+  line-height: 1.35;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.mpv-left,
+.mpv-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.mpv-center {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  padding: 0 8px;
+}
+
+.mpv-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.mpv-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.mpv-speed-btn {
+  width: auto;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mpv-time {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.mpv-title {
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.mpv-volume-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mpv-volume-slider {
+  width: 80px;
+  height: 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.mpv-volume-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
+}
+
+.mpv-speed-group {
+  position: relative;
+}
+
+.mpv-speed-popup {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 8px;
+  background: rgba(30, 30, 30, 0.95);
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  min-width: 64px;
+}
+
+.mpv-speed-option {
+  border: none;
+  background: transparent;
+  color: #ccc;
+  font-size: 12px;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  text-align: center;
+  transition: background 0.1s, color 0.1s;
+}
+
+.mpv-speed-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.mpv-speed-option.active {
+  color: #e040fb;
+  font-weight: 700;
+}
+
+html.native-overlay-mode,
+html.native-overlay-mode body {
+  background: transparent !important;
+  overflow: hidden;
+}

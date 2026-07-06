@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <!-- Thiết lập bảng mã ký tự và biểu tượng trang web -->
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Tiêu đề và mô tả của ứng dụng hiển thị trên trình duyệt/công cụ tìm kiếm -->
+    <title>Omega Drive</title>
+    <meta
+      name="description"
+      content="Omega Drive - Giải pháp lưu trữ đám mây cá nhân"
+    />
+
+    <!-- Nhúng các font chữ từ Google Fonts (Google Sans, Inter, Roboto) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Thư viện HLS.js để hỗ trợ phát video streaming trên trình duyệt -->
+    <script src="/lib/subtitles-octopus/subtitles-octopus.js"></script>
+  </head>
+  <body>
+    <!-- Điểm gắn kết (Mount Point): Nơi React sẽ render toàn bộ giao diện ứng dụng vào đây -->
+    <div id="root"></div>
+
+    <!-- Khởi tạo vùng thả file toàn cục cực kỳ mạnh mẽ để tránh hiện dấu cấm (no-drop cursor) -->
+    <script>
+      globalThis.addEventListener(
+        "dragover",
+        (e) => {
+          e.preventDefault();
+          try {
+            e.dataTransfer.dropEffect = "copy";
+          } catch (err) {
+            console.error("Dragover update failed:", err);
+          }
+        },
+        false,
+      );
+      globalThis.addEventListener(
+        "drop",
+        (e) => {
+          e.preventDefault();
+        },
+        false,
+      );
+    </script>
+
+    <!-- Điểm nhập (Entry Point): Tải tệp JavaScript chính để khởi chạy logic của React -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create.outputs.upload_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Release
+        id: create
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          draft: true
+          name: Omega Drive ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-core:
+    needs: [create-release]
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            ext: .msi
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            ext: .AppImage
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            ext: .dmg
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            ext: .dmg
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.target }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm --prefix ui ci
+      - run: npm --prefix ui run build
+      - run: cargo tauri build --target ${{ matrix.target }}
+      - name: Upload app installer
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: src-tauri/target/${{ matrix.target }}/release/Omega-Drive${{ matrix.ext }}
+          asset_name: Omega-Drive-${{ matrix.target }}${{ matrix.ext }}
+          asset_content_type: application/octet-stream
+
+  build-binary-archive:
+    needs: [create-release]
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive_ext: .zip
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive_ext: .tar.gz
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            archive_ext: .tar.gz
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            archive_ext: .tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create binary archive
+        shell: bash
+        run: |
+          mkdir -p dist/binaries
+          cp src-tauri/binaries/* dist/binaries/ 2>/dev/null || true
+          cd dist
+          if [[ "${{ matrix.archive_ext }}" == ".zip" ]]; then
+            7z a "binaries-${{ matrix.target }}${{ matrix.archive_ext }}" binaries/
+          else
+            tar czf "binaries-${{ matrix.target }}${{ matrix.archive_ext }}" binaries/
+          fi
+      - name: Upload binary archive
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: dist/binaries-${{ matrix.target }}${{ matrix.archive_ext }}
+          asset_name: binaries-${{ matrix.target }}${{ matrix.archive_ext }}
+          asset_content_type: application/octet-stream

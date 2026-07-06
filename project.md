@@ -1,0 +1,219 @@
+# Project
+
+## Purpose
+- Session router for new work.
+- Read this file first.
+- Then open exactly one relevant file in `contexts/`.
+
+## Stack
+- App: Omega Drive
+- Desktop runtime: Tauri 2
+- Backend: Rust in `src-tauri/`
+- Frontend: Vite + React in `ui/`
+- Local DB: SQLite
+- Native playback: `libmpv` behind a backend-owned HTTP bridge
+
+## Entry Points
+- `src-tauri/src/main.rs`
+- `src-tauri/src/app/bootstrap.rs`
+- `src-tauri/src/app/tauri_app.rs`
+- `src-tauri/src/app/bridge.rs`
+- `ui/src/main.tsx`
+- `ui/src/App.tsx`
+
+## Current Status
+- SQLite is now tenant-scoped instead of one shared `omega_drive.db`:
+  - DB filename contract: `<scope>__<discordGuildOr0>__<telegramChatOr0>.db`
+  - `tenant_registry.json` remembers `activeDbFiles.my` and `activeDbFiles.shared`
+  - bootstrap/bridge/runtime reopen the current tenant DB at startup and on UI tenant switch
+  - row-level `drive_scope` is removed from the fresh schema and synthesized only where legacy callers still expect it
+- Provider env is now credential-only:
+  - Discord: `DISCORD_TOKEN`
+  - Telegram: `TELEGRAM_PHONE`, `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`
+  - current Discord guild / Telegram chat come from the mounted tenant, not env IDs
+- Provider onboarding is now credential-driven inside the app:
+  - if Discord token is missing or Telegram MTProto is not authorized, `MainAppContent` opens `ProviderOnboardingModal`
+  - onboarding supports Discord token save, Telegram OTP login, and optional Telegram 2FA password
+  - `get_onboarding_state` now stays lightweight and does not eagerly load Discord guild lists / Telegram dialogs
+  - Telegram auth checks in that lightweight path now reuse a cached authorized snapshot per current credential/session key instead of reconnecting MTProto on every call
+  - that auth probe now also times out quickly and caches the negative result briefly, so a stuck MTProto auth check cannot spam reconnect logs forever
+  - `load_onboarding_destinations` is called lazily only when the tenant-selection UI actually needs server/group choices
+  - Telegram reachable-group discovery is cached briefly in memory during that lazy-load step so repeated destination refreshes do not hammer `messages.getDialogs`
+  - if a scope has no valid DB, the user can create a `my` or `shared` tenant directly from reachable destinations
+  - `Bỏ qua` hides onboarding only for the current UI session; it is not a persisted preference in this wave
+- Fresh DB setup is now a single-version reset:
+  - `_migrations` keeps one minimal schema version only
+  - incompatible legacy test-phase schemas are dropped and recreated
+- Upload resume source tracking is now owned by `upload_jobs.source_path`; persisted upload-job state keeps part/status progress only, and `download_jobs.target_path` remains download-only.
+- Original upload now computes the full-file BLAKE3 hash as a streaming finalize step:
+  - upload progress starts at `preparing`, not an upfront checksum pass
+  - `files.checksum` is written only after the original upload path succeeds
+- Shared Discord small-file batching is now an explicitly bounded in-memory path:
+  - max `8 MB` per inline batch entry
+  - max `24 MB` aggregate bytes per batch group
+  - file bytes are hashed while streaming into the upload buffer instead of `read_full_file + hash_second_pass`
+- Failed upload cleanup is tighter:
+  - original upload always awaits worker shutdown before returning an error
+  - best-effort remote cleanup runs for single-file and shared-batch failures
+  - `upload_jobs.state` now mirrors the real lifecycle (`uploading -> processing/done/error`)
+- Attachment metadata now lives in the standalone `attachments` table instead of `files.role` / `video_files.subtitle_id`.
+- Folder creation is local-app only; it no longer creates Discord categories or stores remote folder ids.
+- Shared/My Drive switching is tenant-driven from the UI server list; direct `forward_file_to_shared` is intentionally disabled under the multi-DB model.
+- Shared-drive setup now creates/selects a shared tenant DB and updates `tenant_registry.json`; it no longer writes `DISCORD_SHARED_GUILD_ID` / `TELEGRAM_SHARED_CHAT_ID` into `bot.env`.
+- `Sidebar.tsx` now treats missing `my` / `shared` active tenants as an onboarding problem:
+  - remembered valid tenants come from `get_active_tenants`
+  - clicking `My Drive` / `Shared Drive` with no valid active DB opens onboarding for that scope instead of the legacy shared-setup modal
+- Sidebar is root navigation only again; tenant DB selection no longer lives in the sidebar server list.
+- `MainAppContent.tsx` now renders a scope-specific tenant dropdown below the breadcrumb area:
+  - `My Drive` shows only `my` DBs
+  - `Shared Drive` shows only `shared` DBs
+  - choosing `setup` reopens onboarding for that scope
+- Tenant DBs now support an optional UI display name:
+  - stored in `tenant_meta.display_name`
+  - DB filenames still carry tenant identity and are never renamed by the UI
+  - the compact dropdown prefers `display_name` when present
+  - double-clicking `Drive của tôi` / `Drive công cộng` opens a scope-specific tenant manager modal for rename/switch actions
+- Global onboarding is now scope-aware:
+  - missing `shared` alone no longer forces the modal while the current `my` scope is already usable
+  - onboarding still appears for missing credentials/auth errors or when the currently relevant scope has no valid tenant
+- Native playback no longer relies on DB `hls_init`; native open now requires original chunk-backed media.
+- Native video/audio playback is MPV-first.
+- `ui/public/player.html` is no longer the primary playback route.
+- Video `play` and `preview` converge on the native player path.
+- App-owned controls live in `index.html?overlay=native-player` and talk through `mpv_*` commands.
+- `/raw/:file_id` now serves provider byte ranges directly to MPV through `src-tauri/src/features/player/bridge.rs`.
+- Provider stream capability now lives in `src-tauri/src/core/ports/stream.rs`.
+- Telegram supports true range streaming from MTProto responses.
+- Discord keeps the resolved-URL streaming path for raw playback.
+- Rust now has a practical strictness baseline:
+  - crate-level lints for `unused_must_use`, `unsafe_op_in_unsafe_fn`, and `unreachable_pub`
+  - reusable `cargo lint-strict` alias in `.cargo/config.toml`
+- App-owned frontend code under `ui/src/**` is now TypeScript-first:
+  - entrypoint is `ui/src/main.tsx` and app shell is `ui/src/App.tsx`
+  - internal app imports are extensionless and resolve `ts/tsx` first
+  - `ui/vite.config.ts` is the active Vite config
+  - vendored browser libraries under `ui/public/lib/**` intentionally remain JS
+- UI type-checking now has a repo-wide compile contract plus a focused high-signal gate:
+  - `ui/tsconfig.json`
+  - `ui/tsconfig.strict.json`
+  - strict gate flags now include:
+    - `strict`
+    - `noUncheckedIndexedAccess`
+    - `exactOptionalPropertyTypes`
+    - `useUnknownInCatchVariables`
+    - `noImplicitReturns`
+    - `noFallthroughCasesInSwitch`
+  - focused boundary coverage currently includes:
+    - `src/api/**/*.ts`
+    - `src/services/**/*.ts`
+    - `src/utils/**/*.ts`
+    - `src/lang/**/*.ts`
+    - `src/debug/uploadPlanMocks.ts`
+    - `vite.config.ts`
+  - `npm --prefix ui run typecheck`
+  - `npm --prefix ui run lint`
+- Player runtime now includes:
+  - sparse block cache
+  - block-key singleflight dedup
+  - hot original-part metadata cache keyed by `(file_id, part_index)`
+  - hot encrypted-header cache keyed by `(file_id, part_index)`
+  - segmented tail scheduler
+  - per-segment telemetry
+  - best-effort MP4/MKV index hints for prefetch
+- Opening native playback for chunk-backed files now warms provider/runtime metadata before MPV starts:
+  - original chunk metadata is cached in RAM
+  - Telegram first reuses RAM/DB metadata cache, then only warms a small synchronous hot window before playback
+  - remaining Telegram metadata warmup continues in the background instead of blocking `mpv loadfile`
+  - encrypted block headers are cached after first parse
+- Raw sparse provider-backed playback now uses a larger 512KB block granularity for plaintext parts so sustained playback does not fall behind on provider request overhead.
+- Foreground seek now has a separate first-frame policy from background sparse fetch:
+  - recent MPV seeks are recorded in runtime state
+  - the next `/raw/:file_id` cold seek bypasses sparse-first micro-fetch on the first span
+  - plaintext seek fetches a contiguous foreground window with pre-roll
+- Raw cloud playback uses a seek-sensitive MPV buffering cap at runtime:
+  - `cache-secs <= 5`
+  - `demuxer-max-bytes <= 64 MB`
+  - `demuxer-readahead-secs <= 5`
+- Persistent keyframe storage now exists in SQLite:
+  - table: `video_keyframes`
+  - minimal schema: `file_id`, `pts_ms`, `part_index`, `part_offset`, `stream_index`
+  - upload-side ffprobe keyframe extraction runs in the background and does not block upload success
+  - bridge/prefetch use persisted keyframes as assistive seek hints only; playback still falls back cleanly when the table is empty
+- Shared runtime state lives in `src-tauri/src/app_runtime.rs`.
+- SQLite writes are serialized through `DbWriteQueue`.
+- `DownloadContext` now reads provider runtime through the shared runtime lock, so the background download manager follows tenant runtime rebinds too.
+- Telegram provider connection status is now runtime-scoped and cached:
+  - a provider-owned background probe captures the current `authorized` state when the runtime is built
+  - `get_connection_status` no longer probes Telegram MTProto directly on every command call
+  - the probe only holds `Weak` references to the runtime-owned Telegram client/shared state, so old tenant rebinds do not leave immortal status loops behind
+- Discord bridge fixes (wave 2026-06):
+  - **Idle watchdog removed**: `spawn_bridge_idle_shutdown` xoá khỏi bridge — nó chạy sai process, tự sát bridge sau ~20s vì không có mpv thật. Đây là root cause chính của "treo" (port 13370 đóng → mpv mất kết nối).
+  - **HTTP/2 adaptive window**: `http_client()` trong `segmentgen.rs` dùng cho Discord CDN đã bật `http2_adaptive_window(true)`.
+  - **Prefetch defaults tăng**: `prefetch_chunks` 1→5, `prefetch_concurrency` 1→2, `max_chunks` 10→20 để cache trước Discord part.
+  - **Phát hiện bottleneck**: CDN thực tế nhanh (8.77 MB/s = 70 Mbps qua .NET WebClient), nhưng bridge chỉ đạt 1.1 MB/s (9 Mbps). Nguyên nhân: `fetch_attachment_url` gọi Discord REST API (`ChannelId::new().message().await`) mỗi part, và code path `download_part_bytes` trong `discord_real.rs` dùng `reqwest::get()` (default HTTP/1.1) thay vì custom HTTP/2 client.
+  - **Chưa fix**: 2 bottleneck trong `discord_real.rs` — (1) `fetch_attachment_url` không cache URL, (2) `download_part` dùng `reqwest::get()`.
+
+## Main Commands
+- Root:
+  - `npm run dev`
+  - `npm run build`
+  - `npm run clean`
+- Backend verify:
+  - `cargo check --manifest-path src-tauri/Cargo.toml`
+  - `cargo test --manifest-path src-tauri/Cargo.toml`
+  - `cargo lint-strict`
+- Desktop verify/build:
+  - `cargo tauri dev`
+  - `cargo tauri build --debug`
+- UI only:
+  - `npm --prefix ui run dev`
+  - `npm --prefix ui run build`
+  - `npm --prefix ui run lint`
+  - `npm --prefix ui run lint:strict`
+  - `npm --prefix ui run test`
+  - `npm --prefix ui run typecheck`
+
+## Verify Notes
+- Current code-level verification for the onboarding/runtime wave:
+  - `cargo check --manifest-path src-tauri/Cargo.toml`
+  - `cargo test --manifest-path src-tauri/Cargo.toml`
+  - `npm --prefix ui run lint`
+  - `npm --prefix ui run test`
+  - `npm --prefix ui run typecheck`
+  - `npm --prefix ui run build`
+- The Windows `link.exe 1169` blocker is resolved by replacing Telegram's `grammers-session` SQLite storage with the in-repo file-backed `tg.session.json` store; legacy `tg.session` is migrated on first use.
+- `cargo tauri build --debug` was not re-run in this wave after the onboarding changes.
+- `cargo lint-strict` was not re-run in this wave; earlier tracks intentionally left some warnings documented instead of force-fixing refactor-grade cases like `too_many_arguments`, `type_complexity`, and assertion-heavy `unwrap/expect` in tests.
+- `npm --prefix ui run build` is green; the remaining frontend build warning is Vite chunk-size guidance for later code-splitting work.
+- For real seek latency, request storm, and RAM behavior, verify under `cargo tauri dev` with a real cloud-backed media file.
+- Browser-only flows are not enough to validate native runtime behavior.
+
+## Open One Context
+- Upload -> `contexts/upload.md`
+- Download -> `contexts/download.md`
+- Player/native playback/bridge -> `contexts/player.md`
+- Tauri command and handler wiring -> `contexts/api.md`
+- DB/schema/migrations -> `contexts/db.md`
+- Frontend/invoke/wrappers -> `contexts/ui.md`
+- Config/env/feature flags -> `contexts/config-env.md`
+
+## Repo Map
+- `src-tauri/` backend
+- `ui/` frontend
+- `contexts/` agent-only context files
+- `docs/` human docs
+- `config.json` runtime config
+- `bot.env` local env
+- `tenant_registry.json` active DB memory for `my/shared`
+
+## Backend Feature Convention
+- Canonical doc: `docs/backend-feature-convention.md`
+- Backend additions are backend-first:
+  - logic in `src-tauri/src/features/<feature>/`
+  - Tauri commands in `src-tauri/src/api/handlers/<feature>.rs`
+- Runtime command registration point is `src-tauri/src/api/plugins/mod.rs`
+
+## Rules
+- Keep reads narrow.
+- Prefer `contexts/*.md` before code.
+- These files are agent-only context, not human-facing docs.

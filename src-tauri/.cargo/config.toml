@@ -1,0 +1,5 @@
+[build]
+incremental = false
+
+[profile.dev]
+debug = 0

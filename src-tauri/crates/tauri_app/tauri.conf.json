@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "app": {
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "center": true,
+        "dragDropEnabled": true,
+        "height": 768,
+        "minHeight": 600,
+        "minWidth": 800,
+        "title": "Omega Drive",
+        "visible": false,
+        "width": 1024
+      }
+    ],
+    "withGlobalTauri": true
+  },
+  "build": {
+    "beforeBuildCommand": "npm --prefix ui run build",
+    "beforeDevCommand": "npm --prefix ../../ui run dev",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../../../ui/dist"
+  },
+  "bundle": {
+    "active": true,
+    "externalBin": [
+      "../../binaries/ffmpeg",
+      "../../binaries/ffprobe",
+      "../../binaries/yt-dlp",
+      "../../binaries/deno"
+    ],
+    "icon": [
+      "icons/icon.ico"
+    ],
+    "resources": [
+      "../../../config.json",
+      "../../binaries/mpv.dll",
+      "../../binaries/mpv-1.dll",
+      "../../resources/player/player_ui.lua"
+    ],
+    "targets": [
+      "nsis"
+    ]
+  },
+  "identifier": "com.omegadrive",
+  "plugins": {
+    "deep-link": {
+      "schemes": [
+        "omegadrive"
+      ]
+    }
+  },
+  "productName": "Omega Drive",
+  "version": "1.0.0"
+}
