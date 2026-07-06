@@ -1,0 +1,26 @@
+*
+
+!config.json
+!updater.json
+!TASKS.md
+!PLAN.md
+!.cargo/
+!.cargo/**
+
+# Backend
+
+!src-tauri/
+!src-tauri/**
+src-tauri/binaries/
+src-tauri/icons/
+src-tauri/libs/
+src-tauri/target/
+
+# Frontend
+!ui/
+!ui/**
+ui/node_modules/
+ui/coverage/
+ui/dist/
+ui/images/
+.gitnexus
