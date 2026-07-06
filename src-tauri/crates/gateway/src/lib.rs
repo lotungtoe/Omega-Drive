@@ -1,6 +1,8 @@
 #![cfg_attr(not(debug_assertions), deny(unused_imports))]
 #![cfg_attr(debug_assertions, allow(unused_imports))]
 
+pub use blake3;
+
 pub mod core;
 
 pub mod upload;

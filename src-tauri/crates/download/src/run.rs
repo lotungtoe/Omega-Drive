@@ -435,6 +435,7 @@ fn verify_part_checksum_from_disk(
 
     let mut remaining = part_len;
     let mut hasher = blake3::Hasher::new();
+    use omega_drive_gateway::blake3;
     let mut buffer = [0u8; 64 * 1024];
 
     while remaining > 0 {

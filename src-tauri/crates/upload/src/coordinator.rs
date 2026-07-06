@@ -374,6 +374,7 @@ async fn run_original_upload(
     };
 
     let mut bytes_left = prepared.total_bytes;
+    use omega_drive_gateway::blake3;
     let mut file_hasher = blake3::Hasher::new();
     let mut dispatch_error = None;
 

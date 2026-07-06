@@ -2,6 +2,7 @@
 use std::path::Path;
 use tokio::io::AsyncReadExt;
 
+use omega_drive_gateway::blake3;
 use omega_drive_gateway::upload::upload_plan::HashAlgorithm;
 
 pub const BLAKE3_PREFIX: &str = "";

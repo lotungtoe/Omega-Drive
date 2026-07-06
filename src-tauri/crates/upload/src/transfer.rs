@@ -132,6 +132,7 @@ async fn read_shared_batch_file_payload(
         .map_err(|err| UploadError::io("Failed to open small file for batch upload", err))?;
     let mut reader = BufReader::new(file);
     let mut bytes = Vec::with_capacity(expected_bytes.min(usize::MAX as u64) as usize);
+    use omega_drive_gateway::blake3;
     let mut hasher = blake3::Hasher::new();
     let mut buffer = vec![0u8; SHARED_BATCH_READ_BUFFER_BYTES];
 

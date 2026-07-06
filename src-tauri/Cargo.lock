@@ -3809,7 +3809,6 @@ name = "omega_drive_download"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "blake3",
  "fs2",
  "futures-util",
  "omega_drive_gateway",
@@ -3840,7 +3839,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "blake3",
  "bytes",
  "omega_drive_gateway",
  "tokio",
@@ -3864,6 +3862,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "blake3",
  "bytes",
  "chrono",
  "futures-util",
@@ -3984,7 +3983,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "blake3",
  "omega_drive_gateway",
  "reqwest 0.12.28",
  "serde",
