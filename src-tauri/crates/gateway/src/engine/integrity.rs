@@ -1,9 +1,9 @@
-﻿use anyhow::{Context, Result};
+use anyhow::{Context, Result};
 use std::path::Path;
 use tokio::io::AsyncReadExt;
 
-use omega_drive_gateway::blake3;
-use omega_drive_gateway::upload::upload_plan::HashAlgorithm;
+use crate::blake3;
+use crate::upload::upload_plan::HashAlgorithm;
 
 pub const BLAKE3_PREFIX: &str = "";
 
@@ -56,7 +56,7 @@ pub fn calculate_bytes_hash(data: &[u8], _algorithm: HashAlgorithm) -> String {
 pub struct EngineIntegrityService;
 
 #[async_trait::async_trait]
-impl omega_drive_gateway::core::engine_context::IntegrityService for EngineIntegrityService {
+impl crate::core::engine_context::IntegrityService for EngineIntegrityService {
     fn calculate_bytes_blake3(&self, data: &[u8]) -> String {
         calculate_bytes_blake3(data)
     }

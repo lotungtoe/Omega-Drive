@@ -5,6 +5,7 @@ pub use blake3;
 
 pub mod core;
 
+pub mod engine;
 pub mod upload;
 pub mod provider;
 pub mod db;

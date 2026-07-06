@@ -3834,18 +3834,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "omega_drive_engine"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "bytes",
- "omega_drive_gateway",
- "tokio",
- "zip 2.4.2",
-]
-
-[[package]]
 name = "omega_drive_external_import"
 version = "0.1.0"
 dependencies = [
@@ -3871,6 +3859,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-util",
+ "zip 2.4.2",
 ]
 
 [[package]]
@@ -3910,7 +3899,6 @@ dependencies = [
  "omega_drive_discord",
  "omega_drive_download",
  "omega_drive_drive",
- "omega_drive_engine",
  "omega_drive_external_import",
  "omega_drive_gateway",
  "omega_drive_player",

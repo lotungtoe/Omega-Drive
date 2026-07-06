@@ -1,4 +1,4 @@
-﻿#[cfg(not(feature = "zip"))]
+#[cfg(not(feature = "zip"))]
 use anyhow::anyhow;
 #[cfg(feature = "zip")]
 use anyhow::Context;
@@ -13,7 +13,7 @@ use std::path::Path;
 use zip::{write::FileOptions, AesMode, CompressionMethod, ZipArchive, ZipWriter};
 
 #[cfg(not(feature = "zip"))]
-use omega_drive_gateway::core::error::AppError;
+use crate::core::error::AppError;
 #[cfg(not(feature = "zip"))]
 use std::path::Path;
 
@@ -131,7 +131,7 @@ pub fn zip_file_to_path(
 
 pub struct EngineZipService;
 
-impl omega_drive_gateway::core::engine_context::ZipService for EngineZipService {
+impl crate::core::engine_context::ZipService for EngineZipService {
     fn unzip_or_raw(&self, data: Vec<u8>) -> Result<Vec<u8>, String> {
         unzip_or_raw(data).map_err(|e| e.to_string())
     }

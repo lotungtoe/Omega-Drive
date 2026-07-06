@@ -25,8 +25,8 @@ use crate::providers::install::{
     render_builtin_bot_env_template, ProviderInstallContext,
 };
 use crate::providers::runtime::ProviderRuntime;
-use omega_drive_engine::integrity::EngineIntegrityService;
-use omega_drive_engine::zip_utils::EngineZipService;
+use omega_drive_gateway::engine::integrity::EngineIntegrityService;
+use omega_drive_gateway::engine::zip_utils::EngineZipService;
 use omega_drive_gateway::core::backup::Op;
 use omega_drive_gateway::core::config::Config;
 use omega_drive_gateway::core::engine_context::EngineContext;
