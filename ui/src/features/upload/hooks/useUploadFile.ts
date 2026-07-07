@@ -11,7 +11,7 @@ import {
 } from '../services/uploadService';
 import { uploadPlanService } from "../services/uploadPlanService";
 import { toUserMessage } from '../../../shared/services/errors/toUserMessage';
-import { getDriveScopeForSection } from '../../drive/hooks/driveSections.ts';
+import { getDriveScopeForSection } from '../../drive/hooks/driveSections';
 
 export function useUploadFile(
   currentFolderId,
@@ -52,9 +52,9 @@ export function useUploadFile(
         overwriteConfirmed = await confirmOverwrite(collisions);
       }
 
-      let blockedByPurge = new Set();
+      let blockedByPurge = new Set<string>();
       if (overwriteConfirmed && collisions.length > 0) {
-        blockedByPurge = await processPurge(collisions);
+        blockedByPurge = await processPurge(collisions as any);
       }
 
       let planByPath = new Map();

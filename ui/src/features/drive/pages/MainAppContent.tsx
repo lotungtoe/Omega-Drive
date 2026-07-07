@@ -128,7 +128,7 @@ function MorphingDragOverlay({ activeDragData, dark }) {
           width: "max-content",
         }}
       >
-        {activeDragData.isFolder ? <FolderIcon size={20} /> : <FileIcon filename={activeDragData.name} size={18} />}
+        {activeDragData.isFolder ? <FolderIcon size={20} /> : <FileIcon filename={activeDragData.name} size={18} kind={undefined} />}
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {activeDragData.name}
         </span>
@@ -243,9 +243,9 @@ export function MainAppContent() {
   }, []);
 
   const extractDroppedPaths = useCallback((event) => {
-    const files = Array.from(event.dataTransfer?.files ?? []);
+    const files: any = Array.from(event.dataTransfer?.files ?? []);
     return files
-      .map((file) => (typeof file.path === "string" && file.path.length > 0 ? file.path : null))
+      .map((file: any) => (typeof file.path === "string" && file.path.length > 0 ? file.path : null))
       .filter(Boolean);
   }, []);
 
@@ -343,10 +343,10 @@ export function MainAppContent() {
       ]);
       const nextState = {
         tenantList: Array.isArray(tenantList) ? tenantList : [],
-        activeTenants: activeTenants || { my: null, shared: null, current: null },
+        activeTenants: (activeTenants as any) || { my: null, shared: null, current: null },
         loading: false,
       };
-      setTenantPickerState(nextState);
+      setTenantPickerState(nextState as any);
       return nextState;
     } catch (error) {
       setTenantPickerState((current) => ({ ...current, loading: false }));
@@ -383,7 +383,7 @@ export function MainAppContent() {
       .then((nextState) => {
         if (cancelled) return
         uiActions.setOnboardingState(nextState)
-        if (nextState?.requiresOnboarding && !uiState.onboardingDismissed) {
+        if ((nextState as any)?.requiresOnboarding && !uiState.onboardingDismissed) {
           uiActions.showOnboarding(null)
         }
       })
@@ -408,7 +408,7 @@ export function MainAppContent() {
         if (cancelled) return;
         setTenantPickerState({
           tenantList: Array.isArray(tenantList) ? tenantList : [],
-          activeTenants: activeTenants || { my: null, shared: null, current: null },
+          activeTenants: (activeTenants as any) || { my: null, shared: null, current: null },
           loading: false,
         });
       })
@@ -598,11 +598,12 @@ export function MainAppContent() {
                             : undefined
                         }
                       />
-                      {breadcrumbs.map((breadcrumb, index) => (
+                      {breadcrumbs.map((breadcrumb: any, index) => (
                         <BreadcrumbItem
                           key={breadcrumb.id}
                           label={breadcrumb.name}
                           isLast={index === breadcrumbs.length - 1}
+                          active={true}
                           onClick={() => driveController.setCurrentFolderId(Number(breadcrumb.id))}
                         />
                       ))}
@@ -633,7 +634,7 @@ export function MainAppContent() {
               {isTransfers ? (
                 <TransfersPage toast={uiActions.toast} />
               ) : (
-                <FileGrid files={sorted} hasMore={listHasMore} loadMore={loadMore} loadingMore={loadingMore} />
+                <FileGrid {...({ files: sorted, hasMore: listHasMore, loadMore, loadingMore } as any)} />
               )}
             </div>
 
@@ -652,12 +653,7 @@ export function MainAppContent() {
           </div>
         </main>
 
-        <ProgressOverlay
-          progressMap={uiState.progressMap}
-          onClose={uiActions.clearProgressMap}
-          removeSession={uiActions.removeSession}
-        />
-
+        <ProgressOverlay {...{ progressMap: uiState.progressMap, onClose: uiActions.clearProgressMap, removeSession: uiActions.removeSession } as any} />
         {uiState.showSettings && (
           <Suspense fallback={<OverlayLoader message={t("modal.loadingSettings")} />}>
             <LazySettingsModal
@@ -690,7 +686,6 @@ export function MainAppContent() {
           <Suspense fallback={<OverlayLoader message={t("modal.loadingUploadPlan")} />}>
             <LazyUploadPlanModal
               entries={uiState.uploadPlanModal.entries}
-              dark={uiState.dark}
               toast={uiActions.toast}
               onClose={uiActions.closeUploadPlanModal}
               onProceed={uiActions.proceedUploadPlanModal}

@@ -1,7 +1,7 @@
 ﻿import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-export const TxtSearch = ({ value, onChange }) => {
+export const TxtSearch = ({ value, onChange, dark: _dark }: { value: any; onChange: any; dark?: any }) => {
   const { t } = useTranslation();
 
   return (

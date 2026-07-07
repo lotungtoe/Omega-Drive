@@ -17,7 +17,7 @@ export function useStatusMonitor(isLite = false) {
     let unlisten;
     const setupListener = async () => {
       unlisten = await listen("omega-event", (event) => {
-        const payload = event.payload;
+        const payload = event.payload as Record<string, any> | null;
         // Handle variant DiscordConnectionStatusChanged(bool)
         if (payload?.type === "DiscordConnectionStatusChanged") {
           const isConnected = payload.data;
@@ -32,10 +32,10 @@ export function useStatusMonitor(isLite = false) {
     };
     setupListener();
 
-    // 2. Periodic Polling (Fallback) - Increased interval to 10s to reduce load
+    // 2. Periodic Polling (Fallback) - Increased interval to 10s to reduce risk of excessive checks
     const check = async () => {
       try {
-        const st = await getConnectionStatus();
+        const st = await getConnectionStatus() as Record<string, any> | null;
         setDiscordOnline(st?.discord?.connected ?? false);
         setTelegramOnline(st?.telegram?.authorized ?? false);
       } catch (err) {

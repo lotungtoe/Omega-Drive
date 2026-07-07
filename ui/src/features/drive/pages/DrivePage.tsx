@@ -1,1 +1,1 @@
-export { MainApp as default, MainApp } from "./MainApp";
+export { MainAppContent as default, MainAppContent as MainApp } from "./MainAppContent";

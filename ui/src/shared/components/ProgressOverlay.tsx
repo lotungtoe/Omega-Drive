@@ -88,10 +88,10 @@ const SessionItem = ({ s, onCancel }) => {
   )
 }
 
-export const ProgressOverlay = memo(function ProgressOverlay({ progressMap, onClose, removeSession }) {
+export const ProgressOverlay = memo(function ProgressOverlay({ progressMap, onClose, removeSession }: any) {
   const { t } = useTranslation()
   const [isMinimized, setIsMinimized] = useState(false)
-  const sessions = Object.values(progressMap).sort((a, b) => b.lastUpdate - a.lastUpdate)
+  const sessions = Object.values(progressMap as any).sort((a: any, b: any) => b.lastUpdate - a.lastUpdate)
   if (sessions.length === 0) return null
 
   return (
@@ -142,7 +142,7 @@ export const ProgressOverlay = memo(function ProgressOverlay({ progressMap, onCl
 
       {!isMinimized && (
         <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-          {sessions.map(s => <SessionItem key={s.sessionId} s={s} onCancel={removeSession} />)}
+          {sessions.map((s: any) => <SessionItem key={s.sessionId} s={s} onCancel={removeSession} />)}
         </div>
       )}
     </div>

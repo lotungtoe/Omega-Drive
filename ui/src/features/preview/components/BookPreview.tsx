@@ -1,22 +1,24 @@
-﻿import { useState, useEffect, useRef } from 'react'
-import { Download, Loader2, AlertCircle, FileText } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Download, Loader2, AlertCircle, BookOpen, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { invoke } from '@tauri-apps/api/core'
 import { getColor, formatSize } from '../../../shared/utils'
+import { normalizeError } from '../../../shared/services/errors/normalizeError'
 
-export function DocxPreview({ file, onClose: _onClose, onDownload }) {
+export function BookPreview({ file, onClose, onDownload }) {
   const { t } = useTranslation()
   const displayName = file.filename || file.name || ''
   const color = getColor(displayName, file.kind)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const containerRef = useRef(null)
+  const viewerRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
+    let rendition = null
 
-    const loadDocx = async () => {
+    const loadBook = async () => {
       try {
         setLoading(true)
         setError(null)
@@ -24,37 +26,30 @@ export function DocxPreview({ file, onClose: _onClose, onDownload }) {
         const binaryData = await invoke('retrieve_full_file', { fileId: file.id })
         if (cancelled) return
 
-        // Dynamically import docx-preview to keep initial bundle small
-        const { renderAsync } = await import('docx-preview')
-        if (cancelled || !containerRef.current) return
+        const ePub = (await import('epubjs')).default
+        if (cancelled || !viewerRef.current) return
 
-        // Clear any previous render
-        containerRef.current.innerHTML = ''
-
-        await renderAsync(
-          new Uint8Array(binaryData as any).buffer,
-          containerRef.current,
-          null, // styleContainer â€“ null = inline styles
-          {
-            className: 'docx',
-            inWrapper: true,
-            ignoreWidth: false,
-            ignoreHeight: false,
-            ignoreFonts: false,
-            breakPages: true,
-            debug: false,
-          }
-        )
+        const book = ePub(new Uint8Array(binaryData as any).buffer)
+        rendition = book.renderTo(viewerRef.current, {
+          width: '100%',
+          height: '100%',
+          flow: 'scrolled-doc',
+          spread: 'none',
+        })
+        await rendition.display()
       } catch (err) {
-        console.error('Failed to load DOCX preview:', err)
-        if (!cancelled) setError(err.toString())
+        console.error('Failed to load book preview:', err)
+        if (!cancelled) setError(normalizeError(err).message)
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
 
-    loadDocx()
-    return () => { cancelled = true }
+    loadBook()
+    return () => {
+      cancelled = true
+      if (rendition) rendition.destroy?.()
+    }
   }, [file.id])
 
   return (
@@ -62,33 +57,42 @@ export function DocxPreview({ file, onClose: _onClose, onDownload }) {
       {/* Header */}
       <div className="h-14 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shrink-0 z-10">
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 shrink-0">
-            <FileText className="w-5 h-5" style={{ color }} />
+          <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 shrink-0">
+            <BookOpen className="w-5 h-5" style={{ color }} />
           </div>
           <div className="flex flex-col min-w-0">
             <span className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">
               {displayName}
             </span>
             <span className="text-xs text-slate-500">
-              {formatSize(file.size)} &bull; Word Document
+              {formatSize(file.size)} &bull; eBook
             </span>
           </div>
         </div>
 
-        <button type="button"
-          onClick={() => onDownload(file)}
-          className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors shrink-0"
-          title={t('common.download', 'Download')}
-        >
-          <Download className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          <button type="button"
+            onClick={() => onDownload(file)}
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors"
+            title={t('common.download', 'Download')}
+          >
+            <Download className="w-5 h-5" />
+          </button>
+          <button type="button"
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 text-slate-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+            title={t('common.close', 'Close')}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto relative bg-slate-200 dark:bg-slate-800 flex justify-center py-6 px-4">
+      <div className="flex-1 overflow-auto relative bg-slate-200 dark:bg-slate-800 flex justify-center">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-100/60 dark:bg-slate-900/60 backdrop-blur-sm z-10">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
           </div>
         )}
 
@@ -111,19 +115,20 @@ export function DocxPreview({ file, onClose: _onClose, onDownload }) {
           </div>
         ) : (
           <div
-            ref={containerRef}
-            className="docx-container bg-white shadow-xl max-w-4xl w-full min-h-full"
+            ref={viewerRef}
+            className="w-full max-w-4xl bg-white shadow-xl min-h-full"
             style={{ minHeight: loading ? '400px' : undefined }}
           />
         )}
       </div>
 
-      {/* Scoped CSS to normalise docx-preview output */}
+      {/* ponytail: scrolled-doc flow, no TOC nav — add if users ask for chapter jumping */}
       <style>{`
-        .docx-container .docx { padding: 2.5rem; font-family: 'Times New Roman', serif; line-height: 1.6; color: #1e293b; }
-        .docx-container table { border-collapse: collapse; width: 100%; }
-        .docx-container td, .docx-container th { border: 1px solid #cbd5e1; padding: 4px 8px; }
-        .docx-container img { max-width: 100%; height: auto; }
+        .epub-container { padding: 2rem 3rem; color: #1e293b; line-height: 1.8; }
+        .epub-container img { max-width: 100%; height: auto; }
+        @media (prefers-color-scheme: dark) {
+          .epub-container { color: #e2e8f0; }
+        }
       `}</style>
     </div>
   )

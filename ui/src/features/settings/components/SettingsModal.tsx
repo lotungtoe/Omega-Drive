@@ -42,6 +42,7 @@ const ToggleRow = ({ label, description, path, getConfigValue, updateConfig }) =
       <ToggleSwitch
         checked={isEnabled}
         onChange={(v) => updateConfig(path, v)}
+        disabled={false}
       />
     </div>
   )
@@ -60,7 +61,7 @@ const InputRow = ({ label, description, path, type = 'number', step = 1, placeho
       value={getConfigValue(path, '')}
       onChange={e => {
         const val = e.target.value
-        let parsed = val
+        let parsed: string | number = val
         if (type === 'number') {
           parsed = val === '' ? '' : Number.parseFloat(val)
         }
@@ -82,6 +83,8 @@ const SelectRow = ({ label, description, path, options, getConfigValue, updateCo
       onChange={(v) => updateConfig(path, v)}
       options={options}
       style={{ width: 220 }}
+      disabled={false}
+      onDoubleClick={undefined}
     />
   </div>
 )
@@ -127,7 +130,7 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
           }),
         ])
         if (!cancelled) {
-          const nextConfig = res.config || {}
+          const nextConfig = (res as any).config || {}
           if (!nextConfig.ui) nextConfig.ui = {}
           if (!nextConfig.ui.language && i18n.language) {
             nextConfig.ui.language = i18n.language
@@ -556,7 +559,7 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
                     </Button>
                   </div>
                   {logFeatures.map((feature) => {
-                    const enabled = getConfigValue(`logging.feature_enabled.${feature.key}`, true)
+                    const enabled = getConfigValue(`logging.feature_enabled.${feature.key}`, true as any)
                     const exists = !!logStatus?.[feature.key]
                     return (
                       <div key={feature.key}>

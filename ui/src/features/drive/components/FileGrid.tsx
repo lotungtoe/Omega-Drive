@@ -181,7 +181,7 @@ function FileGridComponent({
   const isTrash = uiState?.activeSection === 'trash'
 
   if (allItems.length === 0) {
-    return <EmptyState onUpload={resolvedUpload} isDragOver={resolvedIsDragOver} dark={resolvedDark} isTrash={isTrash} />
+    return <EmptyState onUpload={resolvedUpload} isDragOver={resolvedIsDragOver} isTrash={isTrash} />
   }
 
   return (

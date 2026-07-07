@@ -61,7 +61,7 @@ export function MainAppProvider({ children }) {
     const bootAutoSync = async () => {
       try {
         const res = await getSettings();
-        if (!mounted || !res?.config?.startup?.auto_sync) {
+        if (!mounted || !(res as any)?.config?.startup?.auto_sync) {
           return;
         }
 
@@ -81,6 +81,7 @@ export function MainAppProvider({ children }) {
   }, []);
 
   const { removeSession } = useDriveEventSubscriptions({
+    isInternalDragging: false,
     setIsDragOver: uiActions.setIsDragOver,
     setIsAnyVideoPlaying: uiActions.setIsAnyVideoPlaying,
     setProgressMap: uiActions.setProgressMap,

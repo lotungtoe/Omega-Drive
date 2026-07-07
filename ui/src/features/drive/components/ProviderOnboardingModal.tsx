@@ -44,6 +44,8 @@ function DiscordSection({
                 value={discordSelection}
                 disabled={!destinationsLoaded}
                 onChange={setDiscordSelection}
+                style={undefined}
+                onDoubleClick={undefined}
                 options={
                   destinationsLoaded
                     ? [
@@ -131,6 +133,8 @@ function TelegramSection({
             value={telegramSelection}
             disabled={!destinationsLoaded || !isLoggedIn}
             onChange={setTelegramSelection}
+            style={undefined}
+            onDoubleClick={undefined}
             options={
               destinationsLoaded && isLoggedIn
                 ? [
@@ -155,7 +159,7 @@ function TelegramSection({
                 }
                 await DriveApi.saveTelegramCredentials(
                   formattedPhone,
-                  Number.parseInt(telegramApiId, 10) || 0,
+                  String(Number.parseInt(telegramApiId, 10) || 0),
                   telegramApiHash
                 );
                 return await DriveApi.sendTelegramLoginCode();

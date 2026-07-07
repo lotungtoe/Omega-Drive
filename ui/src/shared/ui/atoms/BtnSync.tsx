@@ -2,7 +2,7 @@
 import { Bot } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-export const BtnSync = ({ onClick, title }) => {
+export const BtnSync = ({ onClick, title }: { onClick: any; title?: any }) => {
   const { t } = useTranslation();
   const resolvedTitle = title || t('header.sync');
 

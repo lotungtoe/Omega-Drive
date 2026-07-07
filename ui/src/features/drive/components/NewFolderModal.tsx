@@ -6,7 +6,7 @@ import { Button } from '../../../components/ui/be-ui-button'
 export function NewFolderModal({ onClose, onCreate }) {
   const { t } = useTranslation()
   const [name, setName] = useState('')
-  const inputRef = useRef()
+  const inputRef = useRef<HTMLInputElement>(null)
   useEffect(() => inputRef.current?.focus(), [])
 
   const submit = () => {

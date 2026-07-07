@@ -1,6 +1,6 @@
+import type { DriveRecord } from "../../../shared/api/types";
 import {
   DriveApi,
-  type DriveRecord,
   type DriveScope,
   type FoldersResponse,
   type IdLike,

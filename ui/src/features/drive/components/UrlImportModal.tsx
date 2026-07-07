@@ -173,6 +173,7 @@ export const UrlImportModal = ({ dark, onClose, onImportStarted }) => {
               placeholder=""
               disabled={false}
               style={{ width: 140 }}
+              onDoubleClick={undefined}
             />
           </div>
 

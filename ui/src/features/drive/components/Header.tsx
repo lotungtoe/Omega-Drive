@@ -26,11 +26,12 @@ const TelegramIcon = ({ size = 24, color = "currentColor", ...props }) => (
   </svg>
 )
 
-export const Header = memo(function Header({
-  search, setSearch, dark, setDark,
-  discordOnline, telegramOnline, loading,
-  handleSync, handleRefresh, onToggleSidebar,
-}) {
+export const Header = memo(function Header(props: any) {
+  const {
+    search, setSearch, dark, setDark,
+    discordOnline, telegramOnline, loading,
+    handleSync, handleRefresh, onToggleSidebar,
+  } = props
   const { t } = useTranslation()
   const uiState = useContext(MainAppUiStateContext)
   const uiActions = useContext(MainAppUiActionsContext)

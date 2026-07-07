@@ -34,7 +34,7 @@ export function AudioPreview({ file, onClose, onDownload }) {
     try {
       const port = await invoke('get_bridge_port')
       const url = `http://127.0.0.1:${port}${endpoint}${endpoint.includes('?') ? '&' : '?'}type=audio`
-      const options = { method }
+      const options: any = { method }
       if (body) {
         options.headers = { 'Content-Type': 'application/json' }
         options.body = JSON.stringify(body)
@@ -203,7 +203,7 @@ export function AudioPreview({ file, onClose, onDownload }) {
             className="group relative h-1.5 w-full bg-white/5 rounded-full cursor-pointer overflow-hidden"
             onClick={handleSeek}
             role="slider"
-            aria-valuemin="0"
+            aria-valuemin={0}
             aria-valuemax={duration}
             aria-valuenow={currentTime}
             tabIndex={0}

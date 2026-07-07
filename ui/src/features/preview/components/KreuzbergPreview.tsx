@@ -1,9 +1,21 @@
 import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { TextPreview } from './TextPreview'
-import { FileDetailsPreview } from './FileDetailsPreview'
+import { getExt } from '../../../shared/utils/index'
+
+const SUPPORTED = new Set([
+  'pdf', 'docx', 'pptx',
+  'html', 'xml',
+  'eml', 'msg', 'pst',
+  'zip', 'tar', '7z', 'gz',
+])
 
 export function KreuzbergPreview({ file, onClose, onDownload, dark }) {
+  const displayName = file.filename || file.name || ''
+  const ext = getExt(displayName)
+
+  if (!SUPPORTED.has(ext)) return null
+
   const [content, setContent] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -11,7 +23,6 @@ export function KreuzbergPreview({ file, onClose, onDownload, dark }) {
     const load = async () => {
       try {
         setLoading(true)
-        const displayName = file.filename || file.name || ''
         const result: any = await invoke('extract_file_text', {
           fileId: file.id,
           filename: displayName,
@@ -38,5 +49,5 @@ export function KreuzbergPreview({ file, onClose, onDownload, dark }) {
       />
     )
   }
-  return <FileDetailsPreview file={file} onClose={onClose} onDownload={onDownload} dark={dark} />
+  return null
 }

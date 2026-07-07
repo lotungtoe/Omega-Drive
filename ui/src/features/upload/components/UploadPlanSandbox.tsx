@@ -36,12 +36,10 @@ export function UploadPlanSandbox() {
         
         <Suspense fallback={<OverlayLoader message="Loading Sandbox Component..." />}>
           <LazyUploadPlanModal 
-            isOpen={true} 
             entries={mockEntries} 
             onClose={handleClose}
             onProceed={handleProceed}
             toast={mockToast}
-            dark={true}
           />
         </Suspense>
 

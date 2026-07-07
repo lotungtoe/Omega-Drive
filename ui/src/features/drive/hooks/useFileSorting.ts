@@ -23,7 +23,7 @@ export function useFileSorting(files, sort) {
       } else if (sort.field === 'size') {
         cmp = (a.size || 0) - (b.size || 0);
       } else if (sort.field === 'date') {
-        cmp = new Date(a.created_at || a.last_modified) - new Date(b.created_at || b.last_modified);
+        cmp = Number(new Date(a.created_at || a.last_modified)) - Number(new Date(b.created_at || b.last_modified));
       } else if (sort.field === 'type') {
         const aFileType = a.isFolder ? { labelKey: 'fileType.folder', ext: '' } : getFileType(a.filename, a.kind);
         const bFileType = b.isFolder ? { labelKey: 'fileType.folder', ext: '' } : getFileType(b.filename, b.kind);

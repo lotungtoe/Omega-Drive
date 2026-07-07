@@ -62,7 +62,7 @@ export function useDriveQuery(
 
       setLoading(true);
       try {
-        const result = await fetchFileById(Number(targetFileId));
+        const result: any = await fetchFileById(Number(targetFileId));
         if (result?.file) {
           setFiles([result.file]);
         }

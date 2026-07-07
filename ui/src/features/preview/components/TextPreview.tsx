@@ -54,7 +54,7 @@ export function TextPreview({ file, onClose: _onClose, onDownload, preloadedCont
         const binaryData = await invoke('retrieve_full_file', { fileId: file.id })
         
         const decoder = new TextDecoder('utf-8')
-        const text = decoder.decode(new Uint8Array(binaryData))
+        const text = decoder.decode(new Uint8Array(binaryData as any))
         setContent(text)
       } catch (err) {
         console.error("Failed to load text preview:", err)

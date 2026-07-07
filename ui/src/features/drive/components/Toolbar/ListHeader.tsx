@@ -18,7 +18,7 @@ export const ListHeader = ({ sort, setSort, dark, isShared }) => {
     }}>
       <div style={{ width: 36, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0, paddingLeft: 8 }}>
-        <SortButton label={t('sort.name')} field="name" sort={sort} setSort={setSort} dark={dark} align="left" />
+        <SortButton label={t('sort.name')} field="name" sort={sort} setSort={setSort} align="left" />
       </div>
       {isShared && (
         <div style={{ width: 180, flexShrink: 0, display: 'flex', justifyContent: 'flex-start', paddingLeft: 12 }} className="hidden lg:flex">
@@ -26,13 +26,13 @@ export const ListHeader = ({ sort, setSort, dark, isShared }) => {
         </div>
       )}
       <div style={{ width: 100, flexShrink: 0, display: 'flex', justifyContent: 'center' }} className="hidden lg:flex">
-        <SortButton label={t('sort.type')} field="type" sort={sort} setSort={setSort} dark={dark} />
+        <SortButton label={t('sort.type')} field="type" sort={sort} setSort={setSort} />
       </div>
       <div style={{ width: 160, flexShrink: 0, display: 'flex', justifyContent: 'center' }} className="hidden md:flex">
-        <SortButton label={t('sort.modified')} field="date" sort={sort} setSort={setSort} dark={dark} />
+        <SortButton label={t('sort.modified')} field="date" sort={sort} setSort={setSort} />
       </div>
       <div style={{ width: 100, flexShrink: 0, display: 'flex', justifyContent: 'center' }} className="hidden sm:flex">
-        <SortButton label={t('sort.size')} field="size" sort={sort} setSort={setSort} dark={dark} />
+        <SortButton label={t('sort.size')} field="size" sort={sort} setSort={setSort} />
       </div>
       <div style={{ width: 120, flexShrink: 0 }} />
     </div>

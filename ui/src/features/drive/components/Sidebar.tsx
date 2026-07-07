@@ -51,15 +51,16 @@ function DroppableNavItem({ item, active }) {
   )
 }
 
-export const Sidebar = memo(function Sidebar({
-  currentFolderId,
-  setCurrentFolderId,
-  stats,
-  activeSection,
-  setActiveSection,
-  onNewClick,
-  onSettingsClick,
-}) {
+export const Sidebar = memo(function Sidebar(props: any) {
+  const {
+    currentFolderId,
+    setCurrentFolderId,
+    stats,
+    activeSection,
+    setActiveSection,
+    onNewClick,
+    onSettingsClick,
+  } = props
   const { t } = useTranslation()
   const uiState = useContext(MainAppUiStateContext)
   const uiActions = useContext(MainAppUiActionsContext)
@@ -75,8 +76,10 @@ export const Sidebar = memo(function Sidebar({
   const resolvedOnNewClick = onNewClick ?? uiActions?.openNewFolder ?? (() => {})
   const resolvedOnSettingsClick = onSettingsClick ?? uiActions?.openSettings ?? (() => {})
 
+  type TenantState = { my: any; shared: any; current: any; scope?: string }
+
   const fetchTenantState = async () => {
-    const rememberedTenants = await invoke('get_active_tenants')
+    const rememberedTenants = await invoke('get_active_tenants') as TenantState | null
     return rememberedTenants || { my: null, shared: null, current: null }
   }
 
@@ -105,7 +108,7 @@ export const Sidebar = memo(function Sidebar({
 
   const switchTenant = async (tenant) => {
     try {
-      const switched = await invoke('switch_tenant', { tenant })
+      const switched = await invoke('switch_tenant', { tenant }) as TenantState | null
       const refreshedTenants = await fetchTenantState()
       setActiveTenants({
         my: refreshedTenants?.my ?? null,

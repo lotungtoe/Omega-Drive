@@ -25,6 +25,7 @@
     "@tauri-apps/plugin-updater": "^2.10.1",
     "clsx": "^2.1.1",
     "docx-preview": "^0.3.7",
+    "epubjs": "^0.3.93",
     "framer-motion": "^12.34.3",
     "hls.js": "^1.6.15",
     "howler": "^2.2.4",

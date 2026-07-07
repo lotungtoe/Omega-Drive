@@ -21,7 +21,7 @@
         "center": true,
         "dragDropEnabled": true,
         "visible": false,
-        "additionalBrowserArgs": "--disable-gpu --renderer-process-limit=1 --disable-features=RendererCodeIntegrity"
+        "additionalBrowserArgs": "--no-sandbox --renderer-process-limit=1 --disable-features=RendererCodeIntegrity,SubresourceFilter,SafeBrowsing"
       }
     ],
     "security": {

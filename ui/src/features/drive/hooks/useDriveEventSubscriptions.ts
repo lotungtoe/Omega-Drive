@@ -20,7 +20,7 @@ export function useDriveEventSubscriptions({
 
   useEffect(() => {
     const handleProgress = (event) => {
-      const payload = event.payload;
+      const payload: any = event.payload;
       const sessionId = payload.sessionId;
       if (!sessionId) {
         return;
@@ -111,7 +111,7 @@ export function useDriveEventSubscriptions({
       try {
         [unlistenComplete, unlistenFailed] = await Promise.all([
           listen("download-complete", (event) => {
-            const payload = event.payload || {};
+            const payload: any = event.payload || {};
             const filename = payload.filename || t("downloads.unnamedFile");
             const path = payload.path;
             const fileId = payload.fileId;
@@ -130,7 +130,7 @@ export function useDriveEventSubscriptions({
             ].filter(Boolean));
           }),
           listen("download-failed", (event) => {
-            const payload = event.payload || {};
+            const payload: any = event.payload || {};
             const errorMessage = payload.error || t("downloads.failed");
             const fileId = payload.fileId;
 
@@ -217,7 +217,7 @@ export function useDriveEventSubscriptions({
     const setupDatabaseListener = async () => {
       try {
         unlistenFn = await listen("omega-event", (event) => {
-          const payload = event.payload;
+          const payload: any = event.payload;
           // Print JSON string to know exact structure
           console.info("[AutoRefresh] omega-event payload:", payload);
           

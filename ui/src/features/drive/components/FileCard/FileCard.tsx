@@ -12,7 +12,7 @@ function useFileCardLogic(props) {
   const { t } = useTranslation()
   const { file, setCurrentFolderId, onPreview } = props
   const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef(null)
+  const menuRef = useRef<any>(null)
 
   const isFolder = file.isFolder
   const fileType = isFolder
@@ -74,7 +74,7 @@ function useFileCardLogic(props) {
     handleDoubleClick,
     // dnd-kit refs & state
     mergedRef, dragAttributes, dragListeners, isDragging, isOver,
-    handleSelect: (e) => {
+    handleSelect: (e?) => {
       if (props.onSelect) {
         if (e) e.stopPropagation();
         props.onSelect(file.id);

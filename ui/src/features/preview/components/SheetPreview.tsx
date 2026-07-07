@@ -46,9 +46,9 @@ export function SheetPreview({ file, onClose: _onClose, onDownload }) {
         const XLSX = await import('xlsx')
         if (cancelled) return
 
-        const uint8 = new Uint8Array(binaryData)
+        const uint8 = new Uint8Array(binaryData as any)
         const workbook = XLSX.read(uint8, { type: 'array' })
-        workbook.__XLSX = XLSX // attach for re-use on sheet switch
+        ;(workbook as any).__XLSX = XLSX // attach for re-use on sheet switch
 
         if (cancelled) return
 

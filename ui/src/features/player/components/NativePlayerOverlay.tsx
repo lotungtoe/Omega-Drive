@@ -138,11 +138,11 @@ export default function NativePlayerOverlay() {
           const nextStatus = await getMpvStatus();
           if (!active) break;
 
-          setStatus(nextStatus);
+          setStatus(nextStatus as any);
           setLastError("");
           lastPollErrorRef.current = "";
 
-          if (!nextStatus.alive) {
+          if (!(nextStatus as any).alive) {
             try {
               await getCurrentWindow().close();
             } catch {

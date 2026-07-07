@@ -30,6 +30,10 @@ pub(super) fn run_tauri(app_state: AppState) {
     #[cfg(debug_assertions)]
     install_emergency_panic_hook();
 
+    // ponytail: redirect all WebView2 data to %TEMP% — avoid SSD write
+    let wv_cache = std::env::temp_dir().join("omega_cache");
+    std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", &wv_cache);
+
     let last_window_event = Arc::new(AtomicU64::new(0));
     let lwe_ev = last_window_event.clone();
 
@@ -373,83 +377,13 @@ pub(super) fn run_tauri(app_state: AppState) {
                 }
             });
 
-            // --- CHILD PROCESS MONITOR (Windows) ---
-            #[cfg(windows)]
-            tokio::spawn(async move {
-                use std::collections::HashMap;
-                use windows_sys::Win32::System::Diagnostics::ToolHelp::*;
-                use windows_sys::Win32::System::Threading::*;
-                use windows_sys::Win32::Foundation::*;
-
-                unsafe fn send_handle(h: HANDLE) -> usize { h as usize }
-                unsafe fn recv_handle(h: usize) -> HANDLE { h as HANDLE }
-
-                let ppid = std::process::id();
-                let mut children: HashMap<u32, usize> = HashMap::new();
-                let exit_log = std::env::temp_dir().join("omega_drive_child_exit.txt");
-
-                loop {
-                    tokio::time::sleep(Duration::from_secs(3)).await;
-
-                    unsafe {
-                        let snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-                        if snap == INVALID_HANDLE_VALUE {
-                            continue;
-                        }
-                        let mut pe = std::mem::zeroed::<PROCESSENTRY32W>();
-                        pe.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
-
-                        let mut alive: std::collections::HashSet<u32> = std::collections::HashSet::new();
-                        if Process32FirstW(snap, &mut pe) != 0 {
-                            loop {
-                                if pe.th32ParentProcessID == ppid {
-                                    alive.insert(pe.th32ProcessID);
-                                }
-                                if Process32NextW(snap, &mut pe) == 0 {
-                                    break;
-                                }
-                            }
-                        }
-                        CloseHandle(snap);
-
-                        // Report dead children
-                        let dead: Vec<u32> = children.keys().copied()
-                            .filter(|pid| !alive.contains(pid))
-                            .collect();
-                        for pid in dead {
-                            if let Some(&handle_usize) = children.get(&pid) {
-                                let handle = recv_handle(handle_usize);
-                                let mut code: u32 = 0;
-                                let result = if GetExitCodeProcess(handle, &mut code) != 0 {
-                                    format!("Child PID {} exited with code {:#010x}\n", pid, code)
-                                } else {
-                                    format!("Child PID {} died, GetExitCodeProcess failed\n", pid)
-                                };
-                                let _ = std::fs::OpenOptions::new()
-                                    .append(true).create(true).open(&exit_log)
-                                    .and_then(|mut f| std::io::Write::write_all(&mut f, result.as_bytes()));
-                                CloseHandle(handle);
-                                children.remove(&pid);
-                            }
-                        }
-
-                        // Discover new children
-                        for pid in &alive {
-                            if !children.contains_key(pid) {
-                                let handle = OpenProcess(PROCESS_QUERY_INFORMATION, 0, *pid);
-                                if !handle.is_null() {
-                                    children.insert(*pid, send_handle(handle));
-                                }
-                            }
-                        }
-                    }
-                }
-            });
+            // --- CHILD PROCESS MONITOR DISABLED --- disk write suspect, 2026-07-07
 
             #[cfg(debug_assertions)]
-            if let Some(dev_win) = app.get_webview_window("main") {
-                dev_win.open_devtools();
-            }
+            // ponytail: DevTools gây 5MB/s disk write, tạm disable
+            // if let Some(dev_win) = app.get_webview_window("main") {
+            //     dev_win.open_devtools();
+            // }
 
             Ok(())
         })

@@ -25,7 +25,7 @@ export function GlobalAudioBridge() {
     
     try {
       const url = `http://127.0.0.1:${bridgePortRef.current}${endpoint}${endpoint.includes('?') ? '&' : '?'}type=audio`
-      const options = { method }
+      const options: any = { method }
       if (body) {
         options.headers = { 'Content-Type': 'application/json' }
         options.body = JSON.stringify(body)

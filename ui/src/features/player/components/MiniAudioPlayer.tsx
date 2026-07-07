@@ -194,7 +194,7 @@ export function MiniAudioPlayer() {
                   if (e.key === 'ArrowLeft') performSeek(Math.max(0, position - 5))
                 }}
                 role="slider"
-                aria-valuemin="0"
+                aria-valuemin={0}
                 aria-valuemax={duration}
                 aria-valuenow={currentPos}
                 tabIndex={0}
@@ -256,8 +256,8 @@ export function MiniAudioPlayer() {
                 id="volume-rail"
                 className="relative h-1 flex-1 bg-zinc-800 rounded-full cursor-pointer group/vol"
                 role="slider"
-                aria-valuemin="0"
-                aria-valuemax="100"
+                aria-valuemin={0}
+                aria-valuemax={100}
                 aria-valuenow={audioPlayback.volume || 0}
                 tabIndex={0}
                 onKeyDown={(e) => {

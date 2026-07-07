@@ -90,13 +90,13 @@ export function ImagePreview({ file, onClose, onDownload }) {
 
         void invoke('scan_qr_by_file_id', { fileId: file.id })
           .then((codes) => {
-            if (active && codes && codes.length > 0) {
-              setFoundCodes(codes)
+            if (active && codes && (codes as any).length > 0) {
+              setFoundCodes(codes as any)
             }
           })
           .catch((err) => console.error('QR scan failed:', err))
 
-        const blob = new Blob([new Uint8Array(binaryData)], { type: 'image/*' })
+        const blob = new Blob([new Uint8Array(binaryData as any)], { type: 'image/*' })
         objectUrl = URL.createObjectURL(blob)
         if (active) {
           setImageSrc(objectUrl)
@@ -241,8 +241,11 @@ export function ImagePreview({ file, onClose, onDownload }) {
         motionScale.set(newScale)
       } else {
         const springConfig = { type: 'spring', stiffness: 400, damping: 35, mass: 0.5 }
+        // @ts-ignore
         animate(x, clampX, springConfig)
+        // @ts-ignore
         animate(y, clampY, springConfig)
+        // @ts-ignore
         animate(motionScale, newScale, springConfig)
       }
     }

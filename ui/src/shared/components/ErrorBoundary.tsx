@@ -4,7 +4,7 @@ import { toUserMessage } from "../services/errors/toUserMessage";
 import i18n from "../../lang/i18n";
 import { Button } from "../../components/ui/be-ui-button";
 
-export class ErrorBoundary extends React.Component {
+export class ErrorBoundary extends React.Component<any, any> {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null, showDetails: false };

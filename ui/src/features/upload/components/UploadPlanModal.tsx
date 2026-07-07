@@ -35,11 +35,11 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
           getConnectionStatus().catch(() => null),
         ]);
         if (!mounted) return;
-        setProfiles(profilesResp || []);
-        setTelegramAuthorized(Boolean(statusResp?.telegram?.authorized));
+        setProfiles((profilesResp as any) || []);
+        setTelegramAuthorized(Boolean((statusResp as any)?.telegram?.authorized));
 
         const nameMap = new Map(entries.map((e) => [e.path, e.filename || getFilename(e.path)]));
-        const resolvedItems = (resolved || []).map((r) => ({
+        const resolvedItems = ((resolved as any) || []).map((r: any) => ({
           path: r.path,
           filename: nameMap.get(r.path) || getFilename(r.path),
           profileId: r.profileId ?? null,
@@ -125,7 +125,7 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
       };
       const saved = await uploadPlanService.saveProfile(newProfile);
       setProfiles((prev) => [...prev, saved]);
-      setActiveProfileId(saved.id);
+      setActiveProfileId((saved as any).id);
       toast?.show?.(t("upload.profileCreated"), "success");
     } catch (err) {
       console.error("Failed to create profile:", err);

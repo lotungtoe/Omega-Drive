@@ -8,7 +8,7 @@ import {
   parseBootstrapIssues,
 } from "../services/playerService";
 import { formatPlaybackTime } from "../../../shared/utils/formatPlaybackTime";
-import { getFileType } from "../../../shared/utils/index";
+import { getFileType, getExt } from "../../../shared/utils/index";
 
 export function usePlaybackLauncher({ bootstrapStatus, setBootstrapStatus, toast, t, openPreview }) {
   const bootstrapIssues = useMemo(() => parseBootstrapIssues(bootstrapStatus), [bootstrapStatus]);
@@ -42,14 +42,14 @@ export function usePlaybackLauncher({ bootstrapStatus, setBootstrapStatus, toast
 
       try {
         const playback = await getPlaybackPosition(file.id);
-        if (playback?.resumeEligible) {
+        if ((playback as any)?.resumeEligible) {
           const shouldResume = await (async () => {
             try {
               if (typeof globalThis.confirm !== "function") return true;
               return await globalThis.confirm(
                 t("player.resumePrompt", {
                   title: playerTitle,
-                  time: formatPlaybackTime(playback.positionSec),
+                  time: formatPlaybackTime((playback as any).positionSec),
                 })
               );
             } catch {
@@ -58,7 +58,7 @@ export function usePlaybackLauncher({ bootstrapStatus, setBootstrapStatus, toast
           })();
 
           if (shouldResume) {
-            startPositionSec = playback.positionSec;
+            startPositionSec = (playback as any).positionSec;
           } else {
             clearPlaybackPosition(file.id).catch(() => {});
           }
@@ -90,6 +90,19 @@ export function usePlaybackLauncher({ bootstrapStatus, setBootstrapStatus, toast
         await launchNativePlayer(file);
         return;
       }
+
+      const ext = getExt(displayName);
+      const group = getFileType(displayName, file?.kind).group;
+      const supportedExts = ['pdf','docx','xlsx','xls','csv','tsv','ods','odp',
+        'pptx','html','xml','eml','msg','pst','zip','tar','7z','gz'];
+      const binaryDocExts = ['doc','ppt','odt','rtf'];
+
+      const canPreview =
+        ['image','audio'].includes(group) ||
+        supportedExts.includes(ext) ||
+        (group === 'doc' && !binaryDocExts.includes(ext));
+
+      if (!canPreview) return;
 
       openPreview(file);
     },

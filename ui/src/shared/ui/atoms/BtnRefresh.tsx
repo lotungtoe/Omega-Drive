@@ -2,7 +2,7 @@
 import { RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-export const BtnRefresh = ({ onClick, loading, title }) => {
+export const BtnRefresh = ({ onClick, loading, title }: { onClick: any; loading?: any; title?: any }) => {
   const { t } = useTranslation();
   const resolvedTitle = title || t('common.refresh');
 

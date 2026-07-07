@@ -186,8 +186,6 @@ impl DriveService {
             return Err("File too large to preview (Max 100MB)".to_string());
         }
 
-        self.file_repo.update_file_status(file_id, "accessed").await.ok();
-
         let parts = self.file_repo
             .get_parts_for_file(file_id).await
             .map_err(|e| e.to_string())?;

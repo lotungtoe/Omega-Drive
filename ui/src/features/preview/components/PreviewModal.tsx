@@ -1,13 +1,14 @@
-import { AnimatePresence } from 'framer-motion'
+import { useEffect } from 'react'
+import { X } from 'lucide-react'
 import { getFileType, getExt } from '../../../shared/utils/index'
 import { ImagePreview } from './ImagePreview'
 import { AudioPreview } from './AudioPreview'
-import { FileDetailsPreview } from './FileDetailsPreview'
 import { PdfPreview } from './PdfPreview'
 import { TextPreview } from './TextPreview'
 import { DocxPreview } from './DocxPreview'
 import { SheetPreview } from './SheetPreview'
 import { KreuzbergPreview } from './KreuzbergPreview'
+import { BookPreview } from './BookPreview'
 
 export function PreviewModal({ file, onClose, onDownload, dark }) {
   const displayName = file.filename || file.name || ''
@@ -19,8 +20,17 @@ export function PreviewModal({ file, onClose, onDownload, dark }) {
   const isPdf = ext === 'pdf'
   const isDocx = ext === 'docx'
   const isSheet = ['xlsx', 'xls', 'csv', 'tsv', 'ods', 'odp'].includes(ext)
-  const isBinaryDoc = ['doc', 'ppt', 'pptx', 'odt', 'rtf', 'epub', 'mobi'].includes(ext)
+  const isBook = ['epub', 'mobi'].includes(ext)
+  const isBinaryDoc = ['doc', 'ppt', 'pptx', 'odt', 'rtf'].includes(ext)
   const isTextOrCode = fileType.group === 'doc'
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onClose])
 
   const renderContent = () => {
     if (isImage) {
@@ -78,6 +88,17 @@ export function PreviewModal({ file, onClose, onDownload, dark }) {
       )
     }
 
+    if (isBook) {
+      return (
+        <BookPreview
+          key="book-preview"
+          file={file}
+          onClose={onClose}
+          onDownload={onDownload}
+        />
+      )
+    }
+
     if (isBinaryDoc) {
       return (
         <KreuzbergPreview 
@@ -101,20 +122,22 @@ export function PreviewModal({ file, onClose, onDownload, dark }) {
       )
     }
 
-    return (
-      <KreuzbergPreview 
-        key="kreuzberg-preview" 
-        file={file} 
-        onClose={onClose} 
-        onDownload={onDownload} 
-        dark={dark} 
-      />
-    )
+    return null
   }
 
   return (
-    <AnimatePresence mode="wait">
+    <div
+      className="fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors shadow-lg"
+      >
+        <X size={20} />
+      </button>
       {renderContent()}
-    </AnimatePresence>
+    </div>
   )
 }

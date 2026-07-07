@@ -23,7 +23,7 @@ export function useTransfersList(toast) {
         loadingMoreRef.current = true;
       }
 
-      const res = await fetchTransfersPaginated(fetchCursor, 50);
+      const res: any = await fetchTransfersPaginated(fetchCursor, 50);
       
       setUploads(prev => reset ? res.files : [...prev, ...res.files]);
       setCursor(res.next_cursor);
@@ -42,7 +42,7 @@ export function useTransfersList(toast) {
     void loadUploads(true);
 
     const refreshOnProgress = listen('upload-progress', (event) => {
-      const phase = event.payload?.phase;
+      const phase = (event.payload as any)?.phase;
       if (phase === 'done' || phase === 'failed') {
         void loadUploads(true);
       }
@@ -53,9 +53,9 @@ export function useTransfersList(toast) {
     };
   }, [loadUploads]);
 
-  const resumeUpload = useCallback(async (file: { local_path?: string | null; folder_id?: number | null; drive_scope?: string | null }) => {
+  const resumeUpload = useCallback(async (file: any) => {
     try {
-      await resumeUploadByPath(file);
+      await resumeUploadByPath(file as any);
     } catch (err) {
       const msg = toUserMessage(err);
       toast?.show?.(msg.message || 'Could not resume upload', 'error');

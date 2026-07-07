@@ -38,7 +38,7 @@ export function PdfPreview({ file, onClose: _onClose, onDownload }) {
         
         // Pass the raw Uint8Array data directly to react-pdf instead of ObjectURL 
         // to avoid some CORS/ObjectURL restrictions in webviews
-        setPdfData({ data: new Uint8Array(binaryData) })
+        setPdfData({ data: new Uint8Array(binaryData as any) })
       } catch (err) {
         console.error("Failed to load PDF preview:", err)
         setError(err.toString())
