@@ -16,6 +16,7 @@ members = [
     "crates/upload",
     "crates/updater",
     "crates/extractor",
+    "crates/book_bridge",
 ]
 
 [profile.dev]

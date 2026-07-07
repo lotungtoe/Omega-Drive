@@ -54,6 +54,7 @@ pub struct AppState {
     pub events: Arc<EventBus>,
     pub drive_service: Arc<DriveService>,
     pub bridge_port: u16,
+    pub book_bridge_port: u16,
     pub active_tenant: Arc<std::sync::Mutex<TenantDescriptor>>,
     pub player_runtime: Arc<PlayerRuntime>,
     pub download_manager: Arc<download_crate::DownloadManager>,

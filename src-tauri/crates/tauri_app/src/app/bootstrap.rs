@@ -352,6 +352,7 @@ pub async fn run() {
         events: Arc::clone(&event_bus),
         drive_service: Arc::clone(&drive_service),
         bridge_port,
+        book_bridge_port: 0,
         file_repo: Arc::clone(&file_repo),
         active_tenant: Arc::new(std::sync::Mutex::new(default_tenant)),
         player_runtime,
@@ -452,6 +453,33 @@ pub async fn run() {
             }
         });
     }
+
+    // --- Start Book Bridge (port 13380) ---
+    let book_bridge_manager = Arc::new(omega_drive_book_bridge::BookManager::new());
+    let book_bridge_port = {
+        let sr = match app_state_init.provider_runtime.read() {
+            Ok(g) => Arc::clone(&g),
+            Err(p) => Arc::clone(&p.into_inner()),
+        };
+        let cfg = omega_drive_book_bridge::BookBridgeConfig {
+            base_dir: base_dir.clone(),
+            file_repo: Arc::clone(&file_repo),
+            stream_registry: Arc::clone(&sr.stream_registry),
+            engine: app_state_init.engine.clone(),
+            port: pick_bridge_port(13380),
+        };
+        match omega_drive_book_bridge::start_book_bridge(cfg, Arc::clone(&book_bridge_manager)).await {
+            Ok(port) => {
+                tracing::info!("Book bridge started at port {}", port);
+                port
+            }
+            Err(e) => {
+                eprintln!("Failed to start book bridge: {e}");
+                std::process::exit(1);
+            }
+        }
+    };
+    app_state_init.book_bridge_port = book_bridge_port;
 
     // --- Start HTTP Bridge (dynamic port) ---
     #[cfg(feature = "player")]

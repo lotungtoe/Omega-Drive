@@ -8,7 +8,7 @@ import { TextPreview } from './TextPreview'
 import { DocxPreview } from './DocxPreview'
 import { SheetPreview } from './SheetPreview'
 import { KreuzbergPreview } from './KreuzbergPreview'
-import { BookPreview } from './BookPreview'
+import { BookReader } from './BookReader'
 
 export function PreviewModal({ file, onClose, onDownload, dark }) {
   const displayName = file.filename || file.name || ''
@@ -31,6 +31,15 @@ export function PreviewModal({ file, onClose, onDownload, dark }) {
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [onClose])
+
+  // Full-screen book reader (no modal wrapper)
+  if (isBook) {
+    return (
+      <div className="fixed inset-0 z-[150] bg-white dark:bg-slate-950">
+        <BookReader file={file} onClose={onClose} onDownload={onDownload} />
+      </div>
+    )
+  }
 
   const renderContent = () => {
     if (isImage) {
@@ -81,17 +90,6 @@ export function PreviewModal({ file, onClose, onDownload, dark }) {
       return (
         <SheetPreview
           key="sheet-preview"
-          file={file}
-          onClose={onClose}
-          onDownload={onDownload}
-        />
-      )
-    }
-
-    if (isBook) {
-      return (
-        <BookPreview
-          key="book-preview"
           file={file}
           onClose={onClose}
           onDownload={onDownload}

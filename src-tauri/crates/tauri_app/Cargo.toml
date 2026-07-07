@@ -26,6 +26,7 @@ omega_drive_download = { path = "../download" }
 omega_drive_external_import = { path = "../external_import" }
 omega_drive_upload = { path = "../upload" }
 omega_drive_updater = { path = "../updater" }
+omega_drive_book_bridge = { path = "../book_bridge" }
 
 tauri = { version = "2", features = ["tray-icon", "devtools"] }
 tauri-plugin-dialog = "2"

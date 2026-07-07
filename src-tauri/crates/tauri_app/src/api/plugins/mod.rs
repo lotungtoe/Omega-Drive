@@ -70,6 +70,7 @@ macro_rules! tauri_feature_handler {
             $crate::api::handlers::open_download_folder,
             $crate::api::handlers::get_playback_position,
             $crate::api::handlers::get_bridge_port,
+            $crate::api::handlers::get_book_bridge_port,
             $crate::api::handlers::prepare_audio_bridge,
             $crate::api::handlers::save_playback_position,
             $crate::api::handlers::clear_playback_position,

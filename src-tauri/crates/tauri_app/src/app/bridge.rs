@@ -190,6 +190,7 @@ let player_ctx = Arc::new(PlayerContext {
         events: event_bus,
         drive_service,
         bridge_port,
+        book_bridge_port: 0,
         file_repo: Arc::clone(&file_repo),
         active_tenant: Arc::new(std::sync::Mutex::new(TenantDescriptor::new(
             default_tenant.scope,

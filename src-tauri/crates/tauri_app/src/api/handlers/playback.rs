@@ -239,6 +239,11 @@ pub async fn get_bridge_port(st: tauri::State<'_, AppState>) -> AppResult<u16> {
 }
 
 #[tauri::command]
+pub async fn get_book_bridge_port(st: tauri::State<'_, AppState>) -> AppResult<u16> {
+    Ok(st.book_bridge_port)
+}
+
+#[tauri::command]
 pub async fn prepare_audio_bridge(st: tauri::State<'_, AppState>) -> AppResult<()> {
     let bridge_res: Result<(), String> =
         omega_drive_player::runtime::ensure_video_bridge_child_for_player(
