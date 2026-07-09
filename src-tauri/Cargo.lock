@@ -4625,6 +4625,7 @@ dependencies = [
  "bytes",
  "chrono",
  "flate2",
+ "futures-util",
  "omega_drive_gateway",
  "serde",
  "serde_json",

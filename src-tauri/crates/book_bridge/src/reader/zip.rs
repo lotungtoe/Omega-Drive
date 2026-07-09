@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use bytes::Bytes;
 
+use futures_util::FutureExt;
 use omega_drive_gateway::provider::{
     stream::StreamRegistry,
     storage::PartMetadata,
@@ -224,7 +225,7 @@ impl ZipReader {
         size: u64,
         registry: &StreamRegistry,
         byte_cache: &Arc<dyn ByteCache>,
-        _singleflight: &Arc<dyn PartSingleFlight>,
+        singleflight: &Arc<dyn PartSingleFlight>,
     ) -> Result<Vec<u8>, String> {
         let end = offset + size;
         let mut current = offset;
@@ -239,7 +240,6 @@ impl ZipReader {
             let part = &parts[chunk_idx];
             let file_offset = chunk_offsets[chunk_idx];
             let chunk_end = file_offset + part.size as u64;
-            let _local_start = current - file_offset;
             let local_len = (end - current).min(chunk_end - current);
 
             // Check byte cache
@@ -251,12 +251,18 @@ impl ZipReader {
             }
 
             // Not in cache — download the full part via singleflight
-            let _part_idx = part.part_index;
-            let gw = registry.get(&part.platform)
-                .ok_or_else(|| format!("gateway {} not found", part.platform))?;
-            let raw = gw.download_part_range(part, None).await
-                .map_err(|e| format!("download part {}: {e}", part.part_index))?;
-            byte_cache.write(file_id, file_offset, Bytes::from(raw)).await;
+            let part_clone = part.clone();
+            let bc = byte_cache.clone();
+            let gw = registry.get(&part_clone.platform)
+                .ok_or_else(|| format!("gateway {} not found", part_clone.platform))?;
+            let _ = singleflight.run((file_id, part.part_index), Box::new(move || {
+                async move {
+                    let raw = gw.download_part_range(&part_clone, None).await
+                        .map_err(|e| format!("download part {}: {e}", part_clone.part_index))?;
+                    bc.write(file_id, file_offset, Bytes::from(raw.clone())).await;
+                    Ok(Bytes::from(raw))
+                }.boxed()
+            })).await?;
 
             // Read from cache after write
             let data = byte_cache.wait_range(file_id, current, local_len).await?;
