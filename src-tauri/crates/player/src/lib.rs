@@ -42,7 +42,7 @@ pub use playlistbuild::{
 pub use segmentgen::get_file_part_internal;
 pub use segment_telemetry::SegmentTelemetry;
 pub use crate::sparse::SparseCache;
-pub use singleflight::PartSingleFlight;
+pub use singleflight::PlayerSingleFlight;
 pub use idx_cache::IdxCache;
 pub use video_indexer::VideoIndexer;
 

@@ -296,6 +296,32 @@ impl SparseCache {
     }
 }
 
+use omega_drive_gateway::player::cache::ByteCache;
+use async_trait::async_trait;
+
+#[async_trait]
+impl ByteCache for SparseCache {
+    async fn write(&self, file_id: i64, offset: u64, data: Bytes) {
+        SparseCache::write(self, file_id, offset, data).await
+    }
+
+    async fn is_range_filled(&self, file_id: i64, offset: u64, len: u64) -> bool {
+        SparseCache::is_range_filled(self, file_id, offset, len)
+    }
+
+    async fn wait_range(&self, file_id: i64, offset: u64, len: u64) -> Result<Bytes, String> {
+        SparseCache::wait_range(self, file_id, offset, len).await
+    }
+
+    async fn set_pin_window(&self, file_id: i64, center: u64, half: u64, max: u64) {
+        SparseCache::set_pin_window(self, file_id, center, half, max)
+    }
+
+    async fn clear(&self) {
+        SparseCache::clear(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

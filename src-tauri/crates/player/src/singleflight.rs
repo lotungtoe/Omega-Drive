@@ -7,7 +7,7 @@ use futures_util::future::{BoxFuture, FutureExt, Shared};
 use tokio::sync::Mutex;
 
 pub(crate) type PartKey = (i64, u32);
-pub type PartSingleFlight = SingleFlight<PartKey>;
+pub type PlayerSingleFlight = SingleFlight<PartKey>;
 type SharedBytesFuture = Shared<BoxFuture<'static, Result<Bytes, String>>>;
 
 #[derive(Clone)]
@@ -67,6 +67,20 @@ impl<K: Hash + Eq + Clone + Send + 'static> SingleFlight<K> {
         map.insert(key, fut.clone());
         drop(map);
         fut.await
+    }
+}
+
+use omega_drive_gateway::player::singleflight::PartSingleFlight;
+use async_trait::async_trait;
+
+#[async_trait]
+impl PartSingleFlight for SingleFlight<PartKey> {
+    async fn run<F, Fut>(&self, key: PartKey, f: F) -> Result<Bytes, String>
+    where
+        F: FnOnce() -> Fut + Send + 'static,
+        Fut: std::future::Future<Output = Result<Bytes, String>> + Send + 'static,
+    {
+        SingleFlight::run(self, key, f).await
     }
 }
 
