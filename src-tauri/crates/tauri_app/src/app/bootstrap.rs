@@ -8,6 +8,8 @@ use tracing::{error, info};
 
 use omega_drive_core::services::DefaultDebugLogger;
 use omega_drive_discord::DiscordBackupGateway;
+use omega_drive_gateway::player::cache::ByteCache;
+use omega_drive_gateway::player::singleflight::PartSingleFlight;
 use omega_drive_player::{IdxCache, PlayerContext};
 
 use crate::app::event_emitter::TauriEventEmitter;
@@ -355,7 +357,7 @@ pub async fn run() {
         book_bridge_port: 0,
         file_repo: Arc::clone(&file_repo),
         active_tenant: Arc::new(std::sync::Mutex::new(default_tenant)),
-        player_runtime,
+        player_runtime: player_runtime.clone(),
         download_manager: Arc::clone(&download_manager),
         disk_semaphore: Arc::new(tokio::sync::Semaphore::new(2)),
         stream_spool_sem: Arc::new(tokio::sync::Semaphore::new(3)),
@@ -467,6 +469,8 @@ pub async fn run() {
             stream_registry: Arc::clone(&sr.stream_registry),
             engine: app_state_init.engine.clone(),
             port: pick_bridge_port(13380),
+            byte_cache: player_runtime.sparse_cache.clone() as Arc<dyn ByteCache>,
+            singleflight: player_runtime.part_singleflight.clone() as Arc<dyn PartSingleFlight>,
         };
         match omega_drive_book_bridge::start_book_bridge(cfg, Arc::clone(&book_bridge_manager)).await {
             Ok(port) => {
