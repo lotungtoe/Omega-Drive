@@ -75,12 +75,33 @@ use async_trait::async_trait;
 
 #[async_trait]
 impl PartSingleFlight for SingleFlight<PartKey> {
-    async fn run<F, Fut>(&self, key: PartKey, f: F) -> Result<Bytes, String>
-    where
-        F: FnOnce() -> Fut + Send + 'static,
-        Fut: std::future::Future<Output = Result<Bytes, String>> + Send + 'static,
-    {
-        SingleFlight::run(self, key, f).await
+    async fn run(
+        &self,
+        key: PartKey,
+        f: Box<dyn FnOnce() -> BoxFuture<'static, Result<Bytes, String>> + Send>,
+    ) -> Result<Bytes, String> {
+        let mut map = self.inner.lock().await;
+        if let Some(shared) = map.get(&key) {
+            let fut = shared.clone();
+            drop(map);
+            return fut.await;
+        }
+
+        let guard = EntryGuard {
+            key: key.clone(),
+            inner: Arc::clone(&self.inner),
+        };
+
+        let fut = async move {
+            let _guard = guard;
+            f().await
+        }
+        .boxed()
+        .shared();
+
+        map.insert(key, fut.clone());
+        drop(map);
+        fut.await
     }
 }
 

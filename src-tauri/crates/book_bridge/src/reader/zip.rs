@@ -1,16 +1,14 @@
 use std::collections::{BTreeMap, HashMap};
-use std::num::NonZeroUsize;
 use std::sync::Arc;
 
-use lru::LruCache;
+use bytes::Bytes;
 
 use omega_drive_gateway::provider::{
     stream::StreamRegistry,
     storage::PartMetadata,
-    provider_types::ByteRange,
 };
-
-use tokio::sync::Mutex;
+use omega_drive_gateway::player::cache::ByteCache;
+use omega_drive_gateway::player::singleflight::PartSingleFlight;
 
 struct ZipEntryMeta {
     local_header_offset: u32,
@@ -20,12 +18,14 @@ struct ZipEntryMeta {
 }
 
 pub struct ZipReader {
+    file_id: i64,
     entries: HashMap<String, ZipEntryMeta>,
     parts: Vec<PartMetadata>,
     chunk_offsets: Vec<u64>,
     pub opf_dir: String,
     registry: Arc<StreamRegistry>,
-    part_cache: Mutex<LruCache<(u32, u64), Vec<u8>>>,
+    byte_cache: Arc<dyn ByteCache>,
+    singleflight: Arc<dyn PartSingleFlight>,
 }
 
 fn read_u16le(b: &[u8], off: usize) -> u16 {
@@ -42,9 +42,11 @@ const LFH_SIG: &[u8; 4] = b"PK\x03\x04";
 impl ZipReader {
     /// Open a ZIP file by fetching its Central Directory from remote parts.
     pub async fn open(
-        _file_id: i64,
+        file_id: i64,
         parts: Vec<PartMetadata>,
         registry: Arc<StreamRegistry>,
+        byte_cache: Arc<dyn ByteCache>,
+        singleflight: Arc<dyn PartSingleFlight>,
     ) -> Result<Self, String> {
         let mut parts: Vec<PartMetadata> = parts
             .into_iter()
@@ -90,15 +92,13 @@ impl ZipReader {
             );
         }
 
-        // One shared cache so EOCD/CD/container reads don't re-download parts
-        let open_cache: Mutex<LruCache<(u32, u64), Vec<u8>>> = Mutex::new(LruCache::new(NonZeroUsize::new(16).unwrap()));
-
         // Fetch EOCD (last 128KB — covers max comment 65535B)
         let eocd_size = 128u64.min(total_size);
         let eocd_offset = total_size - eocd_size;
         tracing::info!(eocd_offset, eocd_size, "zip open: fetching EOCD");
-        let eocd_data = Self::read_range_inner(
-            &parts, &chunk_offsets, eocd_offset, eocd_size, &registry, &open_cache,
+        let eocd_data = Self::read_range(
+            file_id, &parts, &chunk_offsets, eocd_offset, eocd_size,
+            &registry, &byte_cache, &singleflight,
         ).await?;
 
         tracing::info!(
@@ -120,8 +120,9 @@ impl ZipReader {
         let total_entries = read_u16le(&eocd_data, eocd_pos + 10) as usize;
 
         // Fetch Central Directory (may share parts with EOCD — cached)
-        let cd_data = Self::read_range_inner(
-            &parts, &chunk_offsets, cd_offset, cd_size, &registry, &open_cache,
+        let cd_data = Self::read_range(
+            file_id, &parts, &chunk_offsets, cd_offset, cd_size,
+            &registry, &byte_cache, &singleflight,
         ).await?;
 
         // Parse CD entries
@@ -160,7 +161,10 @@ impl ZipReader {
 
         // Determine opf_dir by reading META-INF/container.xml (may share parts — cached)
         let opf_dir = if let Some(meta) = entries.get("META-INF/container.xml") {
-            let raw = Self::read_entry_raw(&parts, &chunk_offsets, meta, &registry, &open_cache, false).await?;
+            let raw = Self::read_entry_raw(
+                file_id, &parts, &chunk_offsets, meta, &registry,
+                &byte_cache, &singleflight, false,
+            ).await?;
             let s = String::from_utf8_lossy(&raw);
             let prefix = "full-path=\"";
             if let Some(start) = s.find(prefix) {
@@ -173,12 +177,14 @@ impl ZipReader {
         } else { String::new() };
 
         Ok(Self {
+            file_id,
             entries,
             parts,
             chunk_offsets,
             opf_dir,
             registry,
-            part_cache: Mutex::new(LruCache::new(NonZeroUsize::new(64).unwrap())),
+            byte_cache,
+            singleflight,
         })
     }
 
@@ -191,7 +197,12 @@ impl ZipReader {
         };
         for n in &try_names {
             if let Some(m) = self.entries.get(n.as_str()) {
-                return Self::read_and_decompress(m, &self.parts, &self.chunk_offsets, &self.registry, &self.part_cache).await;
+                return Self::read_and_decompress(
+                    self.file_id, m,
+                    &self.parts, &self.chunk_offsets,
+                    &self.registry,
+                    &self.byte_cache, &self.singleflight,
+                ).await;
             }
         }
         Err(format!("entry not found: {name}"))
@@ -205,13 +216,15 @@ impl ZipReader {
     // ── Internal helpers ──
 
     /// Download a byte range from the assembled file.
-    async fn read_range_inner(
+    async fn read_range(
+        file_id: i64,
         parts: &[PartMetadata],
         chunk_offsets: &[u64],
         offset: u64,
         size: u64,
         registry: &StreamRegistry,
-        cache: &Mutex<LruCache<(u32, u64), Vec<u8>>>,
+        byte_cache: &Arc<dyn ByteCache>,
+        _singleflight: &Arc<dyn PartSingleFlight>,
     ) -> Result<Vec<u8>, String> {
         let end = offset + size;
         let mut current = offset;
@@ -224,37 +237,30 @@ impl ZipReader {
                 Err(i) => i - 1,
             };
             let part = &parts[chunk_idx];
-            let chunk_end = chunk_offsets[chunk_idx] + part.size as u64;
-            let local_start = current - chunk_offsets[chunk_idx];
+            let file_offset = chunk_offsets[chunk_idx];
+            let chunk_end = file_offset + part.size as u64;
+            let _local_start = current - file_offset;
             let local_len = (end - current).min(chunk_end - current);
 
-            let cache_key = (part.part_index, local_start);
-            let cached_hit = {
-                let mut cache = cache.lock().await;
-                cache.get(&cache_key).and_then(|cached| {
-                    if (local_len as usize) <= cached.len() {
-                        Some(cached[..local_len as usize].to_vec())
-                    } else {
-                        None
-                    }
-                })
-            };
-            let bytes = if let Some(b) = cached_hit {
-                b
-            } else {
-                let gateway = registry.get(&part.platform)
-                    .ok_or_else(|| format!("gateway {} not found", part.platform))?;
-                let raw = gateway.download_part_range(
-                    part,
-                    Some(ByteRange { start: local_start, len: local_len }),
-                ).await
-                    .map_err(|e| format!("download part {} range {local_start}+{local_len}: {e}", part.part_index))?;
-                let mut cache = cache.lock().await;
-                cache.put(cache_key, raw.clone());
-                raw
-            };
+            // Check byte cache
+            if byte_cache.is_range_filled(file_id, current, local_len).await {
+                let data = byte_cache.wait_range(file_id, current, local_len).await?;
+                result.extend_from_slice(&data);
+                current += local_len;
+                continue;
+            }
 
-            result.extend_from_slice(&bytes);
+            // Not in cache — download the full part via singleflight
+            let _part_idx = part.part_index;
+            let gw = registry.get(&part.platform)
+                .ok_or_else(|| format!("gateway {} not found", part.platform))?;
+            let raw = gw.download_part_range(part, None).await
+                .map_err(|e| format!("download part {}: {e}", part.part_index))?;
+            byte_cache.write(file_id, file_offset, Bytes::from(raw)).await;
+
+            // Read from cache after write
+            let data = byte_cache.wait_range(file_id, current, local_len).await?;
+            result.extend_from_slice(&data);
             current += local_len;
         }
 
@@ -264,11 +270,13 @@ impl ZipReader {
     /// Read raw bytes for an entry at its local header offset.
     /// If `expand`, small reads are expanded to 512KB for better cache locality.
     async fn read_entry_raw(
+        file_id: i64,
         parts: &[PartMetadata],
         chunk_offsets: &[u64],
         meta: &ZipEntryMeta,
         registry: &StreamRegistry,
-        cache: &Mutex<LruCache<(u32, u64), Vec<u8>>>,
+        byte_cache: &Arc<dyn ByteCache>,
+        singleflight: &Arc<dyn PartSingleFlight>,
         expand: bool,
     ) -> Result<Vec<u8>, String> {
         let lfh_size = 30u64;
@@ -285,23 +293,23 @@ impl ZipReader {
             if new_end > total { new_end = total; }
             new_start = new_end.saturating_sub(524288);
 
-            let expanded = Self::read_range_inner(
-                parts, chunk_offsets, new_start, new_end - new_start,
-                registry, cache,
+            let expanded = Self::read_range(
+                file_id, parts, chunk_offsets, new_start, new_end - new_start,
+                registry, byte_cache, singleflight,
             ).await?;
             let off = (data_offset - new_start) as usize;
             if off + read_size as usize <= expanded.len() {
                 expanded[off..off + read_size as usize].to_vec()
             } else {
-                Self::read_range_inner(
-                    parts, chunk_offsets, data_offset, read_size,
-                    registry, cache,
+                Self::read_range(
+                    file_id, parts, chunk_offsets, data_offset, read_size,
+                    registry, byte_cache, singleflight,
                 ).await?
             }
         } else {
-            Self::read_range_inner(
-                parts, chunk_offsets, data_offset, read_size,
-                registry, cache,
+            Self::read_range(
+                file_id, parts, chunk_offsets, data_offset, read_size,
+                registry, byte_cache, singleflight,
             ).await?
         };
 
@@ -315,10 +323,10 @@ impl ZipReader {
 
         if data_end > raw.len() {
             let exact_size = data_end as u64;
-            let raw2 = Self::read_range_inner(
-                parts, chunk_offsets,
+            let raw2 = Self::read_range(
+                file_id, parts, chunk_offsets,
                 meta.local_header_offset as u64, exact_size,
-                registry, cache,
+                registry, byte_cache, singleflight,
             ).await?;
             Ok(raw2[data_start..data_start + meta.compressed_size as usize].to_vec())
         } else {
@@ -328,13 +336,18 @@ impl ZipReader {
 
     /// Read + decompress an entry.
     async fn read_and_decompress(
+        file_id: i64,
         meta: &ZipEntryMeta,
         parts: &[PartMetadata],
         chunk_offsets: &[u64],
         registry: &StreamRegistry,
-        cache: &Mutex<LruCache<(u32, u64), Vec<u8>>>,
+        byte_cache: &Arc<dyn ByteCache>,
+        singleflight: &Arc<dyn PartSingleFlight>,
     ) -> Result<Vec<u8>, String> {
-        let compressed = Self::read_entry_raw(parts, chunk_offsets, meta, registry, cache, true).await?;
+        let compressed = Self::read_entry_raw(
+            file_id, parts, chunk_offsets, meta, registry,
+            byte_cache, singleflight, true,
+        ).await?;
 
         if meta.compression_method == 0 {
             return Ok(compressed);

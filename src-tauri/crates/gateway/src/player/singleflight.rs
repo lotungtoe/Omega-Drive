@@ -1,13 +1,14 @@
 use async_trait::async_trait;
 use bytes::Bytes;
-use std::future::Future;
+use futures_util::future::BoxFuture;
 
 pub type PartKey = (i64, u32);
 
 #[async_trait]
 pub trait PartSingleFlight: Send + Sync {
-    async fn run<F, Fut>(&self, key: PartKey, f: F) -> Result<Bytes, String>
-    where
-        F: FnOnce() -> Fut + Send + 'static,
-        Fut: Future<Output = Result<Bytes, String>> + Send + 'static;
+    async fn run(
+        &self,
+        key: PartKey,
+        f: Box<dyn FnOnce() -> BoxFuture<'static, Result<Bytes, String>> + Send>,
+    ) -> Result<Bytes, String>;
 }
