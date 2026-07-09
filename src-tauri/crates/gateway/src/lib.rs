@@ -8,3 +8,4 @@ pub mod upload;
 pub mod provider;
 pub mod db;
 pub mod updater;
+pub mod player;
