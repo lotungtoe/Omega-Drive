@@ -323,6 +323,10 @@ pub async fn run() {
         cdn_link_cache: Arc::clone(&shared_cdn_link_cache),
         base_dir: base_dir.clone(),
         stream_registry: provider_runtime_raw.stream_registry.clone(),
+        mem_cache: Arc::new(omega_drive_download::PartitionedMemCache::new(
+            50 * 1024 * 1024,
+            std::collections::HashMap::new(),
+        )),
     };
     let player_ctx = Arc::new(PlayerContext {
         player_runtime: Arc::clone(&player_runtime),
@@ -397,6 +401,10 @@ pub async fn run() {
         folder_repo: Arc::new(DbFolderRepository::new(Arc::clone(&db_write))),
         upload_job_repo: Arc::new(DbUploadJobRepository::new(Arc::clone(&db_write))),
         download_job_repo: Arc::new(DbDownloadJobRepository::new(Arc::clone(&db_write))),
+        mem_cache: Arc::new(omega_drive_download::PartitionedMemCache::new(
+            50 * 1024 * 1024,
+            std::collections::HashMap::new(),
+        )),
     };
 
     // Startup: flush any pending ops from crash recovery

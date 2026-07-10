@@ -159,8 +159,12 @@ pub(super) async fn run_video_bridge_process(
         cdn_link_cache: Arc::clone(&shared_cdn_link_cache),
         base_dir: base_dir.clone(),
         stream_registry: provider_runtime_raw.stream_registry.clone(),
+        mem_cache: Arc::new(omega_drive_download::PartitionedMemCache::new(
+            50 * 1024 * 1024,
+            std::collections::HashMap::new(),
+        )),
     };
-let player_ctx = Arc::new(PlayerContext {
+    let player_ctx = Arc::new(PlayerContext {
         player_runtime: Arc::clone(&player_runtime),
         bridge_port: Arc::new(std::sync::atomic::AtomicU16::new(bridge_port)),
         file_repo: Arc::clone(&file_repo),
@@ -237,6 +241,10 @@ let player_ctx = Arc::new(PlayerContext {
         folder_repo: Arc::new(DbFolderRepository::new(Arc::clone(&db_write))),
         upload_job_repo: Arc::new(DbUploadJobRepository::new(Arc::clone(&db_write))),
         download_job_repo: Arc::new(DbDownloadJobRepository::new(Arc::clone(&db_write))),
+        mem_cache: Arc::new(omega_drive_download::PartitionedMemCache::new(
+            50 * 1024 * 1024,
+            std::collections::HashMap::new(),
+        )),
     };
 
     let actual_port = player_bridge::start_bridge((*state.player_ctx).clone()).await?;

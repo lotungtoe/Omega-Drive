@@ -74,6 +74,7 @@ pub struct AppState {
     pub folder_repo: Arc<dyn omega_drive_gateway::provider::folder_repository::FolderRepository>,
     pub upload_job_repo: Arc<dyn omega_drive_gateway::provider::upload_job_repository::UploadJobRepository>,
     pub download_job_repo: Arc<dyn omega_drive_gateway::provider::download_job_repository::DownloadJobRepository>,
+    pub mem_cache: Arc<download_crate::PartitionedMemCache>,
 }
 
 impl AppState {
@@ -155,6 +156,7 @@ impl AppState {
             cdn_link_cache: Arc::clone(&self.cdn_link_cache),
             base_dir: self.base_dir.clone(),
             stream_registry: self.provider_runtime().stream_registry.clone(),
+            mem_cache: Arc::clone(&self.mem_cache),
         }
     }
 

@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex, RwLock};
 use chrono::{DateTime, Utc};
 use tokio::sync::RwLock as TokioRwLock;
 
+use crate::partitioned_mem_cache::PartitionedMemCache;
 use omega_drive_gateway::core::config::Config;
 use omega_drive_gateway::core::engine_context::EngineContext;
 use omega_drive_gateway::provider::app_context::AppContext;
@@ -26,4 +27,5 @@ pub struct DownloadContext {
     pub cdn_link_cache: Arc<TokioRwLock<HashMap<String, (String, DateTime<Utc>)>>>,
     pub base_dir: PathBuf,
     pub stream_registry: Arc<StreamRegistry>,
+    pub mem_cache: Arc<PartitionedMemCache>,
 }
