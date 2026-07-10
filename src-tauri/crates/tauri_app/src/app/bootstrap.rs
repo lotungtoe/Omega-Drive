@@ -10,6 +10,7 @@ use omega_drive_core::services::DefaultDebugLogger;
 use omega_drive_discord::DiscordBackupGateway;
 use omega_drive_gateway::player::cache::ByteCache;
 use omega_drive_gateway::player::singleflight::PartSingleFlight;
+use omega_drive_gateway::download::ByteStreamProvider;
 use omega_drive_player::{IdxCache, PlayerContext};
 
 use crate::app::event_emitter::TauriEventEmitter;
@@ -312,7 +313,7 @@ pub async fn run() {
     let bridge_port = pick_bridge_port(13370);
     let file_repo: Arc<dyn omega_drive_gateway::provider::file_repository::FileRepository> = Arc::new(DbFileRepository::new(Arc::clone(&db_read), Arc::clone(&db_write)));
     let shared_cdn_link_cache = Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
-    let download_ctx = omega_drive_download::DownloadContext {
+    let download_ctx = Arc::new(omega_drive_download::DownloadContext {
         cfg: Arc::clone(&cfg),
         file_repo: Arc::clone(&file_repo),
         download_job_repo: Arc::new(DbDownloadJobRepository::new(Arc::clone(&db_write))),
@@ -327,7 +328,10 @@ pub async fn run() {
             50 * 1024 * 1024,
             std::collections::HashMap::new(),
         )),
-    };
+    });
+    let byte_stream_provider: Arc<dyn ByteStreamProvider> = Arc::new(
+        omega_drive_download::DownloadByteStreamProvider::new(Arc::clone(&download_ctx)),
+    );
     let player_ctx = Arc::new(PlayerContext {
         player_runtime: Arc::clone(&player_runtime),
         bridge_port: Arc::new(AtomicU16::new(bridge_port)),
@@ -355,7 +359,8 @@ pub async fn run() {
             },
         )),
         idx_cache: IdxCache::new(base_dir.join("idx_cache")),
-        download_ctx,
+        download_ctx: (*download_ctx).clone(),
+        byte_stream_provider: Arc::clone(&byte_stream_provider),
     });
     omega_drive_telegram::services::init(Box::new(DefaultDebugLogger));
     let mut app_state_init = AppState {
@@ -492,7 +497,7 @@ pub async fn run() {
             stream_registry: Arc::clone(&sr.stream_registry),
             engine: app_state_init.engine.clone(),
             port: pick_bridge_port(13480),
-            byte_cache: player_runtime.sparse_cache.clone() as Arc<dyn ByteCache>,
+            byte_cache: download_ctx.mem_cache.clone() as Arc<dyn ByteCache>,
             singleflight: player_runtime.part_singleflight.clone() as Arc<dyn PartSingleFlight>,
         };
         match omega_drive_book_bridge::start_book_bridge(cfg, Arc::clone(&book_bridge_manager)).await {

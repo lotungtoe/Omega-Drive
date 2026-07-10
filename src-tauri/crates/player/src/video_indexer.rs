@@ -58,7 +58,7 @@ impl VideoIndexer {
     async fn detect_container_from_parts(
         &self, st: &PlayerContext, file_id: i64,
     ) -> Option<ContainerHint> {
-        let head = crate::segmentgen::get_chunk_part_internal(st.clone(), file_id, 1)
+        let head = crate::segmentgen::get_file_part_internal(st, file_id, 1)
             .await
             .ok()?;
         if looks_like_mp4(&head) {
@@ -82,11 +82,11 @@ async fn probe_index_hint(
         return None;
     }
 
-    let head = crate::segmentgen::get_chunk_part_internal(st.clone(), file_id, 1)
+    let head = crate::segmentgen::get_file_part_internal(st, file_id, 1)
         .await
         .ok()?;
     let tail = if total_parts > 1 {
-        crate::segmentgen::get_chunk_part_internal(st.clone(), file_id, total_parts)
+        crate::segmentgen::get_file_part_internal(st, file_id, total_parts)
             .await
             .ok()
     } else {

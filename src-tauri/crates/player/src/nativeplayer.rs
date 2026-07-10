@@ -150,10 +150,6 @@ fn release_closed_file_cache(
     handle: &tokio::runtime::Handle,
 ) {
     if should_release_file_cache(active_file_id, file_id) {
-        state
-            .player_runtime
-            .sparse_cache
-            .unpin_file(file_id);
         let player_runtime = Arc::clone(&state.player_runtime);
         handle.spawn(async move {
             player_runtime.clear_hot_file_state(file_id).await;

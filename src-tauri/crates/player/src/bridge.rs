@@ -1,5 +1,4 @@
-﻿use crate::url_cache;
-use crate::PlayerContext;
+﻿use crate::PlayerContext;
 use axum::{
     body::Body,
     extract::{Path, Query, State},
@@ -9,11 +8,9 @@ use axum::{
     Json, Router,
 };
 use chrono::Utc;
-use futures_util::StreamExt;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::net::SocketAddr;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use std::sync::Mutex;
 use std::sync::OnceLock;
 use tokio::time::Duration;
@@ -27,7 +24,7 @@ use crate::nativeplayer::{
     BridgeVolumeRequest, MpvSessionType, MpvStatus,
 };
 
-use omega_drive_download::provider::{fetch_part_metadata, load_chunk_meta};
+
 
 struct ByteRangeTracker {
     last_start: u64,
@@ -42,12 +39,6 @@ static BYTE_RANGE_TRACKER: OnceLock<Mutex<HashMap<i64, ByteRangeTracker>>> = Onc
 /// Old stream tasks check this at each part boundary and exit if stale.
 pub(crate) static RAW_STREAM_GENERATION: OnceLock<Mutex<HashMap<i64, u64>>> = OnceLock::new();
 pub(crate) static T1_MARK: OnceLock<Mutex<HashMap<i64, std::time::Instant>>> = OnceLock::new();
-
-pub(crate) fn take_t1_mark(file_id: i64) -> Option<std::time::Duration> {
-    let mut map = T1_MARK.get_or_init(|| Mutex::new(HashMap::new())).lock().ok()?;
-    let mark = map.remove(&file_id)?;
-    Some(mark.elapsed())
-}
 
 /// Determine Content-Type based on file extension (Video & Audio)
 fn guess_media_content_type(filename: &str) -> &'static str {
@@ -303,28 +294,6 @@ async fn handle_raw_file(
     debug_log!("http", "bridge_raw: file={} range={:?} ua={} size={}",
         file_id, range_header, ua, file_size);
 
-    // One-time background URL cache refresh
-    let needs_refresh = {
-        let mut done = URL_REFRESH_DONE
-            .get_or_init(|| std::sync::Mutex::new(std::collections::HashSet::new()))
-            .lock()
-            .expect("Mutex poisoned");
-        done.insert(file_id)
-    };
-    if needs_refresh {
-        let disk_entry = url_cache::read_disk_cache(
-            &st.base_dir
-                .join("cache")
-                .join("discord")
-                .join(format!("{}.json", file_id)),
-        );
-        if !disk_entry.is_empty() {
-            let mut cache = st.cdn_link_cache.write().await;
-            cache.extend(disk_entry);
-        }
-        tokio::spawn(background_refresh_url_cache(st.clone(), file_id));
-    }
-
     let result_data = match parse_range(range_header, file_size) {
         Some((start, end)) => {
             T1_MARK.get_or_init(|| Mutex::new(HashMap::new()))
@@ -426,12 +395,6 @@ async fn handle_raw_file(
                 end,
                 recent_seek_pts
             );
-            // Pin window around seek target so eviction doesn't remove data we need
-            let chunk_size_u64 = chunk_size as u64;
-            let center_off = (start / chunk_size_u64) * chunk_size_u64 + chunk_size_u64;
-            st.player_runtime
-                .sparse_cache
-                .set_pin_window(file_id, center_off, chunk_size_u64 * 2, chunk_size_u64 * 5);
             // Bump stream generation to cancel stale tasks for this file_id
             let stream_gen = {
                 let mut map = RAW_STREAM_GENERATION
@@ -524,111 +487,6 @@ async fn handle_raw_file(
     result_data
 }
 
-/// Parse Range Header syntax (e.g. "bytes=100-200")
-static URL_REFRESH_DONE: OnceLock<Mutex<HashSet<i64>>> = OnceLock::new();
-
-async fn background_refresh_url_cache(st: PlayerContext, file_id: i64) {
-    let gateway = match st.stream_registry.get("discord") {
-        Some(g) => g,
-        None => return,
-    };
-    let parts_map = match st.player_runtime.get_all_original_parts(file_id).await {
-        Some(m) => m,
-        None => return,
-    };
-    let now = Utc::now();
-    let threshold = now + chrono::Duration::minutes(60);
-    let to_refresh = {
-        let cache = st.cdn_link_cache.read().await;
-        url_cache::list_expired_parts(&parts_map, &cache, file_id, now, threshold)
-    };
-    if to_refresh.is_empty() {
-        return;
-    }
-
-    let mut groups: HashMap<String, Vec<u32>> = HashMap::new();
-    for &pn in &to_refresh {
-        let meta = &parts_map[&pn];
-        groups.entry(meta.message_id.clone()).or_default().push(pn);
-    }
-    debug_log!(
-        "bg",
-        "start file={} expired={}/{} groups={}",
-        file_id,
-        to_refresh.len(),
-        parts_map.len(),
-        groups.len()
-    );
-
-    let st_bg = st.clone();
-    let progress = Arc::new(AtomicU64::new(0));
-    let progress_clone = progress.clone();
-    let updated: Vec<bool> = futures_util::stream::iter(groups.into_iter().map(move |(msg_id, parts)| {
-        let st = st_bg.clone();
-        let gateway = gateway.clone();
-        let parts_map = parts_map.clone();
-        let progress = progress_clone.clone();
-        let msg_id = msg_id;
-        async move {
-            let meta = match load_chunk_meta(&st.download_ctx, file_id, parts[0]).await {
-                Ok(m) => m,
-                Err(e) => {
-                    debug_log!("bg", "group msg={} load_chunk_meta FAIL: {}", msg_id, e);
-                    return false;
-                }
-            };
-            let part = fetch_part_metadata(&meta, file_id, parts[0]);
-            let attachments = match gateway.resolve_message_attachments(&part).await {
-                Ok(a) => a,
-                Err(e) => {
-                    debug_log!("bg", "group msg={} resolve FAIL: {}", msg_id, e);
-                    return false;
-                }
-            };
-            let mut resolved = 0u32;
-            {
-                let mut cache = st.cdn_link_cache.write().await;
-                for (name, url) in &attachments {
-                    if let Some(pn) = url_cache::parse_part_index(name) {
-                        if parts_map.contains_key(&pn) {
-                            let expiry = expiry_from_discord_url(url, 10);
-                            cache.insert(format!("{}:{}", file_id, pn), (url.clone(), expiry));
-                            resolved += 1;
-                        }
-                    }
-                }
-            }
-            debug_log!("bg", "group msg={} parts={} resolved={}/{}", msg_id, parts.len(), resolved, attachments.len());
-            let n = progress.fetch_add(1, Ordering::Relaxed);
-            let updated = resolved > 0;
-            if updated && (n + 1) % 20 == 0 {
-                debug_log!("bg", "persist n={} file={}", n + 1, file_id);
-                let cache_map = st.cdn_link_cache.read().await;
-                url_cache::persist_cache_to_disk(&cache_map, file_id, &st.base_dir);
-            }
-            updated
-        }
-    }))
-    .buffer_unordered(4)
-    .collect()
-    .await;
-
-    let n = progress.load(Ordering::Relaxed);
-    if updated.iter().any(|&u| u) && n % 20 != 0 {
-        debug_log!("bg", "final_persist n={} file={}", n, file_id);
-        let cache_map = st.cdn_link_cache.read().await;
-        url_cache::persist_cache_to_disk(&cache_map, file_id, &st.base_dir);
-    }
-    debug_log!(
-        "bg",
-        "done file={} total_groups={} updated={}/{}",
-        file_id,
-        updated.len(),
-        updated.iter().filter(|&&u| u).count(),
-        updated.len()
-    );
-}
-
 fn parse_range(range: Option<&str>, file_size: i64) -> Option<(u64, u64)> {
     let range = range?;
     if !range.starts_with("bytes=") {
@@ -664,26 +522,5 @@ fn parse_range(range: Option<&str>, file_size: i64) -> Option<(u64, u64)> {
     Some((start, std::cmp::min(end, file_size_u64 - 1)))
 }
 
-// ██ Utility functions (inlined from omega_drive_core to remove that dependency) ██
 
-fn parse_discord_expires(url: &str) -> Option<chrono::DateTime<chrono::Utc>> {
-    let query = url.split('?').nth(1)?;
-    for pair in query.split('&') {
-        let mut it = pair.splitn(2, '=');
-        let key = it.next()?;
-        let value = it.next().unwrap_or("");
-        if key == "ex" && !value.is_empty() {
-            if let Ok(ts) = u64::from_str_radix(value, 16) {
-                let ts_i64 = i64::try_from(ts).ok()?;
-                return chrono::DateTime::from_timestamp(ts_i64, 0);
-            }
-        }
-    }
-    None
-}
-
-fn expiry_from_discord_url(url: &str, fallback_minutes: i64) -> chrono::DateTime<chrono::Utc> {
-    parse_discord_expires(url)
-        .unwrap_or_else(|| chrono::Utc::now() + chrono::Duration::minutes(fallback_minutes))
-}
 

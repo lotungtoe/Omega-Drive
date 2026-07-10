@@ -17,7 +17,7 @@ use omega_drive_gateway::core::config::Config;
 use omega_drive_gateway::provider::storage::PartMetadata;
 use crate::{
     PlayerSingleFlight, SegmentTelemetry,
-    VideoIndexer, SparseCache,
+    VideoIndexer,
 };
 
 const GLOBAL_VIDEO_BRIDGE_PROCESS_KEY: &str = "__global_video_bridge__";
@@ -39,7 +39,6 @@ enum SeekSource {
 
 #[derive(Clone)]
 pub struct PlayerRuntime {
-    pub sparse_cache: Arc<SparseCache>,
     pub part_singleflight: Arc<PlayerSingleFlight>,
 
     pub segment_telemetry: Arc<SegmentTelemetry>,
@@ -56,7 +55,6 @@ pub struct PlayerRuntime {
 impl PlayerRuntime {
     pub fn new(cfg: &Config) -> Self {
         Self {
-            sparse_cache: Arc::new(SparseCache::new(cfg.playback_buffer_ram_bytes as usize)),
             part_singleflight: Arc::new(PlayerSingleFlight::default()),
             segment_telemetry: Arc::new(SegmentTelemetry::default()),
             video_indexer: Arc::new(VideoIndexer::default()),
@@ -71,7 +69,6 @@ impl PlayerRuntime {
     }
 
     pub(crate) async fn clear_playback_cache(&self) {
-        self.sparse_cache.clear();
         self.original_part_index.write().await.clear();
         self.recent_seek_targets.write().await.clear();
     }

@@ -3,7 +3,6 @@ pub mod debug;
 #[macro_use]
 pub mod bridge;
 pub mod stream;
-pub mod sparse;
 pub mod nativeplayer;     // Controls mpv via IPC — open, play/pause, seek, volume, speed, fullscreen
 pub mod playlistbuild;    // Checks if video in DB is "ready" before playback
 
@@ -32,6 +31,7 @@ use std::{
 use chrono::{DateTime, Utc};
 use omega_drive_download::DownloadContext;
 use omega_drive_gateway::core::config::Config;
+use omega_drive_gateway::download::ByteStreamProvider;
 use omega_drive_gateway::provider::{file_repository::FileRepository, stream::StreamRegistry};
 use omega_drive_gateway::provider::debug_logger::DebugLogger;
 
@@ -41,7 +41,6 @@ pub use playlistbuild::{
 };
 pub use segmentgen::get_file_part_internal;
 pub use segment_telemetry::SegmentTelemetry;
-pub use crate::sparse::SparseCache;
 pub use singleflight::PlayerSingleFlight;
 pub use idx_cache::IdxCache;
 pub use video_indexer::VideoIndexer;
@@ -65,6 +64,7 @@ pub struct PlayerContext {
     pub ui_last_heartbeat: Arc<AtomicU64>,
     pub idx_cache: IdxCache,
     pub download_ctx: DownloadContext,
+    pub byte_stream_provider: Arc<dyn ByteStreamProvider>,
 }
 
 
