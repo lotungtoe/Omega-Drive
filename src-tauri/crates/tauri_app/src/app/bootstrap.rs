@@ -27,6 +27,7 @@ use crate::providers::install::{
     render_builtin_bot_env_template, ProviderInstallContext,
 };
 use crate::providers::runtime::ProviderRuntime;
+use omega_drive_core::ports::app_context::NoopAppContext;
 use omega_drive_engine::integrity::EngineIntegrityService;
 use omega_drive_engine::zip_utils::EngineZipService;
 use omega_drive_gateway::core::backup::Op;
@@ -310,6 +311,18 @@ pub async fn run() {
     let app_handle_state = Arc::new(std::sync::Mutex::new(None));
     let bridge_port = pick_bridge_port(13370);
     let file_repo: Arc<dyn omega_drive_gateway::provider::file_repository::FileRepository> = Arc::new(DbFileRepository::new(Arc::clone(&db_read), Arc::clone(&db_write)));
+    let download_ctx = omega_drive_download::DownloadContext {
+        cfg: Arc::clone(&cfg),
+        file_repo: Arc::clone(&file_repo),
+        download_job_repo: Arc::new(DbDownloadJobRepository::new(Arc::clone(&db_write))),
+        provider_runtime: Arc::clone(&provider_runtime_raw),
+        app_ctx: Arc::new(NoopAppContext),
+        ui_heartbeats: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
+        engine: engine_ctx.clone(),
+        cdn_link_cache: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
+        base_dir: base_dir.clone(),
+        stream_registry: provider_runtime_raw.stream_registry.clone(),
+    };
     let player_ctx = Arc::new(PlayerContext {
         player_runtime: Arc::clone(&player_runtime),
         bridge_port: Arc::new(AtomicU16::new(bridge_port)),
@@ -337,6 +350,7 @@ pub async fn run() {
             },
         )),
         idx_cache: IdxCache::new(base_dir.join("idx_cache")),
+        download_ctx,
     });
     omega_drive_telegram::services::init(Box::new(DefaultDebugLogger));
     let mut app_state_init = AppState {

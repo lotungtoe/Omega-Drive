@@ -4780,6 +4780,7 @@ dependencies = [
  "fastrand",
  "futures-util",
  "libmpv2",
+ "omega_drive_download",
  "omega_drive_gateway",
  "parking_lot",
  "reqwest 0.12.28",

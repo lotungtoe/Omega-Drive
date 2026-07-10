@@ -31,6 +31,7 @@ use std::{
 };
 
 use chrono::{DateTime, Utc};
+use omega_drive_download::DownloadContext;
 use omega_drive_gateway::core::config::Config;
 use omega_drive_gateway::provider::{file_repository::FileRepository, stream::StreamRegistry};
 use omega_drive_gateway::provider::debug_logger::DebugLogger;
@@ -64,6 +65,7 @@ pub struct PlayerContext {
     pub debug_logger: Arc<dyn DebugLogger>,
     pub ui_last_heartbeat: Arc<AtomicU64>,
     pub idx_cache: IdxCache,
+    pub download_ctx: DownloadContext,
 }
 
 

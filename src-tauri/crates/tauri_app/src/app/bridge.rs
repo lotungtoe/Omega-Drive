@@ -23,6 +23,7 @@ use crate::providers::install::{
     ProviderInstallContext,
 };
 
+use omega_drive_core::ports::app_context::NoopAppContext;
 use omega_drive_engine::integrity::EngineIntegrityService;
 use omega_drive_engine::zip_utils::EngineZipService;
 use omega_drive_gateway::core::engine_context::EngineContext;
@@ -146,6 +147,18 @@ pub(super) async fn run_video_bridge_process(
     player_runtime.active_playback_windows.lock().expect("Mutex poisoned").insert("video_bridge".to_string());
     player_runtime.start_idle_gc();
         let file_repo: Arc<dyn omega_drive_gateway::provider::file_repository::FileRepository> = Arc::new(DbFileRepository::new(Arc::clone(&db_read), Arc::clone(&db_write)));
+    let download_ctx = omega_drive_download::DownloadContext {
+        cfg: Arc::clone(&cfg),
+        file_repo: Arc::clone(&file_repo),
+        download_job_repo: Arc::new(DbDownloadJobRepository::new(Arc::clone(&db_write))),
+        provider_runtime: Arc::clone(&provider_runtime_raw),
+        app_ctx: Arc::new(NoopAppContext),
+        ui_heartbeats: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
+        engine: engine_ctx.clone(),
+        cdn_link_cache: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
+        base_dir: base_dir.clone(),
+        stream_registry: provider_runtime_raw.stream_registry.clone(),
+    };
 let player_ctx = Arc::new(PlayerContext {
         player_runtime: Arc::clone(&player_runtime),
         bridge_port: Arc::new(std::sync::atomic::AtomicU16::new(bridge_port)),
@@ -173,6 +186,7 @@ let player_ctx = Arc::new(PlayerContext {
             },
         )),
         idx_cache: IdxCache::new(base_dir.join("idx_cache")),
+        download_ctx,
     });
 
     let state = AppState {
