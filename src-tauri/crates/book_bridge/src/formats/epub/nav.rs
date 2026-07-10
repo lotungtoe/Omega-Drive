@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::util;
 
-#[derive(serde::Serialize)]
+#[derive(Clone, serde::Serialize)]
 pub struct NavEntry {
     pub title: String,
     pub path: String,
@@ -12,8 +12,12 @@ pub struct NavEntry {
 
 /// Parse nav.xhtml → tree NavEntry
 pub async fn parse_nav(reader: &crate::reader::ZipReader, spine_map: &HashMap<String, usize>) -> Result<Vec<NavEntry>, String> {
-    let nav_html = match reader.read_entry_str("nav.xhtml").await {
-        Ok(h) => h,
+    if let Some(cached) = reader.get_cached_nav() {
+        return Ok(cached.clone());
+    }
+
+    let nav_html = match reader.lazy_nav_html().await {
+        Ok(h) => h.to_owned(),
         Err(e) => {
             tracing::warn!("nav.xhtml entry not found: {e}");
             let s = reader.read_entry_str("toc.ncx").await
@@ -24,7 +28,9 @@ pub async fn parse_nav(reader: &crate::reader::ZipReader, spine_map: &HashMap<St
 
     tracing::info!(nav_html_len = nav_html.len(), preview = &nav_html[..nav_html.len().min(200)], "parse_nav: raw");
 
-    Ok(parse_ol_items(&nav_html, spine_map))
+    let entries = parse_ol_items(&nav_html, spine_map);
+    reader.set_cached_nav(entries.clone());
+    Ok(entries)
 }
 
 pub fn find_li_tag(s: &str) -> Option<usize> {

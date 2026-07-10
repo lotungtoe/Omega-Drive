@@ -5,7 +5,7 @@ use crate::util;
 
 use super::nav::{self, NavEntry};
 
-#[derive(serde::Serialize)]
+#[derive(Clone, serde::Serialize)]
 pub struct SpineEntry {
     pub index: usize,
     pub title: String,
@@ -14,6 +14,10 @@ pub struct SpineEntry {
 
 /// Parse OPF spine + build title map từ nav.xhtml
 pub async fn parse_spine(reader: &ZipReader) -> Result<Vec<SpineEntry>, String> {
+    if let Some(cached) = reader.get_cached_spine() {
+        return Ok(cached.clone());
+    }
+
     let container = reader.read_entry_str("META-INF/container.xml").await?;
     let opf_path = util::extract_attr_value(&container, "full-path=\"")
         .ok_or_else(|| "no rootfile".to_string())?;
@@ -24,8 +28,8 @@ pub async fn parse_spine(reader: &ZipReader) -> Result<Vec<SpineEntry>, String> 
 
     // Build title map from nav.xhtml (1 file instead of 3800)
     let mut nav_titles: HashMap<String, String> = HashMap::new();
-    if let Ok(nav_html) = reader.read_entry_str("nav.xhtml").await {
-        let entries = nav::parse_ol_items(&nav_html, &HashMap::new());
+    if let Ok(nav_html) = reader.lazy_nav_html().await {
+        let entries = nav::parse_ol_items(nav_html, &HashMap::new());
         flatten_nav_titles(&entries, &opf_dir, &mut nav_titles);
     }
 
@@ -72,6 +76,7 @@ pub async fn parse_spine(reader: &ZipReader) -> Result<Vec<SpineEntry>, String> 
         }
     }
 
+    reader.set_cached_spine(entries.clone());
     Ok(entries)
 }
 

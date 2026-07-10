@@ -1,5 +1,8 @@
 use std::collections::{BTreeMap, HashMap};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
+
+use crate::formats::epub::spine::SpineEntry;
+use crate::formats::epub::nav::NavEntry;
 
 use bytes::Bytes;
 
@@ -27,6 +30,9 @@ pub struct ZipReader {
     registry: Arc<StreamRegistry>,
     byte_cache: Arc<dyn ByteCache>,
     singleflight: Arc<dyn PartSingleFlight>,
+    nav_html: OnceLock<String>,
+    spine_cache: OnceLock<Vec<SpineEntry>>,
+    nav_cache: OnceLock<Vec<NavEntry>>,
 }
 
 fn read_u16le(b: &[u8], off: usize) -> u16 {
@@ -186,6 +192,9 @@ impl ZipReader {
             registry,
             byte_cache,
             singleflight,
+            nav_html: OnceLock::new(),
+            spine_cache: OnceLock::new(),
+            nav_cache: OnceLock::new(),
         })
     }
 
@@ -212,6 +221,33 @@ impl ZipReader {
     pub async fn read_entry_str(&self, name: &str) -> Result<String, String> {
         let data = self.read_entry(name).await?;
         Ok(String::from_utf8_lossy(&data).to_string())
+    }
+
+    /// Lazy-cached nav.xhtml content — reads + decompresses once.
+    pub async fn lazy_nav_html(&self) -> Result<&str, String> {
+        if let Some(html) = self.nav_html.get() {
+            return Ok(html);
+        }
+        let html = self.read_entry_str("nav.xhtml").await?;
+        // OnceLock::set returns Err if already set (race with concurrent caller)
+        let _ = self.nav_html.set(html);
+        Ok(self.nav_html.get().unwrap())
+    }
+
+    pub fn get_cached_spine(&self) -> Option<&Vec<SpineEntry>> {
+        self.spine_cache.get()
+    }
+
+    pub fn set_cached_spine(&self, spine: Vec<SpineEntry>) {
+        self.spine_cache.set(spine).ok();
+    }
+
+    pub fn get_cached_nav(&self) -> Option<&Vec<NavEntry>> {
+        self.nav_cache.get()
+    }
+
+    pub fn set_cached_nav(&self, nav: Vec<NavEntry>) {
+        self.nav_cache.set(nav).ok();
     }
 
     // ── Internal helpers ──

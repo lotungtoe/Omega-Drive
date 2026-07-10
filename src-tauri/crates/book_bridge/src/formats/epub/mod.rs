@@ -1,5 +1,5 @@
-mod nav;
-mod spine;
+pub mod nav;
+pub mod spine;
 mod html;
 
 use std::collections::HashMap;
