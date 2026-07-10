@@ -1,6 +1,7 @@
 ﻿pub mod context;
 pub mod manager;
 pub mod progress;
+pub mod provider;
 pub mod run;
 pub mod throttle;
 
