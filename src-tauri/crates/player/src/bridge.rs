@@ -110,13 +110,14 @@ pub async fn start_bridge(st: PlayerContext) -> Result<u16, String> {
         .route("/raw/:file_id", get(handle_raw_file))
         .layer(TraceLayer::new_for_http())
         .layer(tower_http::cors::CorsLayer::permissive())
-        .with_state(st);
+        .with_state(st.clone());
 
     for attempt in 0..max_probe {
         let port = base_port + attempt;
         match tokio::net::TcpListener::bind(SocketAddr::from(([0, 0, 0, 0], port))).await {
             Ok(listener) => {
                 let bound_port = listener.local_addr().map(|a| a.port()).unwrap_or(port);
+                st.bridge_port.store(bound_port, std::sync::atomic::Ordering::Relaxed);
                 tokio::spawn(async move {
                     if let Err(e) = axum::serve(listener, app).await {
                         error!("Bridge server error: {}", e);

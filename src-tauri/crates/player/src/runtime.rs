@@ -6,6 +6,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::sync::{Mutex as AsyncMutex, RwLock};
 use tokio::time::{sleep, timeout};
@@ -106,14 +107,6 @@ impl PlayerRuntime {
             by_part.insert(part.part_index, part);
         }
         cache.insert(file_id, Arc::new(by_part));
-    }
-
-    pub async fn get_original_part(&self, file_id: i64, part_num: u32) -> Option<PartMetadata> {
-        let cache = self.original_part_index.read().await;
-        cache
-            .get(&file_id)
-            .and_then(|parts| parts.get(&part_num))
-            .cloned()
     }
 
     pub async fn get_all_original_parts(&self, file_id: i64) -> Option<Arc<HashMap<u32, PartMetadata>>> {
@@ -322,6 +315,23 @@ fn spawn_video_bridge_child(base_dir: &Path, bridge_port: u16) -> Result<Child, 
     Ok(child)
 }
 
+async fn probe_bridge_port(ip: std::net::Ipv4Addr, port: u16) -> bool {
+    let addr = std::net::SocketAddr::from((ip, port));
+    let mut stream = match timeout(Duration::from_millis(150), TcpStream::connect(&addr)).await {
+        Ok(Ok(s)) => s,
+        _ => return false,
+    };
+    let req = "GET /player/status HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
+    if timeout(Duration::from_millis(100), stream.write_all(req.as_bytes())).await.is_err() {
+        return false;
+    }
+    let mut buf = [0u8; 32];
+    match timeout(Duration::from_millis(100), stream.read_exact(&mut buf[..12])).await {
+        Ok(Ok(_)) => buf.starts_with(b"HTTP/1.1 200") || buf.starts_with(b"HTTP/1.0 200"),
+        _ => false,
+    }
+}
+
 async fn wait_for_video_bridge_ready(child: &mut Child, bridge_port: u16) -> Result<u16, String> {
     let max_scan = 100u16;
     let probe_ip = crate::infrastructure::pick_working_ip();
@@ -342,16 +352,14 @@ async fn wait_for_video_bridge_ready(child: &mut Child, bridge_port: u16) -> Res
         }
 
         // Fast path: try configured port first
-        let addr = std::net::SocketAddr::from((probe_ip, bridge_port));
-        if timeout(Duration::from_millis(150), TcpStream::connect(&addr)).await.is_ok() {
+        if probe_bridge_port(probe_ip, bridge_port).await {
             return Ok(bridge_port);
         }
 
         // Scan fallback ports if configured port didn't respond
         for offset in 1..max_scan {
             let port = bridge_port + offset;
-            let addr = std::net::SocketAddr::from((probe_ip, port));
-            if timeout(Duration::from_millis(20), TcpStream::connect(&addr)).await.is_ok() {
+            if probe_bridge_port(probe_ip, port).await {
                 return Ok(port);
             }
         }

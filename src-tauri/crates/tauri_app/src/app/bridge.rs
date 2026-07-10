@@ -147,6 +147,7 @@ pub(super) async fn run_video_bridge_process(
     player_runtime.active_playback_windows.lock().expect("Mutex poisoned").insert("video_bridge".to_string());
     player_runtime.start_idle_gc();
         let file_repo: Arc<dyn omega_drive_gateway::provider::file_repository::FileRepository> = Arc::new(DbFileRepository::new(Arc::clone(&db_read), Arc::clone(&db_write)));
+    let shared_cdn_link_cache = Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
     let download_ctx = omega_drive_download::DownloadContext {
         cfg: Arc::clone(&cfg),
         file_repo: Arc::clone(&file_repo),
@@ -155,7 +156,7 @@ pub(super) async fn run_video_bridge_process(
         app_ctx: Arc::new(NoopAppContext),
         ui_heartbeats: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
         engine: engine_ctx.clone(),
-        cdn_link_cache: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
+        cdn_link_cache: Arc::clone(&shared_cdn_link_cache),
         base_dir: base_dir.clone(),
         stream_registry: provider_runtime_raw.stream_registry.clone(),
     };
@@ -164,7 +165,7 @@ let player_ctx = Arc::new(PlayerContext {
         bridge_port: Arc::new(std::sync::atomic::AtomicU16::new(bridge_port)),
         file_repo: Arc::clone(&file_repo),
         cfg: Arc::clone(&player_cfg),
-        cdn_link_cache: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
+        cdn_link_cache: Arc::clone(&shared_cdn_link_cache),
         base_dir: base_dir.clone(),
         disk_semaphore: Arc::new(tokio::sync::Semaphore::new(2)),
         stream_registry: {
@@ -200,7 +201,7 @@ let player_ctx = Arc::new(PlayerContext {
         base_dir: base_dir.clone(),
         thumbnail_dir,
         feature_logs: Arc::clone(&feature_logs),
-        cdn_link_cache: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
+        cdn_link_cache: Arc::clone(&shared_cdn_link_cache),
         events: event_bus,
         drive_service,
         bridge_port,

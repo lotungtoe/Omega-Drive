@@ -311,6 +311,7 @@ pub async fn run() {
     let app_handle_state = Arc::new(std::sync::Mutex::new(None));
     let bridge_port = pick_bridge_port(13370);
     let file_repo: Arc<dyn omega_drive_gateway::provider::file_repository::FileRepository> = Arc::new(DbFileRepository::new(Arc::clone(&db_read), Arc::clone(&db_write)));
+    let shared_cdn_link_cache = Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
     let download_ctx = omega_drive_download::DownloadContext {
         cfg: Arc::clone(&cfg),
         file_repo: Arc::clone(&file_repo),
@@ -319,7 +320,7 @@ pub async fn run() {
         app_ctx: Arc::new(NoopAppContext),
         ui_heartbeats: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
         engine: engine_ctx.clone(),
-        cdn_link_cache: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
+        cdn_link_cache: Arc::clone(&shared_cdn_link_cache),
         base_dir: base_dir.clone(),
         stream_registry: provider_runtime_raw.stream_registry.clone(),
     };
@@ -328,7 +329,7 @@ pub async fn run() {
         bridge_port: Arc::new(AtomicU16::new(bridge_port)),
         file_repo: Arc::clone(&file_repo),
         cfg: Arc::clone(&player_cfg),
-        cdn_link_cache: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
+        cdn_link_cache: Arc::clone(&shared_cdn_link_cache),
         base_dir: base_dir.clone(),
         disk_semaphore: Arc::new(tokio::sync::Semaphore::new(2)),
         stream_registry: {
@@ -364,7 +365,7 @@ pub async fn run() {
         base_dir: base_dir.clone(),
         thumbnail_dir: thumbnail_dir.clone(),
         feature_logs: Arc::clone(&feature_logs),
-        cdn_link_cache: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
+        cdn_link_cache: Arc::clone(&shared_cdn_link_cache),
         events: Arc::clone(&event_bus),
         drive_service: Arc::clone(&drive_service),
         bridge_port,
@@ -470,7 +471,7 @@ pub async fn run() {
         });
     }
 
-    // --- Start Book Bridge (port 13380) ---
+    // --- Start Book Bridge (port 13480) ---
     let book_bridge_manager = Arc::new(omega_drive_book_bridge::BookManager::new());
     let book_bridge_port = {
         let sr = match app_state_init.provider_runtime.read() {
@@ -482,7 +483,7 @@ pub async fn run() {
             file_repo: Arc::clone(&file_repo),
             stream_registry: Arc::clone(&sr.stream_registry),
             engine: app_state_init.engine.clone(),
-            port: pick_bridge_port(13380),
+            port: pick_bridge_port(13480),
             byte_cache: player_runtime.sparse_cache.clone() as Arc<dyn ByteCache>,
             singleflight: player_runtime.part_singleflight.clone() as Arc<dyn PartSingleFlight>,
         };
