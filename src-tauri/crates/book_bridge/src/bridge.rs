@@ -8,13 +8,11 @@ use axum::{
     routing::get,
 };
 
+use omega_drive_gateway::download::ByteStreamProvider;
 use omega_drive_gateway::{
     provider::file_repository::FileRepository,
-    provider::stream::StreamRegistry,
     provider::storage::PartMetadata,
     core::engine_context::EngineContext,
-    player::cache::ByteCache,
-    player::singleflight::PartSingleFlight,
 };
 
 use crate::formats::epub;
@@ -26,11 +24,9 @@ use crate::reader::ZipReader;
 pub struct BookBridgeConfig {
     pub base_dir: std::path::PathBuf,
     pub file_repo: Arc<dyn FileRepository>,
-    pub stream_registry: Arc<StreamRegistry>,
     pub engine: EngineContext,
     pub port: u16,
-    pub byte_cache: Arc<dyn ByteCache>,
-    pub singleflight: Arc<dyn PartSingleFlight>,
+    pub provider: Arc<dyn ByteStreamProvider>,
 }
 
 // ── Session manager ─────────────────────────────────────
@@ -109,15 +105,12 @@ pub async fn get_or_start_session(
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("db: {e}")))?;
 
-    let registry = Arc::clone(&state.cfg.stream_registry);
-    let byte_cache = state.cfg.byte_cache.clone();
-    let singleflight = state.cfg.singleflight.clone();
+    let provider = state.cfg.provider.clone();
     let mgr = Arc::clone(&state.mgr);
 
     tokio::spawn(async move {
         let result = ZipReader::open(
-            file_id, parts, registry,
-            byte_cache, singleflight,
+            file_id, parts, provider,
         ).await;
         let mut sessions = mgr.sessions.lock().await;
         if let Some(s) = sessions.get_mut(&file_id) {

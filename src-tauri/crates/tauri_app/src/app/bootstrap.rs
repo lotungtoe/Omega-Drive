@@ -8,8 +8,6 @@ use tracing::{error, info};
 
 use omega_drive_core::services::DefaultDebugLogger;
 use omega_drive_discord::DiscordBackupGateway;
-use omega_drive_gateway::player::cache::ByteCache;
-use omega_drive_gateway::player::singleflight::PartSingleFlight;
 use omega_drive_gateway::download::ByteStreamProvider;
 use omega_drive_player::{IdxCache, PlayerContext};
 
@@ -487,18 +485,12 @@ pub async fn run() {
     // --- Start Book Bridge (port 13480) ---
     let book_bridge_manager = Arc::new(omega_drive_book_bridge::BookManager::new());
     let book_bridge_port = {
-        let sr = match app_state_init.provider_runtime.read() {
-            Ok(g) => Arc::clone(&g),
-            Err(p) => Arc::clone(&p.into_inner()),
-        };
         let cfg = omega_drive_book_bridge::BookBridgeConfig {
             base_dir: base_dir.clone(),
             file_repo: Arc::clone(&file_repo),
-            stream_registry: Arc::clone(&sr.stream_registry),
             engine: app_state_init.engine.clone(),
             port: pick_bridge_port(13480),
-            byte_cache: download_ctx.mem_cache.clone() as Arc<dyn ByteCache>,
-            singleflight: player_runtime.part_singleflight.clone() as Arc<dyn PartSingleFlight>,
+            provider: byte_stream_provider.clone(),
         };
         match omega_drive_book_bridge::start_book_bridge(cfg, Arc::clone(&book_bridge_manager)).await {
             Ok(port) => {

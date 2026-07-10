@@ -4,16 +4,8 @@ use std::sync::{Arc, OnceLock};
 use crate::formats::epub::spine::SpineEntry;
 use crate::formats::epub::nav::NavEntry;
 
-use bytes::Bytes;
-
-use futures_util::FutureExt;
-use omega_drive_gateway::provider::{
-    provider_types::ByteRange,
-    stream::StreamRegistry,
-    storage::PartMetadata,
-};
-use omega_drive_gateway::player::cache::ByteCache;
-use omega_drive_gateway::player::singleflight::PartSingleFlight;
+use omega_drive_gateway::download::ByteStreamProvider;
+use omega_drive_gateway::provider::storage::PartMetadata;
 
 struct ZipEntryMeta {
     local_header_offset: u32,
@@ -28,9 +20,7 @@ pub struct ZipReader {
     parts: Vec<PartMetadata>,
     chunk_offsets: Vec<u64>,
     pub opf_dir: String,
-    registry: Arc<StreamRegistry>,
-    byte_cache: Arc<dyn ByteCache>,
-    singleflight: Arc<dyn PartSingleFlight>,
+    provider: Arc<dyn ByteStreamProvider>,
     nav_html: OnceLock<String>,
     spine_cache: OnceLock<Vec<SpineEntry>>,
     nav_cache: OnceLock<Vec<NavEntry>>,
@@ -52,9 +42,7 @@ impl ZipReader {
     pub async fn open(
         file_id: i64,
         parts: Vec<PartMetadata>,
-        registry: Arc<StreamRegistry>,
-        byte_cache: Arc<dyn ByteCache>,
-        singleflight: Arc<dyn PartSingleFlight>,
+        provider: Arc<dyn ByteStreamProvider>,
     ) -> Result<Self, String> {
         let mut parts: Vec<PartMetadata> = parts
             .into_iter()
@@ -106,7 +94,7 @@ impl ZipReader {
         tracing::info!(eocd_offset, eocd_size, "zip open: fetching EOCD");
         let eocd_data = Self::read_range(
             file_id, &parts, &chunk_offsets, eocd_offset, eocd_size,
-            &registry, &byte_cache, &singleflight,
+            &provider,
         ).await?;
 
         tracing::info!(
@@ -130,7 +118,7 @@ impl ZipReader {
         // Fetch Central Directory (may share parts with EOCD — cached)
         let cd_data = Self::read_range(
             file_id, &parts, &chunk_offsets, cd_offset, cd_size,
-            &registry, &byte_cache, &singleflight,
+            &provider,
         ).await?;
 
         // Parse CD entries
@@ -170,8 +158,7 @@ impl ZipReader {
         // Determine opf_dir by reading META-INF/container.xml (may share parts — cached)
         let opf_dir = if let Some(meta) = entries.get("META-INF/container.xml") {
             let raw = Self::read_entry_raw(
-                file_id, &parts, &chunk_offsets, meta, &registry,
-                &byte_cache, &singleflight, false,
+                file_id, &parts, &chunk_offsets, meta, &provider, false,
             ).await?;
             let s = String::from_utf8_lossy(&raw);
             let prefix = "full-path=\"";
@@ -190,9 +177,7 @@ impl ZipReader {
             parts,
             chunk_offsets,
             opf_dir,
-            registry,
-            byte_cache,
-            singleflight,
+            provider,
             nav_html: OnceLock::new(),
             spine_cache: OnceLock::new(),
             nav_cache: OnceLock::new(),
@@ -211,8 +196,7 @@ impl ZipReader {
                 return Self::read_and_decompress(
                     self.file_id, m,
                     &self.parts, &self.chunk_offsets,
-                    &self.registry,
-                    &self.byte_cache, &self.singleflight,
+                    &self.provider,
                 ).await;
             }
         }
@@ -256,61 +240,18 @@ impl ZipReader {
     /// Download a byte range from the assembled file.
     async fn read_range(
         file_id: i64,
-        parts: &[PartMetadata],
-        chunk_offsets: &[u64],
+        _parts: &[PartMetadata],
+        _chunk_offsets: &[u64],
         offset: u64,
         size: u64,
-        registry: &StreamRegistry,
-        byte_cache: &Arc<dyn ByteCache>,
-        singleflight: &Arc<dyn PartSingleFlight>,
+        provider: &Arc<dyn ByteStreamProvider>,
     ) -> Result<Vec<u8>, String> {
-        let end = offset + size;
-        let mut current = offset;
+        let mut rx = provider.stream_range(file_id, offset, size, "book").await?;
         let mut result = Vec::with_capacity(size as usize);
-
-        while current < end {
-            let chunk_idx = match chunk_offsets.binary_search(&current) {
-                Ok(i) => i,
-                Err(0) => return Err(format!("offset {current} before first chunk")),
-                Err(i) => i - 1,
-            };
-            let part = &parts[chunk_idx];
-            let file_offset = chunk_offsets[chunk_idx];
-            let chunk_end = file_offset + part.size as u64;
-            let local_len = (end - current).min(chunk_end - current);
-
-            // Check byte cache
-            if byte_cache.is_range_filled(file_id, current, local_len).await {
-                let data = byte_cache.wait_range(file_id, current, local_len).await?;
-                result.extend_from_slice(&data);
-                current += local_len;
-                continue;
-            }
-
-            // Not in cache — download the exact byte range via singleflight
-            let local_start = current - file_offset;
-            let part_clone = part.clone();
-            let bc = byte_cache.clone();
-            let gw = registry.get(&part_clone.platform)
-                .ok_or_else(|| format!("gateway {} not found", part_clone.platform))?;
-            let _ = singleflight.run((file_id, part.part_index, local_start, local_len), Box::new(move || {
-                async move {
-                    let raw = gw.download_part_range(
-                        &part_clone,
-                        Some(ByteRange { start: local_start, len: local_len }),
-                    ).await
-                        .map_err(|e| format!("download part {} range {local_start}:{local_len}: {e}", part_clone.part_index))?;
-                    bc.write(file_id, current, Bytes::from(raw.clone())).await;
-                    Ok(Bytes::from(raw))
-                }.boxed()
-            })).await?;
-
-            // Read from cache after write
-            let data = byte_cache.wait_range(file_id, current, local_len).await?;
-            result.extend_from_slice(&data);
-            current += local_len;
+        while let Some(chunk) = rx.recv().await {
+            let chunk = chunk?;
+            result.extend_from_slice(&chunk.data);
         }
-
         Ok(result)
     }
 
@@ -321,9 +262,7 @@ impl ZipReader {
         parts: &[PartMetadata],
         chunk_offsets: &[u64],
         meta: &ZipEntryMeta,
-        registry: &StreamRegistry,
-        byte_cache: &Arc<dyn ByteCache>,
-        singleflight: &Arc<dyn PartSingleFlight>,
+        provider: &Arc<dyn ByteStreamProvider>,
         expand: bool,
     ) -> Result<Vec<u8>, String> {
         let lfh_size = 30u64;
@@ -342,7 +281,7 @@ impl ZipReader {
 
             let expanded = Self::read_range(
                 file_id, parts, chunk_offsets, new_start, new_end - new_start,
-                registry, byte_cache, singleflight,
+                provider,
             ).await?;
             let off = (data_offset - new_start) as usize;
             if off + read_size as usize <= expanded.len() {
@@ -350,13 +289,13 @@ impl ZipReader {
             } else {
                 Self::read_range(
                     file_id, parts, chunk_offsets, data_offset, read_size,
-                    registry, byte_cache, singleflight,
+                    provider,
                 ).await?
             }
         } else {
             Self::read_range(
                 file_id, parts, chunk_offsets, data_offset, read_size,
-                registry, byte_cache, singleflight,
+                provider,
             ).await?
         };
 
@@ -373,7 +312,7 @@ impl ZipReader {
             let raw2 = Self::read_range(
                 file_id, parts, chunk_offsets,
                 meta.local_header_offset as u64, exact_size,
-                registry, byte_cache, singleflight,
+                provider,
             ).await?;
             Ok(raw2[data_start..data_start + meta.compressed_size as usize].to_vec())
         } else {
@@ -387,13 +326,10 @@ impl ZipReader {
         meta: &ZipEntryMeta,
         parts: &[PartMetadata],
         chunk_offsets: &[u64],
-        registry: &StreamRegistry,
-        byte_cache: &Arc<dyn ByteCache>,
-        singleflight: &Arc<dyn PartSingleFlight>,
+        provider: &Arc<dyn ByteStreamProvider>,
     ) -> Result<Vec<u8>, String> {
         let compressed = Self::read_entry_raw(
-            file_id, parts, chunk_offsets, meta, registry,
-            byte_cache, singleflight, true,
+            file_id, parts, chunk_offsets, meta, provider, true,
         ).await?;
 
         if meta.compression_method == 0 {

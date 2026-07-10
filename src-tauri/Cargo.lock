@@ -4622,10 +4622,8 @@ name = "omega_drive_book_bridge"
 version = "0.1.0"
 dependencies = [
  "axum",
- "bytes",
  "chrono",
  "flate2",
- "futures-util",
  "omega_drive_gateway",
  "serde",
  "serde_json",
