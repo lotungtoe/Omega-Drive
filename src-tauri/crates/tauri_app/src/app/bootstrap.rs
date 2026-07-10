@@ -9,7 +9,7 @@ use tracing::{error, info};
 use omega_drive_core::services::DefaultDebugLogger;
 use omega_drive_discord::DiscordBackupGateway;
 use omega_drive_gateway::download::ByteStreamProvider;
-use omega_drive_player::{IdxCache, PlayerContext};
+use omega_drive_player::PlayerContext;
 
 use crate::app::event_emitter::TauriEventEmitter;
 use omega_drive_player::runtime::PlayerRuntime;
@@ -356,7 +356,6 @@ pub async fn run() {
                 }
             },
         )),
-        idx_cache: IdxCache::new(base_dir.join("idx_cache")),
         download_ctx: (*download_ctx).clone(),
         byte_stream_provider: Arc::clone(&byte_stream_provider),
     });

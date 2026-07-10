@@ -12,7 +12,7 @@ use omega_drive_player::runtime::{
     ensure_video_bridge_child_for_player as ensure_video_bridge_child_for_player_shared,
     PlayerRuntime,
 };
-use omega_drive_player::{IdxCache, PlayerContext};
+use omega_drive_player::PlayerContext;
 use crate::app_wiring::app_runtime::AppState;
 use crate::db::repos::{
     DbDownloadJobRepository, DbFileRepository, DbFolderRepository, DbUploadJobRepository,
@@ -194,7 +194,6 @@ pub(super) async fn run_video_bridge_process(
                 }
             },
         )),
-        idx_cache: IdxCache::new(base_dir.join("idx_cache")),
         download_ctx: (*download_ctx).clone(),
         byte_stream_provider: Arc::clone(&byte_stream_provider),
     });
