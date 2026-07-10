@@ -1,178 +1,10 @@
 ﻿use std::sync::Arc;
-use chrono::Utc;
 use bytes::Bytes;
 use crate::PlayerContext;
-use omega_drive_gateway::provider::{
-    provider_types::MediaSource,
-    storage::PartMetadata,
-};
+use omega_drive_gateway::provider::storage::PartMetadata;
 use crate::playlistbuild::ensure_video_playback_ready;
 use crate::singleflight::PartKey;
-use crate::download::download_url;
-
-pub(crate) async fn resolve_cached_discord_url(
-    st: &PlayerContext,
-    file_id: i64,
-    part_num: u32,
-    part: &PartMetadata,
-) -> Result<String, String> {
-    let cache_key = format!("{}:{}", file_id, part_num);
-    if let Some(url) = {
-        let cache = st.cdn_link_cache.read().await;
-        cache.get(&cache_key).and_then(|(u, e)| {
-            if *e > Utc::now() {
-                Some(u.clone())
-            } else {
-                None
-            }
-        })
-    } {
-        return Ok(url);
-    }
-
-    let gateway = st.stream_registry
-        .get("discord")
-        .ok_or_else(|| "Discord stream gateway unavailable".to_string())?;
-    let source = gateway
-        .resolve_media_source(part)
-        .await
-        .map_err(|e| format!("Loi Discord: {e}"))?;
-    match source {
-        MediaSource::ResolvedUrl { url, expiry } => {
-            if let Some(expiry) = expiry {
-                let mut cache = st.cdn_link_cache.write().await;
-                cache.insert(cache_key, (url.clone(), expiry));
-            }
-            Ok(url)
-        }
-        MediaSource::ProviderOwned => Err("Discord stream gateway did not return URL".to_string()),
-    }
-}
-
-async fn download_part_from_provider(
-    st: &PlayerContext,
-    file_id: i64,
-    part_num: u32,
-    part: &PartMetadata,
-) -> Result<Vec<u8>, String> {
-    #[cfg(debug_assertions)]
-    let t2_start = std::time::Instant::now();
-    let result = download_part_from_provider_inner(st, file_id, part_num, part).await;
-    #[cfg(debug_assertions)]
-    if std::env::var("DEBUG").is_ok() {
-        let t2_us = t2_start.elapsed().as_micros() as u64;
-        tracing::info!(target: "latency", "T2_provider={}µs file={} part={} platform={}", t2_us, file_id, part_num, part.platform);
-    }
-    result
-}
-
-async fn download_part_from_provider_inner(
-    st: &PlayerContext,
-    file_id: i64,
-    part_num: u32,
-    part: &PartMetadata,
-) -> Result<Vec<u8>, String> {
-    if part.platform == "discord" {
-        let url = resolve_cached_discord_url(st, file_id, part_num, part).await?;
-        let mut res = download_url(&url).await;
-        if matches!(res.as_ref().err(), Some(e) if e == "HTTP_403") {
-            let fresh = resolve_cached_discord_url(st, file_id, part_num, part).await?;
-            res = download_url(&fresh).await;
-        }
-        return res;
-    }
-
-    if part.platform == "telegram" {
-        let gateway = st.stream_registry
-            .get("telegram")
-            .ok_or_else(|| "Telegram chua duoc cau hinh".to_string())?;
-        return gateway
-            .download_part_bytes(part)
-            .await
-            .map_err(|e| e.to_string());
-    }
-
-    Err("Khong xac dinh duoc duong dan tai".to_string())
-}
-
-async fn download_part_stream(
-    st: &PlayerContext,
-    file_id: i64,
-    part_num: u32,
-    part: &PartMetadata,
-    file_offset: u64,
-    sparse_cache: &crate::sparse::SparseCache,
-) -> Result<(), String> {
-    if part.platform == "discord" {
-        let mut url = resolve_cached_discord_url(st, file_id, part_num, part).await?;
-        let mut retry = 0;
-        loop {
-            let res = crate::download::download_url_stream(&url, file_id, part_num, file_offset, sparse_cache).await;
-            if res.is_ok() || retry >= 2 {
-                return res;
-            }
-            let is_403 = matches!(res.as_ref().err(), Some(e) if e == "HTTP_403");
-            tokio::time::sleep(std::time::Duration::from_millis(500 + retry as u64 * 500)).await;
-            if is_403 {
-                url = resolve_cached_discord_url(st, file_id, part_num, part).await?;
-            }
-            retry += 1;
-        }
-    }
-    if part.platform == "telegram" {
-        let gateway = st.stream_registry
-            .get("telegram")
-            .ok_or_else(|| "Telegram chua duoc cau hinh".to_string())?;
-        let bw_start = std::time::Instant::now();
-        let mut retry = 0;
-        loop {
-            let mut stream = match gateway
-                .download_part_range_stream(part, None)
-                .await
-            {
-                Ok(s) => s,
-                Err(e) => {
-                    if retry >= 2 {
-                        return Err(e.to_string());
-                    }
-                    tokio::time::sleep(std::time::Duration::from_millis(500 + retry as u64 * 500)).await;
-                    retry += 1;
-                    continue;
-                }
-            };
-            use futures_util::StreamExt;
-            let mut bw = crate::download::BandwidthTracker::new();
-            let mut pos: u64 = 0;
-            let mut err: Option<String> = None;
-            while let Some(chunk) = stream.next().await {
-                let chunk = match chunk {
-                    Ok(c) => c,
-                    Err(e) => {
-                        if retry >= 2 {
-                            return Err(e.to_string());
-                        }
-                        tokio::time::sleep(std::time::Duration::from_millis(500 + retry as u64 * 500)).await;
-                        retry += 1;
-                        err = Some("stream error".to_string());
-                        break;
-                    }
-                };
-                let len = chunk.len();
-                let data = Bytes::from(chunk);
-                bw.record(len, bw_start.elapsed());
-                sparse_cache.write(file_id, file_offset + pos, data).await;
-                pos += len as u64;
-            }
-            if err.is_none() {
-                let s = bw.finalize();
-                debug_log!("cdn_bw", "file={} part={} telegram coord avg={:.1}MB/s min={:.1}MB/s max={:.1}MB/s size={} elapsed={:?}",
-                    file_id, part_num, s.avg_mbps, s.min_mbps, s.max_mbps, s.total_bytes, bw_start.elapsed());
-                return Ok(());
-            }
-        }
-    }
-    Err("Khong xac dinh duoc duong dan tai".to_string())
-}
+use omega_drive_download::provider::{download_part_from_provider, download_part_stream};
 
 /// Get data for a part of a video file.
 /// Priority: 1. RAM Buffer, 2. SSD Cache, 3. Fetch from source (Discord/Telegram).
@@ -217,7 +49,7 @@ pub async fn get_file_part_internal(
 
     // 2. Fetch from source
     let part_id = part.id;
-    let raw_data = download_part_from_provider(&st, file_id, part_num, &part)
+    let raw_data = download_part_from_provider(&st.download_ctx, file_id, part_num, &part)
         .await
         .map_err(|err| {
             tracing::error!(
@@ -284,7 +116,7 @@ pub(crate) async fn get_chunk_part_internal(
         .run(key, move || async move {
             let start_time = std::time::Instant::now();
             let part_id = part.id;
-            let raw_data = download_part_from_provider(&st_clone, file_id, part_num, &part)
+            let raw_data = download_part_from_provider(&st_clone.download_ctx, file_id, part_num, &part)
                 .await
                 .map_err(|err| {
                     tracing::error!(
@@ -367,7 +199,7 @@ async fn coordinator_download_part_inner(
         None => return,
     };
     debug_log!("coord", "timing: file={} part={} lookup_part={:?}", file_id, part_num, coord_start.elapsed());
-    if let Err(e) = download_part_stream(&st, file_id, part_num, &part, file_offset, &st.player_runtime.sparse_cache).await {
+    if let Err(e) = download_part_stream(&st.download_ctx, file_id, part_num, &part, file_offset, &*st.player_runtime.sparse_cache).await {
         debug_log!("coord", "fail: file={} part={} err={}", file_id, part_num, e);
         return;
     }

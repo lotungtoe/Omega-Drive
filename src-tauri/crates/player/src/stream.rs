@@ -4,8 +4,8 @@ use futures_util::StreamExt;
 
 use crate::PlayerContext;
 use crate::range_stream::{build_range_plan, receiver_stream, BoxByteStream, StreamError, RangePart};
-use crate::download::load_chunk_meta;
 use crate::sparse::SparseCache;
+use omega_drive_download::provider::{load_chunk_meta, BandwidthTracker, ChunkMeta};
 
 pub(crate) async fn stream_byte_range(
     st: PlayerContext,
@@ -71,7 +71,7 @@ async fn emit_part_bytes(
     tx: &mpsc::Sender<Result<Bytes, StreamError>>,
 ) -> Result<(), StreamError> {
     let part_num = part.part_index;
-    let meta = load_chunk_meta(st, file_id, part_num)
+    let meta = load_chunk_meta(&st.download_ctx, file_id, part_num)
         .await
         .map_err(StreamError::Network)?;
 
@@ -146,7 +146,7 @@ async fn try_seek_range(
     st: &PlayerContext,
     file_id: i64,
     part_num: u32,
-    meta: &crate::download::ChunkMeta,
+    meta: &ChunkMeta,
     file_offset: u64,
     slice_start: u64,
     slice_len: u64,
@@ -156,7 +156,7 @@ async fn try_seek_range(
     let t_start = std::time::Instant::now();
     debug_log!("seek", "try_seek_range start: file={} part={} slice={}+{}", file_id, part_num, slice_start, slice_len);
     let result = {
-        let part_meta = crate::download::fetch_part_metadata(meta, file_id, part_num);
+        let part_meta = omega_drive_download::provider::fetch_part_metadata(meta, file_id, part_num);
         if part_meta.platform == "discord" {
             try_seek_range_discord(st, file_id, part_num, &part_meta, file_offset, slice_start, slice_len, sparse_cache, tx).await
         } else if part_meta.platform == "telegram" {
@@ -184,10 +184,10 @@ async fn try_seek_range_discord(
     sparse_cache: &SparseCache,
     tx: &mpsc::Sender<Result<Bytes, StreamError>>,
 ) -> Result<(), String> {
-    let url = crate::segmentgen::resolve_cached_discord_url(st, file_id, part_num, part).await?;
+    let url = omega_drive_download::provider::resolve_cached_discord_url(&st.download_ctx, file_id, part_num, part).await?;
     if let Err(e) = try_seek_range_discord_stream(&url, file_id, part_num, file_offset, slice_start, slice_len, sparse_cache, tx).await {
         if e == "HTTP_403" {
-            let fresh = crate::segmentgen::resolve_cached_discord_url(st, file_id, part_num, part).await?;
+            let fresh = omega_drive_download::provider::resolve_cached_discord_url(&st.download_ctx, file_id, part_num, part).await?;
             try_seek_range_discord_stream(&fresh, file_id, part_num, file_offset, slice_start, slice_len, sparse_cache, tx).await?;
             return Ok(());
         }
@@ -213,7 +213,7 @@ async fn try_seek_range_telegram(
         .get("telegram")
         .ok_or_else(|| "Telegram chua duoc cau hinh".to_string())?;
     let bw_start = std::time::Instant::now();
-    let mut bw = crate::download::BandwidthTracker::new();
+    let mut bw = BandwidthTracker::new();
     let range = ByteRange { start: slice_start, len: slice_len };
     let mut retry = 0;
     let result = loop {
@@ -286,7 +286,7 @@ async fn try_seek_range_discord_stream(
     if let Some(t1) = crate::bridge::take_t1_mark(file_id) {
         debug_log!("t1", "file={} t1={}µs", file_id, t1.as_micros());
     }
-    let client = crate::download::http_client();
+    let client = omega_drive_download::provider::http_client();
     let range = format!("bytes={}-{}", slice_start, slice_start + slice_len - 1);
     let t_req = std::time::Instant::now();
     let res = client
@@ -307,7 +307,7 @@ async fn try_seek_range_discord_stream(
     }
     let mut stream = res.bytes_stream();
     let bw_start = std::time::Instant::now();
-    let mut bw = crate::download::BandwidthTracker::new();
+    let mut bw = BandwidthTracker::new();
     let mut pos: u64 = 0;
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| e.to_string())?;

@@ -27,7 +27,7 @@ use crate::nativeplayer::{
     BridgeVolumeRequest, MpvSessionType, MpvStatus,
 };
 
-use crate::download::{fetch_part_metadata, load_chunk_meta};
+use omega_drive_download::provider::{fetch_part_metadata, load_chunk_meta};
 
 struct ByteRangeTracker {
     last_start: u64,
@@ -569,7 +569,7 @@ async fn background_refresh_url_cache(st: PlayerContext, file_id: i64) {
         let progress = progress_clone.clone();
         let msg_id = msg_id;
         async move {
-            let meta = match load_chunk_meta(&st, file_id, parts[0]).await {
+            let meta = match load_chunk_meta(&st.download_ctx, file_id, parts[0]).await {
                 Ok(m) => m,
                 Err(e) => {
                     debug_log!("bg", "group msg={} load_chunk_meta FAIL: {}", msg_id, e);

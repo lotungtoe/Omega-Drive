@@ -4,7 +4,6 @@ pub mod debug;
 pub mod bridge;
 pub mod stream;
 pub mod sparse;
-pub mod download;           // Axum server — receives requests from mpv, loads data from Discord/Telegram/DB
 pub mod nativeplayer;     // Controls mpv via IPC — open, play/pause, seek, volume, speed, fullscreen
 pub mod playlistbuild;    // Checks if video in DB is "ready" before playback
 
