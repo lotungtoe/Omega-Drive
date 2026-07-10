@@ -8,12 +8,11 @@ use std::{
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-use tokio::sync::{Mutex as AsyncMutex, RwLock};
+use tokio::sync::RwLock;
 use tokio::time::{sleep, timeout};
 
 use crate::PlayerContext;
 use tracing::{info, warn};
-use omega_drive_gateway::core::config::Config;
 use omega_drive_gateway::provider::storage::PartMetadata;
 
 
@@ -40,21 +39,15 @@ pub struct PlayerRuntime {
     recent_seek_targets: Arc<RwLock<HashMap<i64, RecentSeekTarget>>>,
     pub active_playback_windows: Arc<std::sync::Mutex<HashSet<String>>>,
     pub video_bridge_processes: Arc<std::sync::Mutex<HashMap<String, std::process::Child>>>,
-    pub download_semaphore: Arc<tokio::sync::Semaphore>,
-    pub prefetch_ahead: u32,
-    pub in_flight_coordinator: Arc<AsyncMutex<HashSet<(i64, u32)>>>,
 }
 
 impl PlayerRuntime {
-    pub fn new(cfg: &Config) -> Self {
+    pub fn new() -> Self {
         Self {
             original_part_index: Arc::new(RwLock::new(HashMap::new())),
             recent_seek_targets: Arc::new(RwLock::new(HashMap::new())),
             active_playback_windows: Arc::new(std::sync::Mutex::new(HashSet::new())),
             video_bridge_processes: Arc::new(std::sync::Mutex::new(HashMap::new())),
-            download_semaphore: Arc::new(tokio::sync::Semaphore::new(3)),
-            prefetch_ahead: cfg.prefetch_chunks,
-            in_flight_coordinator: Arc::new(AsyncMutex::new(HashSet::new())),
         }
     }
 

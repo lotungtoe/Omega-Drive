@@ -305,7 +305,7 @@ pub async fn run() {
         Arc::clone(&event_bus),
         engine_ctx.clone(),
     ));
-    let player_runtime = Arc::new(PlayerRuntime::new(&player_cfg));
+    let player_runtime = Arc::new(PlayerRuntime::new());
     player_runtime.start_idle_gc();
     let app_handle_state = Arc::new(std::sync::Mutex::new(None));
     let bridge_port = pick_bridge_port(13370);

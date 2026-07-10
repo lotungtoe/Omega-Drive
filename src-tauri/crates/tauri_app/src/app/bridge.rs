@@ -144,7 +144,7 @@ pub(super) async fn run_video_bridge_process(
         Arc::clone(&event_bus),
         engine_ctx.clone(),
     ));
-    let player_runtime = Arc::new(PlayerRuntime::new(&player_cfg));
+    let player_runtime = Arc::new(PlayerRuntime::new());
     player_runtime.active_playback_windows.lock().expect("Mutex poisoned").insert("video_bridge".to_string());
     player_runtime.start_idle_gc();
         let file_repo: Arc<dyn omega_drive_gateway::provider::file_repository::FileRepository> = Arc::new(DbFileRepository::new(Arc::clone(&db_read), Arc::clone(&db_write)));
