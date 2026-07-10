@@ -194,7 +194,6 @@ pub(super) async fn run_video_bridge_process(
                 }
             },
         )),
-        download_ctx: (*download_ctx).clone(),
         byte_stream_provider: Arc::clone(&byte_stream_provider),
     });
 

@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-omega_drive_download = { path = "../download" }
 omega_drive_gateway = { path = "../gateway" }
 axum = "0.7"
 bytes = "1"

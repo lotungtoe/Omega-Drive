@@ -356,7 +356,6 @@ pub async fn run() {
                 }
             },
         )),
-        download_ctx: (*download_ctx).clone(),
         byte_stream_provider: Arc::clone(&byte_stream_provider),
     });
     omega_drive_telegram::services::init(Box::new(DefaultDebugLogger));
