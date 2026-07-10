@@ -4692,6 +4692,7 @@ name = "omega_drive_download"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bytes",
  "chrono",
  "fs2",
