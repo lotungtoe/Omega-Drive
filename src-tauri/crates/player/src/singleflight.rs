@@ -6,7 +6,7 @@ use bytes::Bytes;
 use futures_util::future::{BoxFuture, FutureExt, Shared};
 use tokio::sync::Mutex;
 
-pub(crate) type PartKey = (i64, u32);
+pub(crate) type PartKey = (i64, u32, u64, u64);
 pub type PlayerSingleFlight = SingleFlight<PartKey>;
 type SharedBytesFuture = Shared<BoxFuture<'static, Result<Bytes, String>>>;
 

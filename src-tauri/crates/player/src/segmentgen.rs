@@ -278,7 +278,7 @@ pub(crate) async fn get_chunk_part_internal(
 
 
     // 2. Fetch from source (SingleFlight)
-    let key: PartKey = (file_id, part_num);
+    let key: PartKey = (file_id, part_num, 0, 0);
     let st_clone = st.clone();
     st.player_runtime.part_singleflight
         .run(key, move || async move {

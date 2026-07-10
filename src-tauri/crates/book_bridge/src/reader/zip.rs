@@ -8,6 +8,7 @@ use bytes::Bytes;
 
 use futures_util::FutureExt;
 use omega_drive_gateway::provider::{
+    provider_types::ByteRange,
     stream::StreamRegistry,
     storage::PartMetadata,
 };
@@ -100,7 +101,7 @@ impl ZipReader {
         }
 
         // Fetch EOCD (last 128KB — covers max comment 65535B)
-        let eocd_size = 128u64.min(total_size);
+        let eocd_size = (128u64 * 1024).min(total_size);
         let eocd_offset = total_size - eocd_size;
         tracing::info!(eocd_offset, eocd_size, "zip open: fetching EOCD");
         let eocd_data = Self::read_range(
@@ -286,16 +287,20 @@ impl ZipReader {
                 continue;
             }
 
-            // Not in cache — download the full part via singleflight
+            // Not in cache — download the exact byte range via singleflight
+            let local_start = current - file_offset;
             let part_clone = part.clone();
             let bc = byte_cache.clone();
             let gw = registry.get(&part_clone.platform)
                 .ok_or_else(|| format!("gateway {} not found", part_clone.platform))?;
-            let _ = singleflight.run((file_id, part.part_index), Box::new(move || {
+            let _ = singleflight.run((file_id, part.part_index, local_start, local_len), Box::new(move || {
                 async move {
-                    let raw = gw.download_part_range(&part_clone, None).await
-                        .map_err(|e| format!("download part {}: {e}", part_clone.part_index))?;
-                    bc.write(file_id, file_offset, Bytes::from(raw.clone())).await;
+                    let raw = gw.download_part_range(
+                        &part_clone,
+                        Some(ByteRange { start: local_start, len: local_len }),
+                    ).await
+                        .map_err(|e| format!("download part {} range {local_start}:{local_len}: {e}", part_clone.part_index))?;
+                    bc.write(file_id, current, Bytes::from(raw.clone())).await;
                     Ok(Bytes::from(raw))
                 }.boxed()
             })).await?;
