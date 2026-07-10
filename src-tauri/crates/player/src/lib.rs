@@ -7,7 +7,6 @@ pub mod nativeplayer;     // Controls mpv via IPC — open, play/pause, seek, vo
 pub mod playlistbuild;    // Checks if video in DB is "ready" before playback
 
 pub mod url_cache;        // Discord CDN URL cache — lookup, resolve, persist
-pub mod range_stream;     // Builds range plan — splits byte range into small part lists
 pub mod runtime;          // Manages all runtime state — caches parts, keyframes, seek targets, bridge child
 pub mod segment_telemetry;// Collects segment load telemetry — TTFB, bytes, retries — suggests parallelism
 pub mod segmentgen;       // Generates segments from cache/cloud for streaming — slices byte range from original part
