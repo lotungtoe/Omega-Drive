@@ -2,11 +2,8 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 use std::time::Duration;
 
-use async_trait::async_trait;
 use bytes::Bytes;
 use parking_lot::Mutex;
-
-use omega_drive_gateway::player::cache::ByteCache;
 
 const EVICT_WATERMARK_RATIO: f64 = 0.9;
 
@@ -252,25 +249,4 @@ impl PartitionedMemCache {
     }
 }
 
-#[async_trait]
-impl ByteCache for PartitionedMemCache {
-    async fn write(&self, file_id: i64, offset: u64, data: Bytes) {
-        self.write(file_id, offset, data, "default").await;
-    }
 
-    async fn is_range_filled(&self, file_id: i64, offset: u64, len: u64) -> bool {
-        self.is_range_filled(file_id, offset, len).await
-    }
-
-    async fn wait_range(&self, file_id: i64, offset: u64, len: u64) -> Result<Bytes, String> {
-        self.wait_range(file_id, offset, len).await
-    }
-
-    async fn set_pin_window(&self, file_id: i64, center: u64, half: u64, max: u64) {
-        self.set_pin_window(file_id, center, half, max, "default").await;
-    }
-
-    async fn clear(&self) {
-        self.clear().await;
-    }
-}

@@ -11,7 +11,6 @@ pub mod range_stream;     // Builds range plan — splits byte range into small 
 pub mod runtime;          // Manages all runtime state — caches parts, keyframes, seek targets, bridge child
 pub mod segment_telemetry;// Collects segment load telemetry — TTFB, bytes, retries — suggests parallelism
 pub mod segmentgen;       // Generates segments from cache/cloud for streaming — slices byte range from original part
-pub mod singleflight;     // Deduplicates concurrent requests — multiple threads loading same part/block call API once
 pub mod idx_cache;
 pub mod video_indexer;    // Scans and caches index hints — container type, critical parts — optimizes seek
 pub mod hwdec;            // Enumerate GPU adapter cho hardware decode
@@ -41,7 +40,6 @@ pub use playlistbuild::{
 };
 pub use segmentgen::get_file_part_internal;
 pub use segment_telemetry::SegmentTelemetry;
-pub use singleflight::PlayerSingleFlight;
 pub use idx_cache::IdxCache;
 pub use video_indexer::VideoIndexer;
 

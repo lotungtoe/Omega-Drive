@@ -9,4 +9,3 @@ pub mod provider;
 pub mod db;
 pub mod download;
 pub mod updater;
-pub mod player;

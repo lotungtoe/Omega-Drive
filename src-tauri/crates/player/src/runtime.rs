@@ -16,7 +16,7 @@ use tracing::{info, warn};
 use omega_drive_gateway::core::config::Config;
 use omega_drive_gateway::provider::storage::PartMetadata;
 use crate::{
-    PlayerSingleFlight, SegmentTelemetry,
+    SegmentTelemetry,
     VideoIndexer,
 };
 
@@ -39,8 +39,6 @@ enum SeekSource {
 
 #[derive(Clone)]
 pub struct PlayerRuntime {
-    pub part_singleflight: Arc<PlayerSingleFlight>,
-
     pub segment_telemetry: Arc<SegmentTelemetry>,
     pub video_indexer: Arc<VideoIndexer>,
     pub original_part_index: Arc<RwLock<HashMap<i64, Arc<HashMap<u32, PartMetadata>>>>>,
@@ -55,7 +53,6 @@ pub struct PlayerRuntime {
 impl PlayerRuntime {
     pub fn new(cfg: &Config) -> Self {
         Self {
-            part_singleflight: Arc::new(PlayerSingleFlight::default()),
             segment_telemetry: Arc::new(SegmentTelemetry::default()),
             video_indexer: Arc::new(VideoIndexer::default()),
             original_part_index: Arc::new(RwLock::new(HashMap::new())),
