@@ -89,6 +89,7 @@ async fn stream_range_impl(
         let part_size = db_part.size.max(0) as u64;
         let fetch_len = remaining.min(part_size - part_off);
 
+        // Cache hit — forward cached data directly
         if let Some(data) = ctx.mem_cache.read(file_id, cur_file_off, fetch_len).await {
             let _ = tx
                 .send(Ok(StreamChunk {
@@ -102,6 +103,7 @@ async fn stream_range_impl(
             continue;
         }
 
+        // Cache miss — download, write to cache, and forward data in one pass
         let part_meta = PartMetadata {
             id: db_part.id,
             file_id,
@@ -116,26 +118,18 @@ async fn stream_range_impl(
         };
 
         if part_meta.platform == "discord" {
-            download_discord_part(&ctx, file_id, part_num, &part_meta, part_start, namespace)
-                .await?;
+            download_and_forward_discord(
+                &ctx, file_id, part_num, &part_meta,
+                part_start, cur_file_off, fetch_len, namespace, &tx,
+            ).await?;
         } else if part_meta.platform == "telegram" {
-            download_telegram_part(&ctx, file_id, &part_meta, part_start, namespace).await?;
+            download_and_forward_telegram(
+                &ctx, file_id, &part_meta,
+                part_start, cur_file_off, fetch_len, namespace, &tx,
+            ).await?;
         } else {
             return Err(format!("Unsupported platform: {}", part_meta.platform));
         }
-
-        let data = ctx
-            .mem_cache
-            .read(file_id, cur_file_off, fetch_len)
-            .await
-            .ok_or_else(|| format!("Data not cached after download part {part_num}"))?;
-        let _ = tx
-            .send(Ok(StreamChunk {
-                file_id,
-                file_offset: cur_file_off,
-                data,
-            }))
-            .await;
 
         cur_file_off += fetch_len;
         remaining -= fetch_len;
@@ -144,13 +138,16 @@ async fn stream_range_impl(
     Ok(())
 }
 
-async fn download_discord_part(
+async fn download_and_forward_discord(
     ctx: &DownloadContext,
     file_id: i64,
     part_num: u32,
     part: &PartMetadata,
-    file_offset: u64,
+    part_start: u64,
+    request_off: u64,
+    request_len: u64,
     namespace: &str,
+    tx: &mpsc::Sender<Result<StreamChunk, String>>,
 ) -> Result<(), String> {
     let mut url = resolve_cached_discord_url(ctx, file_id, part_num, part).await?;
     let mut retry = 0;
@@ -160,18 +157,14 @@ async fn download_discord_part(
         let status = res.status();
 
         if status == StatusCode::FORBIDDEN {
-            if retry >= 2 {
-                return Err("HTTP_403".to_string());
-            }
+            if retry >= 2 { return Err("HTTP_403".to_string()); }
             tokio::time::sleep(Duration::from_millis(500 + retry as u64 * 500)).await;
             url = resolve_cached_discord_url(ctx, file_id, part_num, part).await?;
             retry += 1;
             continue;
         }
         if !status.is_success() {
-            if retry >= 2 {
-                return Err(format!("HTTP_STATUS_{}", status.as_u16()));
-            }
+            if retry >= 2 { return Err(format!("HTTP_STATUS_{}", status.as_u16())); }
             tokio::time::sleep(Duration::from_millis(500 + retry as u64 * 500)).await;
             retry += 1;
             continue;
@@ -182,15 +175,40 @@ async fn download_discord_part(
         let mut pos: u64 = 0;
         let mut stream = res.bytes_stream();
 
+        let skip = request_off.saturating_sub(part_start);
+        let request_end = request_off + request_len;
+        let part_end = part_start + part.size.max(0) as u64;
+        let max_forward = request_end.min(part_end).saturating_sub(request_off.max(part_start));
+        let mut forwarded: u64 = 0;
+
         while let Some(chunk) = stream.next().await {
             let chunk = chunk.map_err(|e| e.to_string())?;
-            let len = chunk.len();
-            let data = Bytes::from(chunk);
-            bw.record(len, bw_start.elapsed());
+            let chunk_bytes = Bytes::from(chunk);
+            let chunk_len = chunk_bytes.len() as u64;
+            let chunk_end = pos + chunk_len;
+
+            // Always write full chunk to cache
             ctx.mem_cache
-                .write(file_id, file_offset + pos, data, namespace)
+                .write(file_id, part_start + pos, chunk_bytes.clone(), namespace)
                 .await;
-            pos += len as u64;
+
+            // Forward only the requested sub-range
+            if chunk_end > skip && forwarded < max_forward {
+                let send_start = if pos < skip { (skip - pos) as usize } else { 0 };
+                let available = (chunk_len as usize - send_start).min((max_forward - forwarded) as usize);
+                if available > 0 {
+                    let fwd = chunk_bytes.slice(send_start..send_start + available);
+                    forwarded += available as u64;
+                    if tx.send(Ok(StreamChunk {
+                        file_id,
+                        file_offset: part_start + pos + send_start as u64,
+                        data: fwd,
+                    })).await.is_err() { return Ok(()); }
+                }
+            }
+
+            bw.record(chunk_bytes.len(), bw_start.elapsed());
+            pos += chunk_len;
             if bw_start.elapsed() > Duration::from_secs(10) {
                 return Err("SLOW_DOWNLOAD".to_string());
             }
@@ -199,12 +217,15 @@ async fn download_discord_part(
     }
 }
 
-async fn download_telegram_part(
+async fn download_and_forward_telegram(
     ctx: &DownloadContext,
     file_id: i64,
     part: &PartMetadata,
-    file_offset: u64,
+    part_start: u64,
+    request_off: u64,
+    request_len: u64,
     namespace: &str,
+    tx: &mpsc::Sender<Result<StreamChunk, String>>,
 ) -> Result<(), String> {
     let gateway = ctx
         .provider_runtime
@@ -212,14 +233,17 @@ async fn download_telegram_part(
         .get("telegram")
         .ok_or_else(|| "Telegram gateway unavailable".to_string())?;
 
+    let skip = request_off.saturating_sub(part_start);
+    let request_end = request_off + request_len;
+    let part_end = part_start + part.size.max(0) as u64;
+    let max_forward = request_end.min(part_end).saturating_sub(request_off.max(part_start));
+
     let mut retry = 0;
     loop {
         let mut stream = match gateway.download_part_range_stream(part, None).await {
             Ok(s) => s,
             Err(e) => {
-                if retry >= 2 {
-                    return Err(e.to_string());
-                }
+                if retry >= 2 { return Err(e.to_string()); }
                 tokio::time::sleep(Duration::from_millis(500 + retry as u64 * 500)).await;
                 retry += 1;
                 continue;
@@ -229,31 +253,47 @@ async fn download_telegram_part(
         let bw_start = Instant::now();
         let mut bw = BandwidthTracker::new();
         let mut pos: u64 = 0;
+        let mut forwarded: u64 = 0;
         let mut err: Option<String> = None;
 
         while let Some(chunk) = stream.next().await {
             let chunk = match chunk {
                 Ok(c) => c,
                 Err(e) => {
-                    if retry >= 2 {
-                        return Err(e.to_string());
-                    }
+                    if retry >= 2 { return Err(e.to_string()); }
                     tokio::time::sleep(Duration::from_millis(500 + retry as u64 * 500)).await;
                     retry += 1;
                     err = Some("stream error".to_string());
                     break;
                 }
             };
-            let len = chunk.len();
-            bw.record(len, bw_start.elapsed());
+            let chunk_len = chunk.len() as u64;
+            let chunk_end = pos + chunk_len;
+
+            // Always write full chunk to cache
             ctx.mem_cache
-                .write(file_id, file_offset + pos, chunk, namespace)
+                .write(file_id, part_start + pos, chunk.clone(), namespace)
                 .await;
-            pos += len as u64;
+
+            // Forward only the requested sub-range
+            if chunk_end > skip && forwarded < max_forward {
+                let send_start = if pos < skip { (skip - pos) as usize } else { 0 };
+                let available = (chunk_len as usize - send_start).min((max_forward - forwarded) as usize);
+                if available > 0 {
+                    let fwd = chunk.slice(send_start..send_start + available);
+                    forwarded += available as u64;
+                    if tx.send(Ok(StreamChunk {
+                        file_id,
+                        file_offset: part_start + pos + send_start as u64,
+                        data: fwd,
+                    })).await.is_err() { return Ok(()); }
+                }
+            }
+
+            bw.record(chunk.len(), bw_start.elapsed());
+            pos += chunk_len;
         }
 
-        if err.is_none() {
-            return Ok(());
-        }
+        if err.is_none() { return Ok(()); }
     }
 }
