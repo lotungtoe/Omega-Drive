@@ -1,11 +1,16 @@
 ﻿use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex, RwLock};
+
+use chrono::{DateTime, Utc};
+use tokio::sync::RwLock as TokioRwLock;
 
 use omega_drive_gateway::core::config::Config;
 use omega_drive_gateway::core::engine_context::EngineContext;
 use omega_drive_gateway::provider::app_context::AppContext;
 use omega_drive_gateway::provider::download_job_repository::DownloadJobRepository;
 use omega_drive_gateway::provider::file_repository::FileRepository;
+use omega_drive_gateway::provider::stream::StreamRegistry;
 use omega_drive_gateway::core::provider_runtime::ProviderRuntime;
 use omega_drive_gateway::core::types::UiHeartbeatStatus;
 
@@ -18,4 +23,7 @@ pub struct DownloadContext {
     pub app_ctx: Arc<dyn AppContext>,
     pub ui_heartbeats: Arc<Mutex<HashMap<String, UiHeartbeatStatus>>>,
     pub engine: EngineContext,
+    pub cdn_link_cache: Arc<TokioRwLock<HashMap<String, (String, DateTime<Utc>)>>>,
+    pub base_dir: PathBuf,
+    pub stream_registry: Arc<StreamRegistry>,
 }

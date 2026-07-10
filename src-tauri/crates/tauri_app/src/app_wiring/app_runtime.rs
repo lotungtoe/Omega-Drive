@@ -152,6 +152,9 @@ impl AppState {
             app_ctx: self.app_ctx_emit().unwrap_or_else(|| Arc::new(NoopAppContext)),
             ui_heartbeats: Arc::clone(&self.ui_heartbeats),
             engine: self.engine.clone(),
+            cdn_link_cache: Arc::clone(&self.cdn_link_cache),
+            base_dir: self.base_dir.clone(),
+            stream_registry: self.provider_runtime().stream_registry.clone(),
         }
     }
 
