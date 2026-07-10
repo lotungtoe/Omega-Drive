@@ -4692,10 +4692,12 @@ name = "omega_drive_download"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bytes",
  "chrono",
  "fs2",
  "futures-util",
  "omega_drive_gateway",
+ "reqwest 0.12.28",
  "serde",
  "serde_json",
  "tokio",
