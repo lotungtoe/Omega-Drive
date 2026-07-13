@@ -1,5 +1,3 @@
-use async_trait::async_trait;
-
 use crate::core::backup::Op;
 
 /// Interface for backup operations used by upload feature.

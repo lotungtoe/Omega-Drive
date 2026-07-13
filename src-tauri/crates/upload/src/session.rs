@@ -23,6 +23,7 @@ pub(crate) struct UploadSessionTracker {
 }
 
 impl UploadSessionTracker {
+    #[allow(dead_code)]
     pub(crate) fn session_id(&self) -> &str {
         &self.session_id
     }

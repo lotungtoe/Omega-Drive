@@ -338,7 +338,7 @@ pub fn update_file_folder(conn: &Connection, id: i64, folder_id: Option<i64>) ->
     Ok(())
 }
 
-pub fn update_file_local_path(conn: &Connection, id: i64, local_path: Option<&str>) -> Result<()> {
+pub fn update_file_local_path(_conn: &Connection, id: i64, local_path: Option<&str>) -> Result<()> {
     // local_path không còn lưu trong DB — file ops ở layer trên
     let _ = (id, local_path);
     Ok(())
