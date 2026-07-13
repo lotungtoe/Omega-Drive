@@ -54,6 +54,7 @@ jobs:
           cache-dependency-path: ui/package-lock.json
       - uses: Swatinem/rust-cache@v2
       - name: Create stub external binaries
+        shell: bash
         run: |
           host=$(rustc -vV | grep host | cut -d' ' -f2); mkdir -p src-tauri/binaries
           for bin in ffmpeg ffprobe yt-dlp deno; do touch "src-tauri/binaries/$bin-$host"; done
