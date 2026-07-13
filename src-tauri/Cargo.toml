@@ -1,7 +1,0 @@
-# Workspace moved to /Cargo.toml
-
-[profile.dev]
-opt-level   = 1
-debug       = 1
-incremental = true
-codegen-units = 256
