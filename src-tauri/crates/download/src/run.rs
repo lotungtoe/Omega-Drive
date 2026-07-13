@@ -672,11 +672,8 @@ mod tests {
             file_id: 1,
             platform: "telegram".to_string(),
             message_id: format!("msg-{part_index}"),
-            attachment_name: None,
             part_index,
             size,
-            part_type: "chunk".to_string(),
-            duration: None,
             checksum: None,
         }
     }

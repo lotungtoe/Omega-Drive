@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = [
+    "src-tauri/crates/core",
+    "src-tauri/crates/engine",
+    "src-tauri/crates/db",
+    "src-tauri/crates/discord",
+    "src-tauri/crates/gateway",
+    "src-tauri/crates/telegram",
+    "src-tauri/crates/player",
+    "src-tauri/crates/tauri_app",
+    "src-tauri/crates/drive",
+    "src-tauri/crates/backup",
+    "src-tauri/crates/download",
+    "src-tauri/crates/external_import",
+    "src-tauri/crates/upload",
+    "src-tauri/crates/updater",
+    "src-tauri/crates/book_bridge",
+]
+
+[profile.dev]
+opt-level   = 1
+debug       = 1
+incremental = true
+codegen-units = 256

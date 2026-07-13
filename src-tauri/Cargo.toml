@@ -1,23 +1,4 @@
-[workspace]
-resolver = "2"
-members = [
-    "crates/core",
-    "crates/engine",
-    "crates/db",
-    "crates/discord",
-    "crates/gateway",
-    "crates/telegram",
-    "crates/player",
-    "crates/tauri_app",
-    "crates/drive",
-    "crates/backup",
-    "crates/download",
-    "crates/external_import",
-    "crates/upload",
-    "crates/updater",
-    "crates/extractor",
-    "crates/book_bridge",
-]
+# Workspace moved to /Cargo.toml
 
 [profile.dev]
 opt-level   = 1

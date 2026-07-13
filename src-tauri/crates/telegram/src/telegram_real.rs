@@ -1168,7 +1168,7 @@ impl StorageProvider for TelegramClient {
         part_idx: i32,
     ) -> Result<PartMetadata> {
         let size = data.len() as i64;
-        let (msg_id, attachment_name) = self
+        let (msg_id, _) = self
             .send_part_internal(data, part_idx as u32, "part", "Auto Upload", None)
             .await?;
         Ok(PartMetadata {
@@ -1176,11 +1176,8 @@ impl StorageProvider for TelegramClient {
             file_id,
             platform: self.metadata().id,
             message_id: msg_id.to_string(),
-            attachment_name,
             part_index: part_idx as u32,
             size,
-            part_type: "chunk".to_string(),
-            duration: None,
             checksum: None,
         })
     }

@@ -15,11 +15,10 @@ pub fn get_file_by_id(conn: &Connection, file_id: i64) -> Result<Option<FileMeta
         "SELECT f.id, f.filename, f.size, f.thread_id, f.folder_id,
                 COALESCE((SELECT scope FROM tenant_meta WHERE singleton = 1), 'my') AS drive_scope,
                 f.checksum, f.status, f.starred,
-                f.created_at, f.deleted_at, uj.source_path AS local_path, f.kind, vf.duration_sec,
+                f.created_at, f.deleted_at, NULL AS local_path, f.kind, vf.duration_sec,
                 f.last_accessed_at
          FROM files f
          LEFT JOIN video_files vf ON vf.file_id = f.id
-         LEFT JOIN upload_jobs uj ON uj.file_id = f.id
          WHERE f.id = ?",
         params![file_id],
         |row| {

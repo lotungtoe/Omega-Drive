@@ -158,6 +158,8 @@ export const DriveApi = {
     ),
   switchTenant: (tenant: TenantDescriptor): Promise<unknown> =>
     call("switch_tenant", { tenant }, { feature: "tenant", action: "switch_tenant" }),
+  deleteTenant: (tenant: TenantDescriptor): Promise<unknown> =>
+    call("delete_tenant", { tenant }, { feature: "tenant", action: "delete_tenant" }),
   saveSettings: (config: JsonRecord): Promise<unknown> =>
     call("save_settings", { config }, { feature: "settings", action: "save_settings" }),
   openBotEnv: (): Promise<unknown> =>

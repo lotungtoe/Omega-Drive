@@ -99,7 +99,7 @@ pub struct FolderMetadata {
 }
 
 // ---------------------------------------------------------------------------
-// db::upload_jobs::UploadJob
+// UploadJob
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -118,7 +118,7 @@ pub struct UploadJob {
 }
 
 // ---------------------------------------------------------------------------
-// db::download_jobs::DownloadJob
+// DownloadJob
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Serialize)]

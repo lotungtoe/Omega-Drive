@@ -469,10 +469,7 @@ impl PartStoreGateway for DiscordPartStoreGateway {
     ) -> Result<UploadPartReceipt> {
         let bytes = self.download_part(part).await?;
         let thread_id = target_container_id.parse::<u64>()?;
-        let attachment_name = part
-            .attachment_name
-            .clone()
-            .unwrap_or_else(|| format!("part_{}.bin", part.part_index));
+        let attachment_name = format!("part_{}.bin", part.part_index);
         let (message_id, _) = discord_impl::send_part(
             &self.shared.http,
             DiscordChannelId::new(thread_id),

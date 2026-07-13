@@ -1,7 +1,4 @@
-﻿use omega_drive_extractor as kreuzberg_extractor;
-use omega_drive_extractor::KreuzbergResult;
-
-use crate::core::error::wrap_error;
+﻿use crate::core::error::wrap_error;
 use rxing::multi::MultipleBarcodeReader;
 use rxing::{
     common::HybridBinarizer, BinaryBitmap, BufferedImageLuminanceSource, DecodeHintType,
@@ -424,32 +421,6 @@ pub async fn scan_qr_by_file_id(st: tauri::State<'_, AppState>, file_id: i64) ->
         .map_err(|e| AppError::new(codes::E_UNKNOWN, e))?;
 
     scan_qr_internal(bytes).await
-}
-
-#[tauri::command]
-pub async fn extract_file_text(
-    st: tauri::State<'_, AppState>,
-    file_id: i64,
-    filename: String,
-) -> AppResult<KreuzbergResult> {
-    let ctx = st.inner().drive_command_context();
-    let bytes = ctx
-        .service
-        .retrieve_full_file(file_id)
-        .await
-        .map_err(|e| AppError::new(codes::E_UNKNOWN, e))?;
-
-    let ext = filename.rsplit('.').next().unwrap_or("").to_lowercase();
-    let result = kreuzberg_extractor::extract_text(&bytes, &ext)
-        .await
-        .map_err(|e| {
-            AppError::new(
-                codes::E_UNKNOWN,
-                format!("Text extraction failed: {}", e),
-            )
-        })?;
-
-    Ok(result)
 }
 
 #[tauri::command]

@@ -183,8 +183,6 @@ impl StorageProvider for DiscordStorageProvider {
 
         let caption = format!("**{}** • Part {}", filename, part_idx);
         let zip_name = format!("{}.part{:04}.zip", filename, part_idx);
-        let attachment_name = zip_name.clone();
-
         let (msg_id, _) = send_part(&self.http, thread_id, data, zip_name, caption).await?;
 
         Ok(PartMetadata {
@@ -192,11 +190,8 @@ impl StorageProvider for DiscordStorageProvider {
             file_id,
             platform: self.metadata().id,
             message_id: msg_id.to_string(),
-            attachment_name: Some(attachment_name),
             part_index: part_idx as u32,
             size,
-            part_type: "chunk".to_string(),
-            duration: None,
             checksum: None,
         })
     }

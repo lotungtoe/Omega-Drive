@@ -325,7 +325,7 @@ impl PartStoreGateway for TelegramPartStoreGateway {
             message_id: new_msg_id,
             platform: "telegram".to_string(),
             size: part.size as u64,
-            attachment_name: part.attachment_name.clone(),
+            attachment_name: None,
         })
     }
 }

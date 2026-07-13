@@ -5,15 +5,16 @@ use std::sync::{Arc, Mutex, RwLock};
 use chrono::{DateTime, Utc};
 use tokio::sync::RwLock as TokioRwLock;
 
+use crate::parts_cache::PartsCacheInner;
 use crate::partitioned_mem_cache::PartitionedMemCache;
 use omega_drive_gateway::core::config::Config;
 use omega_drive_gateway::core::engine_context::EngineContext;
+use omega_drive_gateway::core::provider_runtime::ProviderRuntime;
+use omega_drive_gateway::core::types::UiHeartbeatStatus;
 use omega_drive_gateway::provider::app_context::AppContext;
 use omega_drive_gateway::provider::download_job_repository::DownloadJobRepository;
 use omega_drive_gateway::provider::file_repository::FileRepository;
 use omega_drive_gateway::provider::stream::StreamRegistry;
-use omega_drive_gateway::core::provider_runtime::ProviderRuntime;
-use omega_drive_gateway::core::types::UiHeartbeatStatus;
 
 #[derive(Clone)]
 pub struct DownloadContext {
@@ -28,4 +29,5 @@ pub struct DownloadContext {
     pub base_dir: PathBuf,
     pub stream_registry: Arc<StreamRegistry>,
     pub mem_cache: Arc<PartitionedMemCache>,
+    pub parts_cache: Arc<Mutex<PartsCacheInner>>,
 }

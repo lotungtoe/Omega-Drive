@@ -1,2 +1,5 @@
-[alias]
-lint-strict = "clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D clippy::dbg_macro -D clippy::todo -D clippy::undocumented_unsafe_blocks -W clippy::unwrap_used -W clippy::expect_used"
+[build]
+incremental = false
+
+[profile.dev]
+debug = 0

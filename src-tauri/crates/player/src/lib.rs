@@ -7,7 +7,6 @@ pub mod nativeplayer;
 pub mod playlistbuild;
 
 pub mod runtime;
-pub mod segmentgen;
 pub mod hwdec;
 pub mod infrastructure;
 
@@ -30,7 +29,6 @@ use omega_drive_gateway::provider::debug_logger::DebugLogger;
 
 // Re-exports for cross-module usage
 pub use playlistbuild::ensure_video_playback_ready;
-pub use segmentgen::get_file_part_internal;
 
 pub trait AppEventEmitter: Send + Sync {
     fn emit(&self, event: &str, payload: serde_json::Value);

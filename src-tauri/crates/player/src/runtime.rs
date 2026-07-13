@@ -3,40 +3,23 @@ use std::{
     path::Path,
     process::{Child, Command},
     sync::Arc,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-use tokio::sync::RwLock;
 use tokio::time::{sleep, timeout};
 
 use crate::PlayerContext;
 use tracing::{info, warn};
-use omega_drive_gateway::provider::storage::PartMetadata;
 
 
 const GLOBAL_VIDEO_BRIDGE_PROCESS_KEY: &str = "__global_video_bridge__";
 const BRIDGE_READY_ATTEMPTS: usize = 40;
 const BRIDGE_READY_DELAY_MS: u64 = 100;
 
-#[derive(Clone, Copy, Debug)]
-struct RecentSeekTarget {
-    pts_ms: u64,
-    recorded_at: Instant,
-    source: SeekSource,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum SeekSource {
-    Heuristic, // Bridge byte-range detection (fast but imprecise)
-    Confirmed, // Monitor position jump or UI command (accurate)
-}
-
 #[derive(Clone)]
 pub struct PlayerRuntime {
-    pub original_part_index: Arc<RwLock<HashMap<i64, Arc<HashMap<u32, PartMetadata>>>>>,
-    recent_seek_targets: Arc<RwLock<HashMap<i64, RecentSeekTarget>>>,
     pub active_playback_windows: Arc<std::sync::Mutex<HashSet<String>>>,
     pub video_bridge_processes: Arc<std::sync::Mutex<HashMap<String, std::process::Child>>>,
 }
@@ -44,140 +27,9 @@ pub struct PlayerRuntime {
 impl PlayerRuntime {
     pub fn new() -> Self {
         Self {
-            original_part_index: Arc::new(RwLock::new(HashMap::new())),
-            recent_seek_targets: Arc::new(RwLock::new(HashMap::new())),
             active_playback_windows: Arc::new(std::sync::Mutex::new(HashSet::new())),
             video_bridge_processes: Arc::new(std::sync::Mutex::new(HashMap::new())),
         }
-    }
-
-    pub(crate) async fn clear_playback_cache(&self) {
-        self.original_part_index.write().await.clear();
-        self.recent_seek_targets.write().await.clear();
-    }
-
-    pub fn start_idle_gc(self: &Arc<Self>) {
-        let this = self.clone();
-        tokio::spawn(async move {
-            let check_interval = Duration::from_secs(60);
-            let idle_timeout = Duration::from_secs(300);
-            loop {
-                tokio::time::sleep(check_interval).await;
-                let empty = this.active_playback_windows.lock().expect("Mutex poisoned").is_empty();
-                if empty {
-                    tokio::time::sleep(idle_timeout).await;
-                    let still_empty = this.active_playback_windows.lock().expect("Mutex poisoned").is_empty();
-                    if still_empty {
-                        this.clear_playback_cache().await;
-                    }
-                }
-            }
-        });
-    }
-
-    pub async fn cache_original_parts(&self, file_id: i64, parts: Vec<PartMetadata>) {
-        let mut cache = self.original_part_index.write().await;
-        let existing = cache
-            .get(&file_id)
-            .map(|parts| parts.as_ref().clone())
-            .unwrap_or_default();
-        let mut by_part = HashMap::with_capacity(existing.len() + parts.len());
-        by_part.extend(existing);
-        for part in parts {
-            by_part.insert(part.part_index, part);
-        }
-        cache.insert(file_id, Arc::new(by_part));
-    }
-
-    pub async fn get_all_original_parts(&self, file_id: i64) -> Option<Arc<HashMap<u32, PartMetadata>>> {
-        self.original_part_index.read().await.get(&file_id).cloned()
-    }
-
-    pub async fn get_first_original_part(&self, file_id: i64) -> Option<PartMetadata> {
-        let cache = self.original_part_index.read().await;
-        cache
-            .get(&file_id)
-            .and_then(|parts| {
-                parts
-                    .iter()
-                    .min_by_key(|(part_num, _)| *part_num)
-                    .map(|(_, part)| part)
-            })
-            .cloned()
-    }
-
-    pub async fn record_recent_seek_target(&self, file_id: i64, position_sec: f64) {
-        self.record_seek_internal(file_id, position_sec, SeekSource::Confirmed).await;
-    }
-
-    pub async fn record_recent_seek_target_heuristic(&self, file_id: i64, position_sec: f64) {
-        self.record_seek_internal(file_id, position_sec, SeekSource::Heuristic).await;
-    }
-
-    async fn record_seek_internal(&self, file_id: i64, position_sec: f64, source: SeekSource) {
-        if !position_sec.is_finite() || position_sec < 0.0 {
-            if std::env::var("DEBUG").is_ok() {
-                info!("[seek] record: file={} skipped (invalid pos={})", file_id, position_sec);
-            }
-            return;
-        }
-
-        let pts_ms = (position_sec * 1000.0).round().max(0.0) as u64;
-
-        let mut targets = self.recent_seek_targets.write().await;
-
-        // Only overwrite if: no existing target, OR new source is Confirmed, OR existing is also Heuristic
-        let should_record = match targets.get(&file_id) {
-            None => true,
-            Some(existing) => {
-                source == SeekSource::Confirmed || existing.source == SeekSource::Heuristic
-            }
-        };
-
-        if should_record {
-            if std::env::var("DEBUG").is_ok() {
-                info!("[seek] record: file={} pts_ms={} (pos={}s) source={:?}", file_id, pts_ms, position_sec, source);
-            }
-            targets.insert(
-                file_id,
-                RecentSeekTarget {
-                    pts_ms,
-                    recorded_at: Instant::now(),
-                    source,
-                },
-            );
-        } else if std::env::var("DEBUG").is_ok() {
-            info!("[seek] record: file={} skipped (existing Confirmed target)", file_id);
-        }
-    }
-
-    pub async fn peek_recent_seek_target(&self, file_id: i64, max_age: Duration) -> Option<u64> {
-        let targets = self.recent_seek_targets.read().await;
-        let target = targets.get(&file_id).copied()?;
-        if target.recorded_at.elapsed() > max_age {
-            return None;
-        }
-        Some(target.pts_ms)
-    }
-
-    pub async fn take_recent_seek_target(&self, file_id: i64, max_age: Duration) -> Option<u64> {
-        let mut targets = self.recent_seek_targets.write().await;
-        let target = targets.remove(&file_id)?;
-        if target.recorded_at.elapsed() > max_age {
-            if std::env::var("DEBUG").is_ok() {
-                info!("[seek] take: file={} expired (age={:?} > max={:?})", file_id, target.recorded_at.elapsed(), max_age);
-            }
-            return None;
-        }
-        if std::env::var("DEBUG").is_ok() {
-            info!("[seek] take: file={} → Some({})", file_id, target.pts_ms);
-        }
-        Some(target.pts_ms)
-    }
-
-    pub async fn clear_hot_file_state(&self, file_id: i64) {
-        self.original_part_index.write().await.remove(&file_id);
-        self.recent_seek_targets.write().await.remove(&file_id);
     }
 }
 

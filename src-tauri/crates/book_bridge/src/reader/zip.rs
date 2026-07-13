@@ -46,7 +46,6 @@ impl ZipReader {
     ) -> Result<Self, String> {
         let mut parts: Vec<PartMetadata> = parts
             .into_iter()
-            .filter(|p| p.part_type == "chunk")
             .fold(BTreeMap::<u32, PartMetadata>::new(), |mut map, p| {
                 match map.get(&p.part_index) {
                     Some(ex) if ex.platform == "discord" && p.platform != "discord" => {
@@ -246,7 +245,7 @@ impl ZipReader {
         size: u64,
         provider: &Arc<dyn ByteStreamProvider>,
     ) -> Result<Vec<u8>, String> {
-        let mut rx = provider.stream_range(file_id, offset, size, "book").await?;
+        let mut rx = provider.stream_range(file_id, offset, size, "preview").await?;
         let mut result = Vec::with_capacity(size as usize);
         while let Some(chunk) = rx.recv().await {
             let chunk = chunk?;

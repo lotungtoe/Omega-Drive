@@ -105,40 +105,6 @@ CREATE TABLE IF NOT EXISTS upload_profile_rules (
 CREATE INDEX IF NOT EXISTS idx_upload_profile_rules_profile_priority
     ON upload_profile_rules(profile_id, priority DESC, id ASC);
 
-CREATE TABLE IF NOT EXISTS download_jobs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    file_id INTEGER NOT NULL,
-    target_path TEXT NOT NULL,
-    state TEXT NOT NULL,
-    error TEXT,
-    error_code TEXT,
-    total_parts INTEGER NOT NULL DEFAULT 0,
-    done_parts INTEGER NOT NULL DEFAULT 0,
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL,
-    FOREIGN KEY(file_id) REFERENCES files(id) ON DELETE CASCADE
-);
-CREATE INDEX IF NOT EXISTS idx_download_jobs_file_id ON download_jobs(file_id);
-CREATE INDEX IF NOT EXISTS idx_download_jobs_state_created ON download_jobs(state, created_at);
-CREATE INDEX IF NOT EXISTS idx_download_jobs_file_state ON download_jobs(file_id, state);
-CREATE INDEX IF NOT EXISTS idx_download_jobs_state_updated ON download_jobs(state, updated_at);
-
-CREATE TABLE IF NOT EXISTS upload_jobs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    file_id INTEGER NOT NULL UNIQUE,
-    source_path TEXT NOT NULL,
-    state TEXT NOT NULL,
-    error TEXT,
-    error_code TEXT,
-    done_parts INTEGER NOT NULL DEFAULT 0,
-    total_parts INTEGER NOT NULL DEFAULT 0,
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL,
-    FOREIGN KEY(file_id) REFERENCES files(id) ON DELETE CASCADE
-);
-CREATE INDEX IF NOT EXISTS idx_upload_jobs_state_updated ON upload_jobs(state, updated_at);
-CREATE INDEX IF NOT EXISTS idx_upload_jobs_source_path ON upload_jobs(source_path);
-
 CREATE TABLE IF NOT EXISTS video_files (
     file_id INTEGER PRIMARY KEY,
     duration_sec REAL,
@@ -253,8 +219,6 @@ mod tests {
         "parts",
         "upload_profiles",
         "upload_profile_rules",
-        "download_jobs",
-        "upload_jobs",
         "video_files",
         "audio_files",
         "image_files",

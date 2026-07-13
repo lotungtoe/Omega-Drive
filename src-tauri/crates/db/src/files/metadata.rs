@@ -1,6 +1,6 @@
 ﻿use rusqlite::{params, Connection, OptionalExtension, Result};
 
-use crate::{drive_stats_cache, provider_quota_cache, upload_jobs};
+use crate::{drive_stats_cache, provider_quota_cache};
 
 use super::{ensure_media_child_row, infer_file_kind, set_file_kind, FileMetadata};
 
@@ -16,11 +16,10 @@ const FILE_SELECT_LONG: &str = "SELECT \
     f.id, f.filename, f.size, f.thread_id, f.folder_id, \
     COALESCE((SELECT scope FROM tenant_meta WHERE singleton = 1), 'my') AS drive_scope, \
     f.checksum, f.status, f.starred, \
-    f.created_at, f.deleted_at, uj.source_path AS local_path, f.kind, vf.duration_sec, \
+    f.created_at, f.deleted_at, NULL AS local_path, f.kind, vf.duration_sec, \
     f.is_hidden, f.last_accessed_at \
     FROM files f \
-    LEFT JOIN video_files vf ON vf.file_id = f.id \
-    LEFT JOIN upload_jobs uj ON uj.file_id = f.id";
+    LEFT JOIN video_files vf ON vf.file_id = f.id";
 
 fn map_file(row: &rusqlite::Row) -> rusqlite::Result<FileMetadata> {
     Ok(FileMetadata {
@@ -162,9 +161,8 @@ pub fn insert_file(
         params![filename, size, thread_id, folder_id, checksum, kind],
     )?;
     let file_id = conn.last_insert_rowid();
-    if let Some(source_path) = local_path {
-        upload_jobs::upsert_job(conn, file_id, source_path, "uploading", 0)?;
-    }
+    // local_path không còn lưu trong DB — file được copy vào cache_dir ở layer trên
+    let _ = local_path;
     let _ = drive_scope;
     ensure_media_child_row(conn, file_id, kind)?;
     let _ = drive_stats_cache::refresh_drive_stats_cache(conn);
@@ -341,11 +339,8 @@ pub fn update_file_folder(conn: &Connection, id: i64, folder_id: Option<i64>) ->
 }
 
 pub fn update_file_local_path(conn: &Connection, id: i64, local_path: Option<&str>) -> Result<()> {
-    if let Some(path) = local_path {
-        upload_jobs::update_source_path(conn, id, path)?;
-    } else {
-        upload_jobs::delete_job_by_file_id(conn, id)?;
-    }
+    // local_path không còn lưu trong DB — file ops ở layer trên
+    let _ = (id, local_path);
     Ok(())
 }
 

@@ -190,7 +190,7 @@ impl DriveService {
             .get_parts_for_file(file_id).await
             .map_err(|e| e.to_string())?;
 
-        let parts: Vec<_> = parts.into_iter().filter(|p| p.part_type == "chunk").collect();
+        let parts: Vec<_> = parts.into_iter().collect();
 
         let mut unique_parts_map = std::collections::BTreeMap::new();
         for p in parts {

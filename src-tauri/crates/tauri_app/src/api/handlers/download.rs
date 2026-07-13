@@ -1,13 +1,14 @@
 ﻿use serde_json::{json, Value};
 use std::path::PathBuf;
 
+use omega_drive_gateway::core::data::DownloadJob;
+
 use crate::{
     app_runtime::AppState,
     core::{
         error::{wrap_error, AppResult},
         error_codes as codes,
     },
-    db::download_jobs::DownloadJob,
 };
 
 #[tauri::command]

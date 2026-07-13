@@ -64,11 +64,8 @@ fn build_cleanup_part_metadata(file_sqlite_id: i64, uploaded_part: &UploadedPart
         file_id: file_sqlite_id,
         platform: uploaded_part.platform.clone(),
         message_id: uploaded_part.message_id.to_string(),
-        attachment_name: uploaded_part.attachment_name.clone(),
         part_index: uploaded_part.part_index,
         size: uploaded_part.size as i64,
-        part_type: "chunk".to_string(),
-        duration: None,
         checksum: uploaded_part.checksum.clone(),
     }
 }

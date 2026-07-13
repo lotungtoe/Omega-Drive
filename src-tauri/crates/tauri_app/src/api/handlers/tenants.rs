@@ -12,8 +12,8 @@ use crate::{
         events::OmegaEvent,
         tenant::{TenantDescriptor, TENANT_SCOPE_MY, TENANT_SCOPE_SHARED},
         tenant_registry::{
-            discover_tenants, persist_active_tenant, resolve_active_tenant_for_scope,
-            tenant_db_path,
+            discover_tenants, load_tenant_registry, persist_active_tenant,
+            resolve_active_tenant_for_scope, save_tenant_registry, tenant_db_path,
         },
     },
     db::tenant_meta,
@@ -242,4 +242,54 @@ pub async fn rename_tenant_display_name(
         )
     })?;
     Ok(build_tenant_summary(&st.base_dir, tenant))
+}
+
+#[tauri::command]
+pub async fn delete_tenant(
+    st: tauri::State<'_, AppState>,
+    tenant: TenantDescriptor,
+) -> AppResult<()> {
+    let current = st
+        .active_tenant
+        .lock()
+        .map(|t| t.clone())
+        .map_err(|err| {
+            map_tenant_error(
+                "delete_tenant",
+                json!({ "tenant": tenant }),
+                anyhow::anyhow!(err.to_string()),
+            )
+        })?;
+
+    if current == tenant {
+        return Err(map_tenant_error(
+            "delete_tenant",
+            json!({ "tenant": tenant }),
+            anyhow::anyhow!("Cannot delete the currently active tenant. Switch to another tenant first."),
+        ));
+    }
+
+    let db_path = tenant_db_path(&st.base_dir, &tenant);
+
+    let mut registry = load_tenant_registry(&st.base_dir);
+    if registry.active_tenant(&tenant.scope).as_ref() == Some(&tenant) {
+        registry.set_active_db_file(&tenant.scope, None);
+    }
+    save_tenant_registry(&registry, &st.base_dir).map_err(|err| {
+        map_tenant_error(
+            "delete_tenant",
+            json!({ "tenant": tenant, "dbPath": db_path.display().to_string() }),
+            err,
+        )
+    })?;
+
+    std::fs::remove_file(&db_path).map_err(|err| {
+        map_tenant_error(
+            "delete_tenant",
+            json!({ "tenant": tenant, "dbPath": db_path.display().to_string() }),
+            err,
+        )
+    })?;
+
+    Ok(())
 }

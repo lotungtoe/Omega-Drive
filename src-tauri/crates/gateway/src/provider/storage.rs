@@ -11,11 +11,8 @@ pub struct PartMetadata {
     pub file_id: i64,
     pub platform: String,
     pub message_id: String,
-    pub attachment_name: Option<String>,
     pub part_index: u32,
     pub size: i64,
-    pub part_type: String,
-    pub duration: Option<f64>,
     pub checksum: Option<String>,
 }
 

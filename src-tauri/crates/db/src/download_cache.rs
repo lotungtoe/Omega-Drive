@@ -1,5 +1,5 @@
-﻿use chrono::Utc;
-use rusqlite::{params, Connection, Result};
+use chrono::Utc;
+use rusqlite::{params, Connection, OptionalExtension, Result};
 
 pub use omega_drive_gateway::core::data::DownloadJob;
 
@@ -183,4 +183,3 @@ pub fn purge_old_jobs(conn: &Connection, days: i64, states: &[&str]) -> Result<u
     let affected = conn.execute(&sql, params)?;
     Ok(affected)
 }
-

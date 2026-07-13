@@ -46,6 +46,7 @@ export function TenantManagerModal({
   onClose,
   onSwitchTenant,
   onRenameTenant,
+  onDeleteTenant,
   onOpenSetup,
 }) {
   const { t } = useTranslation()
@@ -129,7 +130,7 @@ export function TenantManagerModal({
             <div style={{ marginTop: 4, fontSize: 13, color: 'var(--gd-modal-text-secondary)' }}>
               {t(
                 'tenantManager.description',
-                'Quan ly danh sach DB trong scope nay va dat ten hien thi de de nhin hon.'
+                'Quan ly danh sach DB trong scope nay.'
               )}
             </div>
           </div>
@@ -184,6 +185,7 @@ export function TenantManagerModal({
                 draftNames={draftNames}
                 setDraftNames={setDraftNames}
                 onRenameTenant={onRenameTenant}
+                onDeleteTenant={onDeleteTenant}
                 onSwitchTenant={onSwitchTenant}
                 loading={loading}
                 t={t}
@@ -208,13 +210,13 @@ function TenantItem({
   draftNames,
   setDraftNames,
   onRenameTenant,
+  onDeleteTenant,
   onSwitchTenant,
   loading,
   t,
 }) {
   const key = tenantKey(tenant)
   const isActive = activeKey === key
-  const [isSaving, setIsSaving] = useState(false)
 
   const statusLabel = isActive
     ? t('tenantManager.active', 'Dang dung')
@@ -225,13 +227,8 @@ function TenantItem({
 
   const draftValue = draftNames[key] ?? tenant.displayName ?? ''
 
-  const handleSave = async () => {
-    setIsSaving(true)
-    try {
-      await onRenameTenant(tenant, draftValue)
-    } finally {
-      setIsSaving(false)
-    }
+  const handleBlur = () => {
+    onRenameTenant(tenant, draftValue)
   }
 
   return (
@@ -290,6 +287,7 @@ function TenantItem({
               [key]: event.target.value,
             }))
           }
+          onBlur={handleBlur}
           placeholder={t('tenantManager.placeholder', 'Ten hien thi tuy chinh')}
           style={{
             flex: '1 1 280px',
@@ -303,12 +301,16 @@ function TenantItem({
           }}
         />
         <Button
-          variant="outline"
+          variant="ghost"
           size="md"
-          disabled={loading || isSaving}
-          onClick={handleSave}
+          disabled={loading}
+          onClick={() => onDeleteTenant(tenant)}
+          style={{
+            color: '#ef4444',
+            borderColor: 'rgba(239,68,68,0.3)',
+          }}
         >
-          {isSaving ? t('tenantManager.saving', 'Dang luu...') : t('tenantManager.save', 'Luu ten')}
+          {t('tenantManager.delete', 'Xoa DB')}
         </Button>
         <Button
           variant={isActive ? "ghost" : "primary"}

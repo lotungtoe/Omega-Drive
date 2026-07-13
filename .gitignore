@@ -6,6 +6,10 @@
 
 # Backend
 
+!Cargo.toml
+!Cargo.lock
+/target/
+
 !src-tauri/
 !src-tauri/**
 src-tauri/binaries/

@@ -15,7 +15,8 @@ use omega_drive_player::runtime::{
 use omega_drive_player::PlayerContext;
 use crate::app_wiring::app_runtime::AppState;
 use crate::db::repos::{
-    DbDownloadJobRepository, DbFileRepository, DbFolderRepository, DbUploadJobRepository,
+    CacheDbDownloadJobRepository, CacheDbUploadJobRepository,
+    DbFileRepository, DbFolderRepository,
 };
 use crate::features::drive::DriveService;
 use crate::providers::install::{
@@ -116,6 +117,14 @@ pub(super) async fn run_video_bridge_process(
     let db_write = Arc::new(DbWriteQueue::new(db_write_conn));
     let db_read = Arc::clone(&drive_db_read);
 
+    // --- Cache database (upload_jobs + download_jobs) ---
+    let cache_dir = base_dir.join("cache");
+    let _ = std::fs::create_dir_all(&cache_dir);
+    let cache_db_path = cache_dir.join("omega_drive_cache.db");
+    let cache_db_conn = omega_drive_db::cache::open_cache_db(&cache_db_path)
+        .map_err(|e| format!("Cannot open cache database: {e}"))?;
+    let cache_db = Arc::new(tokio::sync::Mutex::new(cache_db_conn));
+
     let event_bus = Arc::new(omega_drive_gateway::core::events::EventBus::new());
     let install_ctx = ProviderInstallContext {
         base_dir: base_dir.clone(),
@@ -137,8 +146,10 @@ pub(super) async fn run_video_bridge_process(
         integrity: Arc::new(EngineIntegrityService),
         zip: Arc::new(EngineZipService),
     };
+    let cache_db_file_repo = DbFileRepository::new(Arc::clone(&db_read), Arc::clone(&db_write))
+        .with_cache_db(cache_db_path.clone());
     let drive_service = Arc::new(DriveService::new(
-        Arc::new(DbFileRepository::new(Arc::clone(&db_read), Arc::clone(&db_write))),
+        Arc::new(cache_db_file_repo),
         Arc::new(DbFolderRepository::new(Arc::clone(&db_write))),
         Arc::clone(&provider_runtime_raw),
         Arc::clone(&event_bus),
@@ -146,13 +157,22 @@ pub(super) async fn run_video_bridge_process(
     ));
     let player_runtime = Arc::new(PlayerRuntime::new());
     player_runtime.active_playback_windows.lock().expect("Mutex poisoned").insert("video_bridge".to_string());
-    player_runtime.start_idle_gc();
-        let file_repo: Arc<dyn omega_drive_gateway::provider::file_repository::FileRepository> = Arc::new(DbFileRepository::new(Arc::clone(&db_read), Arc::clone(&db_write)));
+    let file_repo: Arc<dyn omega_drive_gateway::provider::file_repository::FileRepository> =
+        Arc::new(DbFileRepository::new(Arc::clone(&db_read), Arc::clone(&db_write)).with_cache_db(cache_db_path.clone()));
     let shared_cdn_link_cache = Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
+    let cache_config = {
+        let c = cfg.read().expect("cfg RwLock");
+        let mut map = std::collections::HashMap::new();
+        map.insert("preview".into(), omega_drive_download::PartitionConfig { max_bytes: Some(c.cache_preview_max_bytes as usize) });
+        map.insert("player-video".into(), omega_drive_download::PartitionConfig { max_bytes: Some(c.cache_video_max_bytes as usize) });
+        map.insert("player-audio".into(), omega_drive_download::PartitionConfig { max_bytes: Some(c.cache_audio_max_bytes as usize) });
+        map
+    };
+    let cache_download_repo = CacheDbDownloadJobRepository::new(Arc::clone(&cache_db));
     let download_ctx = Arc::new(omega_drive_download::DownloadContext {
         cfg: Arc::clone(&cfg),
         file_repo: Arc::clone(&file_repo),
-        download_job_repo: Arc::new(DbDownloadJobRepository::new(Arc::clone(&db_write))),
+        download_job_repo: Arc::new(cache_download_repo),
         provider_runtime: Arc::clone(&provider_runtime_raw),
         app_ctx: Arc::new(NoopAppContext),
         ui_heartbeats: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
@@ -161,8 +181,10 @@ pub(super) async fn run_video_bridge_process(
         base_dir: base_dir.clone(),
         stream_registry: provider_runtime_raw.stream_registry.clone(),
         mem_cache: Arc::new(omega_drive_download::PartitionedMemCache::new(
-            50 * 1024 * 1024,
-            std::collections::HashMap::new(),
+            cache_config.clone(),
+        )),
+        parts_cache: Arc::new(std::sync::Mutex::new(
+            omega_drive_download::PartsCacheInner::new(omega_drive_download::PARTS_CACHE_MAX_BYTES),
         )),
     });
     let byte_stream_provider: Arc<dyn ByteStreamProvider> = Arc::new(
@@ -242,11 +264,10 @@ pub(super) async fn run_video_bridge_process(
         engine: engine_ctx,
         player_ctx: Arc::clone(&player_ctx),
         folder_repo: Arc::new(DbFolderRepository::new(Arc::clone(&db_write))),
-        upload_job_repo: Arc::new(DbUploadJobRepository::new(Arc::clone(&db_write))),
-        download_job_repo: Arc::new(DbDownloadJobRepository::new(Arc::clone(&db_write))),
+        upload_job_repo: Arc::new(CacheDbUploadJobRepository::new(Arc::clone(&cache_db))),
+        download_job_repo: Arc::new(CacheDbDownloadJobRepository::new(Arc::clone(&cache_db))),
         mem_cache: Arc::new(omega_drive_download::PartitionedMemCache::new(
-            50 * 1024 * 1024,
-            std::collections::HashMap::new(),
+            cache_config,
         )),
     };
 

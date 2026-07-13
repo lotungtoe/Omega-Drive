@@ -1,4 +1,4 @@
-﻿use chrono::Utc;
+use chrono::Utc;
 use rusqlite::{params, Connection, OptionalExtension, Result};
 
 pub use omega_drive_gateway::core::data::UploadJob;
@@ -27,9 +27,8 @@ pub fn upsert_job(
 ) -> Result<i64> {
     let now = Utc::now().timestamp();
     conn.execute(
-        "INSERT INTO upload_jobs (
-            file_id, source_path, state, error, error_code, done_parts, total_parts, created_at, updated_at
-         ) VALUES (?1, ?2, ?3, NULL, NULL, 0, ?4, ?5, ?5)
+        "INSERT INTO upload_jobs (file_id, source_path, state, error, error_code, done_parts, total_parts, created_at, updated_at)
+         VALUES (?1, ?2, ?3, NULL, NULL, 0, ?4, ?5, ?5)
          ON CONFLICT(file_id) DO UPDATE SET
             source_path = excluded.source_path,
             state = excluded.state,
@@ -109,10 +108,6 @@ pub fn update_state(
 }
 
 pub fn delete_job_by_file_id(conn: &Connection, file_id: i64) -> Result<()> {
-    conn.execute(
-        "DELETE FROM upload_jobs WHERE file_id = ?",
-        params![file_id],
-    )?;
+    conn.execute("DELETE FROM upload_jobs WHERE file_id = ?", params![file_id])?;
     Ok(())
 }
-

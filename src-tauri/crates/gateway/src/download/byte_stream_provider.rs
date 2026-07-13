@@ -11,7 +11,7 @@ pub struct StreamChunk {
 #[async_trait::async_trait]
 pub trait ByteStreamProvider: Send + Sync {
     /// Stream bytes [offset, offset+len) từ file_id.
-    /// namespace = "video" | "book" | "document" | "download"
+    /// namespace = "player" | "preview" | "document" | "download"
     async fn stream_range(
         &self,
         file_id: i64,

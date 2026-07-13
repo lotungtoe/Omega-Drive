@@ -29,10 +29,11 @@ pub(crate) async fn stream_byte_range(
     start: u64,
     end: u64,
     stream_gen: u64,
+    namespace: &str,
 ) -> Result<BoxByteStream, StreamError> {
     let len = end - start + 1;
     let rx = st.byte_stream_provider
-        .stream_range(file_id, start, len, "video")
+        .stream_range(file_id, start, len, namespace)
         .await
         .map_err(|e| {
             tracing::error!("stream_range failed: file={} err={}", file_id, e);

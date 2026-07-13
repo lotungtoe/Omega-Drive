@@ -11,13 +11,17 @@ export function DeleteConfirmModal({ isOpen, onClose, onConfirm, item }) {
 
   const isFolder = item.isFolder
   const isPermanent = item.status === 'trashed'
+  const isTenant = item.type === 'tenant'
   const itemName = item.name || item.filename || ''
   
   // Determine text based on item type and status
   let titleKey = 'modal.deleteFile.title'
   let warningText = t('modal.deleteFile.warning', { name: itemName, defaultValue: `Are you sure you want to move "${itemName}" to trash?` })
   
-  if (isPermanent) {
+  if (isTenant) {
+    titleKey = 'modal.deleteTenant.title'
+    warningText = t('modal.deleteTenant.warning', { name: itemName, defaultValue: `Are you sure you want to PERMANENTLY delete the database "${itemName}"? This action cannot be undone.` })
+  } else if (isPermanent) {
     titleKey = 'modal.deleteForever.title'
     warningText = t('modal.deleteForever.warning', { name: itemName, defaultValue: `Are you sure you want to PERMANENTLY delete "${itemName}"? This action cannot be undone.` })
   } else if (isFolder) {

@@ -372,6 +372,27 @@ export function MainAppContent() {
     [refreshTenantPickerState, t, uiActions.toast]
   )
 
+  const handleDeleteTenant = useCallback(async (tenant) => {
+    const displayName = tenant.displayName || `D:${tenant.discordGuildId || '0'} / T:${tenant.telegramGroupId || '0'}`
+    const confirmed = await uiActions.openDeleteConfirmModal({
+      type: 'tenant',
+      name: displayName,
+      tenant,
+    })
+    if (!confirmed) return
+    try {
+      await DriveApi.deleteTenant(tenant)
+      await refreshTenantPickerState()
+    } catch (error) {
+      const message = toUserMessage(error)
+      console.error("[MainApp] Failed to delete tenant:", error)
+      uiActions.toast.show(
+        message.message || t("tenantManager.deleteFailed", "Xoa tenant that bai."),
+        "error"
+      )
+    }
+  }, [refreshTenantPickerState, t, uiActions.toast, uiActions.openDeleteConfirmModal])
+
   useEffect(() => {
     if (onboardingBootstrappedRef.current) {
       return undefined;
@@ -734,6 +755,7 @@ export function MainAppContent() {
                 uiActions.hideTenantManager()
               }}
               onRenameTenant={renameTenantDisplayName}
+              onDeleteTenant={handleDeleteTenant}
               onOpenSetup={(scope) => {
                 uiActions.hideTenantManager()
                 openTenantSetup(scope)

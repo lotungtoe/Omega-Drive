@@ -9,22 +9,6 @@ use omega_drive_gateway::{core::scope::DriveScope, upload::upload_plan::UploadPl
 use omega_drive_player::nativeplayer::{MpvSessionType, MpvStatus};
 
 #[tauri::command]
-pub async fn get_file_part(
-    st: State<'_, AppState>,
-    file_id: i64,
-    part_num: u32,
-) -> Result<Vec<u8>, String> {
-    #[cfg(feature = "player")]
-    {
-        omega_drive_player::get_file_part_internal(st.player_ctx.as_ref(), file_id, part_num).await
-    }
-    #[cfg(not(feature = "player"))]
-    {
-        Err("player feature disabled".to_string())
-    }
-}
-
-#[tauri::command]
 pub async fn open_in_native_player(
     st: State<'_, AppState>,
     file_id: i64,

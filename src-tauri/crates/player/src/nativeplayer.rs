@@ -1,5 +1,4 @@
 ﻿use std::{
-    collections::HashMap,
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicU64, Ordering},
@@ -14,7 +13,6 @@ use tracing::{info, warn};
 
 use crate::PlayerContext;
 use omega_drive_gateway::provider::file_repository::FileRepository;
-use omega_drive_gateway::provider::storage::PartMetadata;
 
 const PLAYBACK_MIN_SAVE_POSITION_SECS: f64 = 10.0;
 const RAW_SEEK_CACHE_SECS_CAP: u64 = 5;
@@ -120,76 +118,8 @@ fn normalize_start_position_sec(start_position_sec: Option<f64>) -> f64 {
         .unwrap_or(0.0)
 }
 
-fn should_release_file_cache(active_file_id: Option<i64>, closing_file_id: i64) -> bool {
-    !matches!(active_file_id, Some(current_file_id) if current_file_id == closing_file_id)
-}
-
 fn mpv_demuxer_max_bytes(max_mb: u64) -> u64 {
     max_mb.saturating_mul(1024).saturating_mul(1024)
-}
-
-fn current_session_file_id(session_type: MpvSessionType) -> Option<i64> {
-    let guard = match mpv_session_store_by_type(session_type).lock() {
-        Ok(guard) => guard,
-        Err(err) => {
-            warn!(
-                "Native mpv session store ({:?}) poisoned while checking active file: {}",
-                session_type, err
-            );
-            err.into_inner()
-        }
-    };
-
-    guard.as_ref().map(|session| session.file_id)
-}
-
-fn release_closed_file_cache(
-    state: &PlayerContext,
-    active_file_id: Option<i64>,
-    file_id: i64,
-    handle: &tokio::runtime::Handle,
-) {
-    if should_release_file_cache(active_file_id, file_id) {
-        let player_runtime = Arc::clone(&state.player_runtime);
-        handle.spawn(async move {
-            player_runtime.clear_hot_file_state(file_id).await;
-        });
-    }
-}
-
-async fn warm_playback_runtime_state(
-    state: &PlayerContext,
-    file_id: i64,
-    parts: Vec<PartMetadata>,
-) {
-    if parts.is_empty() {
-        return;
-    }
-
-    state
-        .player_runtime
-        .cache_original_parts(file_id, parts.clone())
-        .await;
-
-    let mut by_provider: HashMap<String, Vec<PartMetadata>> = HashMap::new();
-    for part in parts {
-        by_provider
-            .entry(part.platform.clone())
-            .or_default()
-            .push(part);
-    }
-
-    for (provider_id, provider_parts) in by_provider {
-        let Some(gateway) = state.stream_registry.get(&provider_id) else {
-            continue;
-        };
-        if let Err(err) = gateway.prepare_parts_for_playback(&provider_parts).await {
-            warn!(
-                "Playback runtime warmup failed for file {} provider {}: {}",
-                file_id, provider_id, err
-            );
-        }
-    }
 }
 
 fn configure_native_player_buffering(
@@ -590,21 +520,17 @@ fn teardown_session(
     let (file_id, position_sec, duration_sec) = save_video_progress(&session);
     shutdown_native_session(&mut session, state);
     drop(session);
-    release_closed_file_cache(state, None, file_id, handle);
     persist_playback_snapshot(&state.file_repo, file_id, position_sec, duration_sec, handle);
 }
 
 async fn teardown_taken_session_async(
     mut session: NativeMpvSession,
     state: &PlayerContext,
-    session_type: MpvSessionType,
+    _session_type: MpvSessionType,
 ) {
-    let handle = tokio::runtime::Handle::current();
     let (file_id, position_sec, duration_sec) = save_video_progress(&session);
     shutdown_native_session(&mut session, state);
     drop(session);
-    let active_file_id = current_session_file_id(session_type);
-    release_closed_file_cache(state, active_file_id, file_id, &handle);
     persist_playback_snapshot_async(&state.file_repo, file_id, position_sec, duration_sec).await;
 }
 
@@ -717,8 +643,6 @@ fn spawn_session_monitor(
 
         loop {
             let mut should_break = false;
-            let mut detected_seek: Option<(i64, f64)> = None;
-
             let mut guard = match session_store.lock() {
                 Ok(guard) => guard,
                 Err(err) => {
@@ -807,7 +731,6 @@ fn spawn_session_monitor(
                                         session_file_id, last_position, position, delta
                                     );
                                     last_seek_detected = Some(Instant::now());
-                                    detected_seek = Some((session_file_id, position));
                                 }
                             }
                         }
@@ -828,16 +751,6 @@ fn spawn_session_monitor(
             if !session_alive {
                 teardown_session(&mut *guard, &state, &handle);
                 should_break = true;
-            }
-
-            if let Some((file_id, position)) = detected_seek {
-                if std::env::var("DEBUG").is_ok() {
-                    info!("[seek] monitor detected native seek: file={} pos={}s", file_id, position);
-                }
-                let state = state.clone();
-                handle.spawn(async move {
-                    state.player_runtime.record_recent_seek_target(file_id, position).await;
-                });
             }
 
             if should_break {
@@ -876,29 +789,14 @@ pub async fn bridge_open_native_player(
             return Err(e);
         }
     };
-    let original_parts = state.file_repo.get_original_parts_for_file(file_id)
-        .await
-        .unwrap_or_default();
-    let has_chunk_parts = !original_parts.is_empty();
 
-    if has_chunk_parts {
-        warm_playback_runtime_state(state, file_id, original_parts).await;
-    }
-
-    let media_source = if has_chunk_parts {
-        info!(
-            "Bridge-owned mpv session ({:?}) will use cloud raw stream directly for '{}'.",
-            session_type, file.filename
-        );
-        let ip = crate::infrastructure::pick_working_ip();
-        let url = format!("http://{}:{}/raw/{}", ip, state.bridge_port.load(std::sync::atomic::Ordering::Relaxed), file_id);
-        debug_log!("mpv", "bridge_open_native_player url: {}", url);
-        url
-    } else {
-        let e = "File khong co original chunk de phat native player.".to_string();
-        debug_log!("mpv", "bridge_open_native_player fail: {}", e);
-        return Err(e);
-    };
+    info!(
+        "Bridge-owned mpv session ({:?}) will use cloud raw stream directly for '{}'.",
+        session_type, file.filename
+    );
+    let ip = crate::infrastructure::pick_working_ip();
+    let media_source = format!("http://{}:{}/raw/{}", ip, state.bridge_port.load(std::sync::atomic::Ordering::Relaxed), file_id);
+    debug_log!("mpv", "bridge_open_native_player url: {}", media_source);
 
     let start_pos = normalize_start_position_sec(start_position_sec);
     let session_id = NEXT_NATIVE_MPV_SESSION_ID.fetch_add(1, Ordering::Relaxed);
@@ -962,7 +860,7 @@ pub async fn bridge_open_native_player(
         }
 
         if init_error.is_none() {
-            if let Err(err) = configure_native_player_buffering(&init, state, has_chunk_parts) {
+            if let Err(err) = configure_native_player_buffering(&init, state, true) {
                 init_error = Some(err);
             }
         }
@@ -1186,13 +1084,6 @@ pub async fn bridge_mpv_seek(
 
     if std::env::var("DEBUG").is_ok() {
         info!("[mpv] seek: file={:?} pos={}s type={:?}", seek_file_id, clamped, session_type);
-    }
-
-    if let Some(file_id) = seek_file_id {
-        state
-            .player_runtime
-            .record_recent_seek_target(file_id, clamped)
-            .await;
     }
 
     Ok(status)

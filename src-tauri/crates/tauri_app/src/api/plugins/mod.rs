@@ -76,7 +76,6 @@ macro_rules! tauri_feature_handler {
             $crate::api::handlers::clear_playback_position,
             $crate::api::handlers::get_video_player_config,
             $crate::api::handlers::update_video_player_config,
-            $crate::api::plugins::player_cmds::get_file_part,
             $crate::api::plugins::player_cmds::open_in_native_player,
             $crate::api::plugins::player_cmds::player_update_playback_progress,
             $crate::api::plugins::player_cmds::player_clear_playback_history,
@@ -100,7 +99,6 @@ macro_rules! tauri_feature_handler {
             $crate::api::handlers::check_binary_updates,
             $crate::api::handlers::download_binary_update,
 
-            $crate::api::handlers::extract_file_text,
             $crate::api::handlers::open_external_url,
             $crate::api::handlers::open_discord_auth,
             $crate::api::handlers::open_bot_env,
@@ -124,6 +122,7 @@ macro_rules! tauri_feature_handler {
             $crate::api::handlers::list_tenants,
             $crate::api::handlers::rename_tenant_display_name,
             $crate::api::handlers::switch_tenant,
+            $crate::api::handlers::delete_tenant,
             $crate::api::handlers::get_available_browsers,
             $crate::api::handlers::get_url_metadata,
             $crate::api::handlers::list_backup_snapshots,

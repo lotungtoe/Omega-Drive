@@ -513,6 +513,30 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
                     path="download.auto_resume_on_startup"
                     {...commonProps}
                   />
+                  <InputRow
+                    label="Book cache max (MB)"
+                    description="Max RAM for book preview cache"
+                    path="download.cache_preview_max_mb"
+                    {...commonProps}
+                  />
+                  <InputRow
+                    label="Video cache max (MB)"
+                    description="Max RAM for video streaming cache"
+                    path="download.cache_player_max_mb"
+                    {...commonProps}
+                  />
+                  <InputRow
+                    label="Video cache max (MB) — dedicated"
+                    description="Dedicated RAM for video (default: player_max_mb)"
+                    path="download.cache_video_max_mb"
+                    {...commonProps}
+                  />
+                  <InputRow
+                    label="Audio cache max (MB)"
+                    description="Dedicated RAM for audio streaming cache"
+                    path="download.cache_audio_max_mb"
+                    {...commonProps}
+                  />
                 </SettingsSection>
               )}
 

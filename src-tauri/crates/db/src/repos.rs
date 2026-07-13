@@ -1,7 +1,9 @@
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
+use tokio::sync::Mutex as TokioMutex;
 use tokio::sync::RwLock as TokioRwLock;
 
 use omega_drive_gateway::core::error::AppResult;
@@ -18,31 +20,61 @@ use omega_drive_gateway::upload::upload_plan::UploadProfile;
 use omega_drive_gateway::upload::upload_rules::UploadProfileRule;
 use omega_drive_gateway::provider::storage::PartMetadata;
 
-use crate::download_jobs::DownloadJob;
+use omega_drive_gateway::core::data::{DownloadJob, UploadJob};
 use crate::drive_stats_cache::DriveStats;
 use crate::files::{AudioFileMetadata, FileMetadata, VideoFileMetadata, VideoPlaybackProgress};
-use crate::upload_jobs::UploadJob;
 use crate::{DbWriteQueue, ReadDbPool};
 
 pub struct DbFileRepository {
     db_read: Arc<ReadDbPool>,
     db_write: Arc<DbWriteQueue>,
+    cache_db: Option<Mutex<rusqlite::Connection>>,
 }
 
 impl DbFileRepository {
-    pub fn new(db_read: Arc<ReadDbPool>, db_write: Arc<DbWriteQueue>) -> Self { Self { db_read, db_write } }
+    pub fn new(db_read: Arc<ReadDbPool>, db_write: Arc<DbWriteQueue>) -> Self {
+        Self { db_read, db_write, cache_db: None }
+    }
+
+    pub fn with_cache_db(self, path: PathBuf) -> Self {
+        let conn = rusqlite::Connection::open(&path).ok();
+        Self { cache_db: conn.map(|c| Mutex::new(c)), ..self }
+    }
+
+    fn fetch_local_path(&self, file_id: i64) -> Option<String> {
+        let conn = self.cache_db.as_ref()?;
+        let conn = conn.lock().ok()?;
+        let row: Option<String> = conn.query_row(
+            "SELECT source_path FROM upload_jobs WHERE file_id = ?",
+            rusqlite::params![file_id],
+            |r| r.get(0),
+        ).ok()?;
+        if row.as_deref() == Some("") { None } else { row }
+    }
 }
 
 #[async_trait]
 impl FileRepository for DbFileRepository {
     async fn get_file_by_id(&self, id: i64) -> AppResult<Option<FileMetadata>> {
         let db = self.db_read.lock().await;
-        Ok(crate::files::get_file_by_id(db.conn(), id)?)
+        let mut meta = crate::files::get_file_by_id(db.conn(), id)?;
+        if let Some(ref mut m) = meta {
+            if m.local_path.is_none() {
+                m.local_path = self.fetch_local_path(m.id);
+            }
+        }
+        Ok(meta)
     }
 
     async fn get_file_by_thread_id(&self, thread_id: &str) -> AppResult<Option<FileMetadata>> {
         let db = self.db_read.lock().await;
-        Ok(crate::files::get_file_by_thread_id(db.conn(), thread_id)?)
+        let mut meta = crate::files::get_file_by_thread_id(db.conn(), thread_id)?;
+        if let Some(ref mut m) = meta {
+            if m.local_path.is_none() {
+                m.local_path = self.fetch_local_path(m.id);
+            }
+        }
+        Ok(meta)
     }
 
     async fn get_file_by_name(&self, name: &str, folder_id: Option<i64>) -> AppResult<Option<FileMetadata>> {
@@ -334,103 +366,115 @@ impl FolderRepository for DbFolderRepository {
     }
 }
 
-pub struct DbUploadJobRepository {
-    db_write: Arc<DbWriteQueue>,
+pub struct CacheDbUploadJobRepository {
+    cache_db: Arc<TokioMutex<rusqlite::Connection>>,
 }
 
-impl DbUploadJobRepository {
-    pub fn new(db_write: Arc<DbWriteQueue>) -> Self { Self { db_write } }
+impl CacheDbUploadJobRepository {
+    pub fn new(cache_db: Arc<TokioMutex<rusqlite::Connection>>) -> Self { Self { cache_db } }
 }
 
 #[async_trait]
-impl UploadJobRepository for DbUploadJobRepository {
+impl UploadJobRepository for CacheDbUploadJobRepository {
     async fn upsert_job(&self, file_id: i64, source_path: &str, state: &str, total_parts: i64) -> AppResult<i64> {
-        Ok(self.db_write.with_write(|conn| crate::upload_jobs::upsert_job(conn, file_id, source_path, state, total_parts)).await?)
+        let conn = self.cache_db.lock().await;
+        Ok(crate::upload_cache::upsert_job(&conn, file_id, source_path, state, total_parts)?)
     }
 
     async fn get_active_job_by_source_path(&self, source_path: &str) -> AppResult<Option<UploadJob>> {
-        let db = self.db_write.lock().await;
-        Ok(crate::upload_jobs::get_active_job_by_source_path(db.conn(), source_path)?)
+        let conn = self.cache_db.lock().await;
+        Ok(crate::upload_cache::get_active_job_by_source_path(&conn, source_path)?)
     }
 
     async fn get_job_by_file_id(&self, file_id: i64) -> AppResult<Option<UploadJob>> {
-        let db = self.db_write.lock().await;
-        Ok(crate::upload_jobs::get_job_by_file_id(db.conn(), file_id)?)
+        let conn = self.cache_db.lock().await;
+        Ok(crate::upload_cache::get_job_by_file_id(&conn, file_id)?)
     }
 
     async fn update_source_path(&self, file_id: i64, source_path: &str) -> AppResult<()> {
-        self.db_write.with_write(|conn| Ok(crate::upload_jobs::update_source_path(conn, file_id, source_path)?)).await
+        let conn = self.cache_db.lock().await;
+        Ok(crate::upload_cache::update_source_path(&conn, file_id, source_path)?)
     }
 
     async fn update_progress(&self, file_id: i64, done_parts: i64, total_parts: i64) -> AppResult<()> {
-        self.db_write.with_write(|conn| Ok(crate::upload_jobs::update_progress(conn, file_id, done_parts, total_parts)?)).await
+        let conn = self.cache_db.lock().await;
+        Ok(crate::upload_cache::update_progress(&conn, file_id, done_parts, total_parts)?)
     }
 
     async fn update_state(&self, file_id: i64, state: &str, error: Option<&str>, error_code: Option<&str>) -> AppResult<()> {
-        self.db_write.with_write(|conn| Ok(crate::upload_jobs::update_state(conn, file_id, state, error, error_code)?)).await
+        let conn = self.cache_db.lock().await;
+        Ok(crate::upload_cache::update_state(&conn, file_id, state, error, error_code)?)
     }
 
     async fn delete_job_by_file_id(&self, file_id: i64) -> AppResult<()> {
-        self.db_write.with_write(|conn| Ok(crate::upload_jobs::delete_job_by_file_id(conn, file_id)?)).await
+        let conn = self.cache_db.lock().await;
+        Ok(crate::upload_cache::delete_job_by_file_id(&conn, file_id)?)
     }
 }
 
-pub struct DbDownloadJobRepository {
-    db_write: Arc<DbWriteQueue>,
+pub struct CacheDbDownloadJobRepository {
+    cache_db: Arc<TokioMutex<rusqlite::Connection>>,
 }
 
-impl DbDownloadJobRepository {
-    pub fn new(db_write: Arc<DbWriteQueue>) -> Self { Self { db_write } }
+impl CacheDbDownloadJobRepository {
+    pub fn new(cache_db: Arc<TokioMutex<rusqlite::Connection>>) -> Self { Self { cache_db } }
 }
 
 #[async_trait]
-impl DownloadJobRepository for DbDownloadJobRepository {
+impl DownloadJobRepository for CacheDbDownloadJobRepository {
     async fn create_job(&self, file_id: i64, target_path: &str, total_parts: i64) -> AppResult<i64> {
-        Ok(self.db_write.with_write(|conn| crate::download_jobs::create_job(conn, file_id, target_path, total_parts)).await?)
+        let conn = self.cache_db.lock().await;
+        Ok(crate::download_cache::create_job(&conn, file_id, target_path, total_parts)?)
     }
 
     async fn update_progress(&self, id: i64, done_parts: i64) -> AppResult<()> {
-        self.db_write.with_write(|conn| Ok(crate::download_jobs::update_progress(conn, id, done_parts)?)).await
+        let conn = self.cache_db.lock().await;
+        Ok(crate::download_cache::update_progress(&conn, id, done_parts)?)
     }
 
     async fn update_state(&self, id: i64, state: &str, error: Option<&str>, error_code: Option<&str>) -> AppResult<()> {
-        self.db_write.with_write(|conn| Ok(crate::download_jobs::update_state(conn, id, state, error, error_code)?)).await
+        let conn = self.cache_db.lock().await;
+        Ok(crate::download_cache::update_state(&conn, id, state, error, error_code)?)
     }
 
     async fn get_job(&self, id: i64) -> AppResult<Option<DownloadJob>> {
-        let db = self.db_write.lock().await;
-        Ok(crate::download_jobs::get_job(db.conn(), id)?)
+        let conn = self.cache_db.lock().await;
+        Ok(crate::download_cache::get_job(&conn, id)?)
     }
 
     async fn list_jobs_by_state(&self, states: &[&str]) -> AppResult<Vec<DownloadJob>> {
-        let db = self.db_write.lock().await;
-        Ok(crate::download_jobs::list_jobs_by_state(db.conn(), states)?)
+        let conn = self.cache_db.lock().await;
+        Ok(crate::download_cache::list_jobs_by_state(&conn, states)?)
     }
 
     async fn get_next_queued(&self) -> AppResult<Option<DownloadJob>> {
-        let db = self.db_write.lock().await;
-        Ok(crate::download_jobs::get_next_queued(db.conn())?)
+        let conn = self.cache_db.lock().await;
+        Ok(crate::download_cache::get_next_queued(&conn)?)
     }
 
     async fn exists_active_job_for_file(&self, file_id: i64) -> AppResult<bool> {
-        let db = self.db_write.lock().await;
-        Ok(crate::download_jobs::exists_active_job_for_file(db.conn(), file_id)?)
+        let conn = self.cache_db.lock().await;
+        Ok(crate::download_cache::exists_active_job_for_file(&conn, file_id)?)
     }
 
     async fn delete_job(&self, id: i64) -> AppResult<()> {
-        self.db_write.with_write(|conn| Ok(crate::download_jobs::delete_job(conn, id)?)).await
+        let conn = self.cache_db.lock().await;
+        Ok(crate::download_cache::delete_job(&conn, id)?)
     }
 
     async fn pause_all_active_jobs(&self, error_code: &str) -> AppResult<()> {
-        self.db_write.with_write(|conn| Ok(crate::download_jobs::pause_all_active_jobs(conn, error_code)?)).await
+        let conn = self.cache_db.lock().await;
+        Ok(crate::download_cache::pause_all_active_jobs(&conn, error_code)?)
     }
 
     async fn resume_shutdown_jobs(&self) -> AppResult<()> {
-        self.db_write.with_write(|conn| Ok(crate::download_jobs::resume_shutdown_jobs(conn)?)).await
+        let conn = self.cache_db.lock().await;
+        Ok(crate::download_cache::resume_shutdown_jobs(&conn)?)
     }
 
     async fn purge_old_jobs(&self, days: i64, states: &[&str]) -> AppResult<usize> {
-        self.db_write.with_write(|conn| Ok(crate::download_jobs::purge_old_jobs(conn, days, states)?)).await
+        let conn = self.cache_db.lock().await;
+        Ok(crate::download_cache::purge_old_jobs(&conn, days, states)?)
     }
 }
 

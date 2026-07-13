@@ -73,23 +73,20 @@ pub fn update_part_remote_id(
 
 pub fn get_parts_for_file(conn: &Connection, file_id: i64) -> Result<Vec<PartMetadata>> {
     let mut stmt = conn.prepare(
-        "SELECT p.id, p.file_id, p.platform, p.message_id, p.part_index, p.size, p.checksum
+        "SELECT p.file_id, p.platform, p.message_id, p.part_index, p.size
          FROM parts p
          WHERE p.file_id = ?
-         ORDER BY p.part_index ASC, p.id ASC",
+         ORDER BY p.part_index ASC",
     )?;
     let rows = stmt.query_map(params![file_id], |row| {
         Ok(PartMetadata {
-            id: row.get(0)?,
-            file_id: row.get(1)?,
-            platform: row.get(2)?,
-            message_id: row.get(3)?,
-            attachment_name: None,
-            part_index: row.get(4)?,
-            size: row.get(5)?,
-            part_type: "chunk".to_string(),
-            duration: None,
-            checksum: row.get(6)?,
+            id: 0,
+            file_id: row.get(0)?,
+            platform: row.get(1)?,
+            message_id: row.get(2)?,
+            part_index: row.get(3)?,
+            size: row.get(4)?,
+            checksum: None,
         })
     })?;
     rows.collect()
@@ -108,16 +105,13 @@ pub fn get_part_by_index(
         params![file_id, part_index],
         |row| {
             Ok(PartMetadata {
-                id: row.get(0)?,
-                file_id: row.get(1)?,
-                platform: row.get(2)?,
-                message_id: row.get(3)?,
-                attachment_name: None,
-                part_index: row.get(4)?,
-                size: row.get(5)?,
-                part_type: "chunk".to_string(),
-                duration: None,
-                checksum: row.get(6)?,
+                id: 0,
+                file_id: row.get(0)?,
+                platform: row.get(1)?,
+                message_id: row.get(2)?,
+                part_index: row.get(3)?,
+                size: row.get(4)?,
+                checksum: None,
             })
         },
     )

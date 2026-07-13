@@ -13,7 +13,6 @@ use std::net::SocketAddr;
 use std::sync::atomic::Ordering;
 use std::sync::Mutex;
 use std::sync::OnceLock;
-use tokio::time::Duration;
 use tower_http::trace::TraceLayer;
 use tracing::{error, info, warn};
 
@@ -260,31 +259,12 @@ async fn handle_raw_file(
     // Ensure file is ready for playback (check cache, decrypt, etc.)
     let (file_size, chunk_size, content_type, duration_sec) =
         match crate::ensure_video_playback_ready(&st, file_id).await {
-            Ok(file) => {
-                let mut chunk_size = st.cfg.general.chunk_bytes;
-                if let Some(first) = st.player_runtime.get_first_original_part(file_id).await {
-                    let logical_size = first.size.max(0) as u64;
-                    if logical_size > 0 {
-                        chunk_size = logical_size;
-                    }
-                } else if let Ok(parts) = st.file_repo.get_original_parts_for_file(file_id).await {
-                    st.player_runtime
-                        .cache_original_parts(file_id, parts.clone())
-                        .await;
-                    if let Some(first) = parts.into_iter().find(|p| p.part_index == 1) {
-                        let logical_size = first.size.max(0) as u64;
-                        if logical_size > 0 {
-                            chunk_size = logical_size;
-                        }
-                    }
-                }
-                (
-                    file.size,
-                    chunk_size,
-                    guess_media_content_type(&file.filename),
-                    file.duration_sec,
-                )
-            }
+            Ok(file) => (
+                file.size,
+                1024 * 1024,
+                guess_media_content_type(&file.filename),
+                file.duration_sec,
+            ),
             Err(e) => return (StatusCode::CONFLICT, e).into_response(),
         };
 
@@ -364,9 +344,6 @@ async fn handle_raw_file(
                 }
             };
             if let Some(estimated_pts) = detected_pts {
-                st.player_runtime
-                    .record_recent_seek_target(file_id, estimated_pts)
-                    .await;
                 debug_log!(
                     "seek",
                     "byte_range_heuristic: recorded file={} pts={:.3}s",
@@ -383,18 +360,6 @@ async fn handle_raw_file(
                 content_length
             );
 
-            let recent_seek_pts = st
-                .player_runtime
-                .peek_recent_seek_target(file_id, Duration::from_millis(2_000))
-                .await;
-            debug_log!(
-                "seek",
-                "bridge_raw: file={} range={}-{} recent_seek_pts={:?}",
-                file_id,
-                start,
-                end,
-                recent_seek_pts
-            );
             // Bump stream generation to cancel stale tasks for this file_id
             let stream_gen = {
                 let mut map = RAW_STREAM_GENERATION
@@ -405,7 +370,8 @@ async fn handle_raw_file(
                 *g += 1;
                 *g
             };
-            match crate::stream::stream_byte_range(st, file_id, start, end, stream_gen).await {
+            let ns = if content_type.starts_with("audio/") { "player-audio" } else { "player-video" };
+            match crate::stream::stream_byte_range(st, file_id, start, end, stream_gen, ns).await {
                 Ok(stream) => {
                     let mut response = Response::new(Body::from_stream(stream));
                     *response.status_mut() = StatusCode::PARTIAL_CONTENT;

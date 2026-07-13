@@ -15,8 +15,6 @@ use tokio::sync::{
 };
 use tracing::{info, warn};
 
-pub mod legacy_session_reader;
-pub mod download_jobs;
 pub mod drive_stats_cache;
 pub mod services;
 pub mod files;
@@ -24,15 +22,15 @@ pub mod folders;
 pub mod migrations;
 pub mod provider_quota_cache;
 pub mod tenant_meta;
-pub mod upload_jobs;
 pub mod upload_profile_rules;
 pub mod backup;
 pub mod backup_repo;
+pub mod cache;
 pub mod db_executor;
+pub mod download_cache;
+pub mod upload_cache;
 pub mod upload_profiles;
 pub mod repos;
-pub mod registries;
-pub mod provider_runtime;
 
 pub struct Db {
     conn: Connection,
@@ -140,13 +138,8 @@ impl Db {
         Ok(Self::from_connection(conn))
     }
 
-    fn open_pooled(path: &Path) -> Result<Self> {
-        let mut conn = Connection::open(path)?;
-        configure_connection(&mut conn)?;
-        Ok(Self::from_connection(conn))
-    }
-
     pub fn reopen(&mut self, path: &Path) -> Result<()> {
+        let _ = self.conn.pragma_update(None, "wal_checkpoint", "TRUNCATE");
         let mut conn = Connection::open(path)?;
         configure_connection(&mut conn)?;
         migrations::run_migrations(&conn)?;
@@ -283,7 +276,7 @@ impl ReadDbPool {
         let mut connections = Vec::with_capacity(size);
         connections.push(Db::open_no_migrate(path)?);
         for _ in 1..size {
-            connections.push(Db::open_pooled(path)?);
+            connections.push(Db::open_no_migrate(path)?);
         }
 
         info!(
@@ -342,13 +335,19 @@ impl ReadDbPool {
         let mut connections = Vec::with_capacity(self.size);
         connections.push(Db::open_no_migrate(path)?);
         for _ in 1..self.size {
-            connections.push(Db::open_pooled(path)?);
+            connections.push(Db::open_no_migrate(path)?);
         }
 
         let mut guard = self
             .connections
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
+
+        // Checkpoint + truncate WAL on all old connections before closing them
+        for db in guard.iter() {
+            let _ = db.conn().pragma_update(None, "wal_checkpoint", "TRUNCATE");
+        }
+
         *guard = connections;
         drop(guard);
         drop(permit);

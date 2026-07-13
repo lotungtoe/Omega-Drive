@@ -143,19 +143,17 @@ struct RawDownload {
     purge_days: Option<u32>,
     hwdec_method: Option<String>,
     d3d11_adapter: Option<String>,
+    cache_preview_max_mb: Option<u64>,
+    cache_player_max_mb: Option<u64>,
+    cache_video_max_mb: Option<u64>,
+    cache_audio_max_mb: Option<u64>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
 struct RawRam {
-    playback_buffer_mb: Option<u64>,
     session_ttl_minutes: Option<u64>,
     gc_interval_minutes: Option<u64>,
     trash_ttl_days: Option<i64>,
-}
-
-#[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
-struct RawStream {
-    ram_pool_mb: Option<u64>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
@@ -231,8 +229,6 @@ struct RawConfig {
     download: RawDownload,
     #[serde(default)]
     ram: RawRam,
-    #[serde(default)]
-    stream: RawStream,
     #[serde(default)]
     server: RawServer,
     #[serde(default)]
@@ -324,7 +320,6 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
     let u = &r.upload;
     let d = &r.download;
     let m = &r.ram;
-    let stream = &r.stream;
     let s = &r.server;
     let dt = &r.data;
     let logging = &r.logging;
@@ -369,8 +364,10 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
         .clone()
         .unwrap_or_else(|| "Auto".to_string());
 
-    let playback_buffer_mb = clamp!(m.playback_buffer_mb, 256, 64, 4096);
-    let stream_ram_pool_mb = clamp!(stream.ram_pool_mb, playback_buffer_mb, 128, 2048);
+    let cache_preview_max_bytes = clamp!(d.cache_preview_max_mb, 50, 10, 2000) * 1024 * 1024;
+    let cache_player_max_bytes = clamp!(d.cache_player_max_mb, 500, 50, 5000) * 1024 * 1024;
+    let cache_video_max_bytes = clamp!(d.cache_video_max_mb.or(d.cache_player_max_mb), 400, 50, 5000) * 1024 * 1024;
+    let cache_audio_max_bytes = clamp!(d.cache_audio_max_mb.or(d.cache_player_max_mb.map(|v| v / 5)), 100, 10, 1000) * 1024 * 1024;
     let session_ttl_minutes = clamp!(m.session_ttl_minutes, 60, 5, 1440);
     let gc_interval_minutes = clamp!(m.gc_interval_minutes, 10, 1, 120);
     let trash_ttl_days = clamp!(m.trash_ttl_days, 30, 1, 365);
@@ -439,7 +436,10 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
         auto_resume_on_startup,
         purge_days,
 
-        playback_buffer_ram_bytes: stream_ram_pool_mb * 1024 * 1024,
+        cache_preview_max_bytes,
+        cache_player_max_bytes,
+        cache_video_max_bytes,
+        cache_audio_max_bytes,
         session_ttl_s: session_ttl_minutes * 60,
         gc_interval_s: gc_interval_minutes * 60,
         trash_ttl_days,
@@ -540,16 +540,16 @@ pub fn save_config_to_file(config: &Config, base_dir: &std::path::Path) -> anyho
             auto_resume_on_startup: Some(config.auto_resume_on_startup),
             purge_days: Some(config.purge_days),
             d3d11_adapter: Some(config.d3d11_adapter.clone()),
+            cache_preview_max_mb: Some(config.cache_preview_max_bytes / 1024 / 1024),
+            cache_player_max_mb: Some(config.cache_player_max_bytes / 1024 / 1024),
+            cache_video_max_mb: Some(config.cache_video_max_bytes / 1024 / 1024),
+            cache_audio_max_mb: Some(config.cache_audio_max_bytes / 1024 / 1024),
             ..Default::default()
         },
         ram: RawRam {
-            playback_buffer_mb: Some(config.playback_buffer_ram_bytes / 1024 / 1024),
             session_ttl_minutes: Some(config.session_ttl_s / 60),
             gc_interval_minutes: Some(config.gc_interval_s / 60),
             trash_ttl_days: Some(config.trash_ttl_days),
-        },
-        stream: RawStream {
-            ram_pool_mb: Some(config.playback_buffer_ram_bytes / 1024 / 1024),
         },
         server: RawServer {
             host: Some(config.host.clone()),

@@ -157,6 +157,9 @@ impl AppState {
             base_dir: self.base_dir.clone(),
             stream_registry: self.provider_runtime().stream_registry.clone(),
             mem_cache: Arc::clone(&self.mem_cache),
+            parts_cache: Arc::new(std::sync::Mutex::new(
+                omega_drive_download::PartsCacheInner::new(omega_drive_download::PARTS_CACHE_MAX_BYTES),
+            )),
         }
     }
 
