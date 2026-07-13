@@ -49,6 +49,7 @@ open = "5.3.3"
 rxing = { version = "0.6.6", features = ["image"] }
 image = { version = "0.25", features = ["png", "jpeg", "webp"] }
 rusqlite = { version = "0.32", features = ["bundled", "hooks", "trace"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 tauri-plugin-autostart = "2.5.1"
 tauri-plugin-deep-link = "2.4.8"
 tauri-plugin-updater = "2"

@@ -53,13 +53,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: ui/package-lock.json
       - uses: Swatinem/rust-cache@v2
-      - name: Create stub external binaries
-        shell: bash
-        run: |
-          host=$(rustc -vV | grep host | cut -d' ' -f2)
-          [[ "$host" == *"-windows-"* ]] && ext=".exe" || ext=""
-          mkdir -p src-tauri/binaries
-          for bin in ffmpeg ffprobe yt-dlp deno; do touch "src-tauri/binaries/$bin-$host$ext"; done
       - name: Install system dependencies
         if: runner.os == 'Linux'
         run: |
@@ -86,41 +79,4 @@ jobs:
           asset_name: Omega-Drive-${{ matrix.target }}${{ matrix.ext }}
           asset_content_type: application/octet-stream
 
-  build-binary-archive:
-    needs: [create-release]
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            archive_ext: .zip
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            archive_ext: .tar.gz
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            archive_ext: .tar.gz
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            archive_ext: .tar.gz
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Create binary archive
-        shell: bash
-        run: |
-          mkdir -p dist/binaries
-          cp src-tauri/binaries/* dist/binaries/ 2>/dev/null || true
-          cd dist
-          if [[ "${{ matrix.archive_ext }}" == ".zip" ]]; then
-            7z a "binaries-${{ matrix.target }}${{ matrix.archive_ext }}" binaries/
-          else
-            tar czf "binaries-${{ matrix.target }}${{ matrix.archive_ext }}" binaries/
-          fi
-      - name: Upload binary archive
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: dist/binaries-${{ matrix.target }}${{ matrix.archive_ext }}
-          asset_name: binaries-${{ matrix.target }}${{ matrix.archive_ext }}
-          asset_content_type: application/octet-stream
+

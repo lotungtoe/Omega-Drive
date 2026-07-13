@@ -52,15 +52,7 @@
       "../../icons/icon.ico"
     ],
     "resources": [
-      "../../binaries/mpv.dll",
-      "../../binaries/mpv-1.dll",
       "../../resources/player/player_ui.lua"
-    ],
-    "externalBin": [
-      "../../binaries/ffmpeg",
-      "../../binaries/ffprobe",
-      "../../binaries/yt-dlp",
-      "../../binaries/deno"
     ]
   }
 }

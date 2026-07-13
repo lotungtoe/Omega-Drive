@@ -62,6 +62,54 @@ fn pick_bridge_port(start: u16) -> u16 {
     start
 }
 
+#[cfg(target_os = "windows")]
+async fn ensure_binaries() {
+    let Some(exe_dir) = std::env::current_exe().ok().and_then(|p| p.parent().map(|d| d.to_path_buf())) else {
+        error!("[Binaries] Cannot determine executable directory, skipping");
+        return;
+    };
+    let _ = tokio::fs::create_dir_all(exe_dir.join("binaries")).await;
+
+    let files: &[(&str, PathBuf)] = &[
+        ("libmpv-2.dll", exe_dir.clone()),
+        ("mpv-1.dll", exe_dir.clone()),
+        ("mpv.dll", exe_dir.clone()),
+        ("ffmpeg-x86_64-pc-windows-msvc.exe", exe_dir.join("binaries")),
+        ("ffprobe-x86_64-pc-windows-msvc.exe", exe_dir.join("binaries")),
+        ("deno-x86_64-pc-windows-msvc.exe", exe_dir.join("binaries")),
+        ("yt-dlp-x86_64-pc-windows-msvc.exe", exe_dir.join("binaries")),
+    ];
+
+    let client = reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(10))
+        .build()
+        .expect("reqwest Client");
+    let base = "https://github.com/lotungtoe/Omega-Drive/releases/download/deps-v1";
+
+    for (filename, dest_dir) in files {
+        let dest = dest_dir.join(filename);
+        if dest.exists() {
+            continue;
+        }
+        let url = format!("{base}/{filename}");
+        info!("[Binaries] Downloading {filename}...");
+        match client.get(&url).send().await {
+            Ok(resp) if resp.status().is_success() => {
+                let bytes = match resp.bytes().await {
+                    Ok(b) => b,
+                    Err(e) => { error!("[Binaries] Read response for {filename}: {e}"); continue; }
+                };
+                if let Err(e) = tokio::fs::write(&dest, &bytes).await {
+                    error!("[Binaries] Write {filename}: {e}");
+                }
+            }
+            Ok(resp) => error!("[Binaries] {filename} HTTP {}", resp.status()),
+            Err(e) => error!("[Binaries] Download {filename}: {e}"),
+        }
+    }
+    info!("[Binaries] Download complete");
+}
+
 fn parse_video_bridge_args() -> Option<VideoBridgeProcessArgs> {
     let mut args = std::env::args().skip(1);
     let mut bridge_mode = false;
@@ -87,6 +135,9 @@ fn parse_video_bridge_args() -> Option<VideoBridgeProcessArgs> {
 }
 
 pub async fn run() {
+    #[cfg(target_os = "windows")]
+    ensure_binaries().await;
+
     let base_dir = resolve_base_dir();
     info!(" Data directory: {}", base_dir.display());
 
