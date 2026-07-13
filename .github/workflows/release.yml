@@ -75,7 +75,7 @@ jobs:
             build-essential
       - run: npm --prefix ui ci
       - run: npm --prefix ui run build
-      - run: npx @tauri-apps/cli build --target ${{ matrix.target }} --app-dir src-tauri/crates/tauri_app
+      - run: npx @tauri-apps/cli build --target ${{ matrix.target }} --config src-tauri/crates/tauri_app/tauri.conf.json
       - name: Upload app installer
         uses: actions/upload-release-asset@v1
         with:

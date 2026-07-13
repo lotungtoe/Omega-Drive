@@ -54,7 +54,7 @@ jobs:
             build-essential
       - run: npm --prefix ui ci
       - run: npm --prefix ui run build
-      - run: npx @tauri-apps/cli build --target ${{ matrix.target }} --app-dir src-tauri/crates/tauri_app
+      - run: npx @tauri-apps/cli build --target ${{ matrix.target }} --config src-tauri/crates/tauri_app/tauri.conf.json
       - uses: actions/upload-artifact@v4
         with:
           name: Omega-Drive-${{ matrix.target }}
