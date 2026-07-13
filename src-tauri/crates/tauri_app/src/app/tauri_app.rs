@@ -379,8 +379,7 @@ pub(super) fn run_tauri(app_state: AppState) {
 
             // --- CHILD PROCESS MONITOR DISABLED --- disk write suspect, 2026-07-07
 
-            #[cfg(debug_assertions)]
-            // ponytail: DevTools gây 5MB/s disk write, tạm disable
+            // ponytail: DevTools disabled (5MB/s disk write)
             // if let Some(dev_win) = app.get_webview_window("main") {
             //     dev_win.open_devtools();
             // }
