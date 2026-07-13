@@ -56,8 +56,10 @@ jobs:
       - name: Create stub external binaries
         shell: bash
         run: |
-          host=$(rustc -vV | grep host | cut -d' ' -f2); mkdir -p src-tauri/binaries
-          for bin in ffmpeg ffprobe yt-dlp deno; do touch "src-tauri/binaries/$bin-$host"; done
+          host=$(rustc -vV | grep host | cut -d' ' -f2)
+          [[ "$host" == *"-windows-"* ]] && ext=".exe" || ext=""
+          mkdir -p src-tauri/binaries
+          for bin in ffmpeg ffprobe yt-dlp deno; do touch "src-tauri/binaries/$bin-$host$ext"; done
       - name: Install system dependencies
         if: runner.os == 'Linux'
         run: |
