@@ -16,6 +16,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Create stub external binaries
+      run: |
+        host=$(rustc -vV | grep host | cut -d' ' -f2); mkdir -p src-tauri/binaries
+        for bin in ffmpeg ffprobe yt-dlp deno; do touch "src-tauri/binaries/$bin-$host"; done
     - name: Install system dependencies
       if: runner.os == 'Linux'
       run: |
