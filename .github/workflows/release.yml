@@ -24,6 +24,8 @@ jobs:
 
   build-core:
     needs: [create-release]
+    env:
+      CARGO_INCREMENTAL: 1
     strategy:
       matrix:
         include:
