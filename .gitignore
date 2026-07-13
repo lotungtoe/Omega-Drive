@@ -3,6 +3,8 @@
 !updater.json
 !.cargo/
 !.cargo/**
+!.github/
+!.github/**
 
 # Backend
 
