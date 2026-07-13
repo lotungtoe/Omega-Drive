@@ -17,6 +17,7 @@
 src-tauri/binaries/
 src-tauri/icons/
 src-tauri/libs/
+!src-tauri/libs/mpv.lib
 src-tauri/target/
 
 # Frontend
