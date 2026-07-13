@@ -48,6 +48,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - uses: Swatinem/rust-cache@v2
       - name: Create stub external binaries
         run: |
           host=$(rustc -vV | grep host | cut -d' ' -f2); mkdir -p src-tauri/binaries
