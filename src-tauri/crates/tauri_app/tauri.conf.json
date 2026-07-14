@@ -53,7 +53,7 @@
     ],
     "windows": {
       "nsis": {
-        "template": "../../../../installer/omega_drive.nsi"
+        "template": "../../../installer/omega_drive.nsi"
       }
     },
     "resources": [
