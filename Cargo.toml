@@ -19,7 +19,14 @@ members = [
 ]
 
 [profile.dev]
-opt-level   = 1
-debug       = 1
-incremental = true
-codegen-units = 256
+opt-level      = 1
+debug          = 1
+incremental    = true
+codegen-units  = 256
+
+[profile.release]
+opt-level      = 1
+codegen-units  = 256
+lto            = "thin"
+strip          = "symbols"
+incremental    = true
