@@ -6,6 +6,10 @@
 !.github/
 !.github/**
 
+# Installer (custom NSIS template)
+!installer/
+!installer/**
+
 # Backend
 
 !Cargo.toml
