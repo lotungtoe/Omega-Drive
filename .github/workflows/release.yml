@@ -26,12 +26,9 @@ jobs:
 
   create-release:
     runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create.outputs.upload_url }}
     steps:
       - uses: actions/checkout@v5
       - name: Create Release
-        id: create
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
@@ -100,9 +97,9 @@ jobs:
           Copy-Item "$dir/mpv.dll" "$dir/mpv-1.dll"
       - run: npx @tauri-apps/cli build --target ${{ matrix.target }} --config src-tauri/crates/tauri_app/tauri.conf.json
       - name: Upload app installer
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: target/${{ matrix.target }}/release/Omega-Drive${{ matrix.ext }}
-          asset_name: Omega-Drive-${{ matrix.target }}${{ matrix.ext }}
-          asset_content_type: application/octet-stream
+          tag_name: ${{ github.ref_name }}
+          files: target/${{ matrix.target }}/release/Omega-Drive${{ matrix.ext }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
