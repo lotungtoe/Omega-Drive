@@ -187,8 +187,10 @@ fn main() {
         .parent().unwrap()
         .parent().unwrap()
         .join("libs");
+    // ponytail: /DELAYLOAD lets ensure_binaries() download libmpv-2.dll before mpv init
     if libs_dir.join("mpv.lib").exists() {
         println!("cargo:rustc-link-search={}", libs_dir.display());
+        println!("cargo:rustc-link-arg=/DELAYLOAD:libmpv-2.dll");
     }
 
     let manifest_dir = PathBuf::from(required_env("CARGO_MANIFEST_DIR"));
