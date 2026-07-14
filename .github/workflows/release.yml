@@ -70,9 +70,15 @@ jobs:
             libsoup-3.0-dev \
             libjavascriptcoregtk-4.1-dev \
             build-essential
-      - run: npm --prefix ui ci
-      - run: npm --prefix ui run build
-      - run: npx @tauri-apps/cli build --target ${{ matrix.target }} --config src-tauri/crates/tauri_app/tauri.conf.json
+      - name: Build frontend & Rust (parallel)
+        shell: pwsh
+        run: |
+          $job = Start-Job -Name "Rust" -ScriptBlock { param($t) cargo build --release --target $t --manifest-path src-tauri/crates/tauri_app/Cargo.toml } -ArgumentList "${{ matrix.target }}"
+          npm --prefix ui ci
+          npm --prefix ui run build
+          Receive-Job -Name "Rust" -Wait
+      - name: Bundle installer
+        run: npx @tauri-apps/cli build --target ${{ matrix.target }} --config src-tauri/crates/tauri_app/tauri.conf.json
       - name: Upload app installer
         uses: actions/upload-release-asset@v1
         with:

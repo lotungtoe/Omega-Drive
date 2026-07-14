@@ -56,9 +56,15 @@ jobs:
           curl -sL -o "$dir/mpv.dll" "https://github.com/lotungtoe/Omega-Drive/releases/download/deps-v1/mpv.dll"
           curl -sL -o "$dir/libmpv-2.dll" "https://github.com/lotungtoe/Omega-Drive/releases/download/deps-v1/libmpv-2.dll"
           Copy-Item "$dir/mpv.dll" "$dir/mpv-1.dll"
-      - run: npm --prefix ui ci
-      - run: npm --prefix ui run build
-      - run: npx @tauri-apps/cli build --target ${{ matrix.target }} --config src-tauri/crates/tauri_app/tauri.conf.json
+      - name: Build frontend & Rust (parallel)
+        shell: pwsh
+        run: |
+          $job = Start-Job -Name "Rust" -ScriptBlock { param($t) cargo build --release --target $t --manifest-path src-tauri/crates/tauri_app/Cargo.toml } -ArgumentList "${{ matrix.target }}"
+          npm --prefix ui ci
+          npm --prefix ui run build
+          Receive-Job -Name "Rust" -Wait
+      - name: Bundle installer
+        run: npx @tauri-apps/cli build --target ${{ matrix.target }} --config src-tauri/crates/tauri_app/tauri.conf.json
       - uses: actions/upload-artifact@v5
         with:
           name: Omega-Drive-${{ matrix.target }}
