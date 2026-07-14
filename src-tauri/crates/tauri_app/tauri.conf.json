@@ -52,9 +52,7 @@
       "icons/icon.ico"
     ],
     "windows": {
-      "nsis": {
-        "template": "../../../installer/omega_drive.nsi"
-      }
+      "nsis": {}
     },
     "resources": [
       "../../resources/player/player_ui.lua"
