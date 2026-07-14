@@ -122,7 +122,7 @@ export const DriveApi = {
     call("load_onboarding_destinations", {}, { feature: "onboarding", action: "load_onboarding_destinations" }),
   saveDiscordToken: (token: string): Promise<unknown> =>
     call("save_discord_token", { token }, { feature: "onboarding", action: "save_discord_token" }),
-  saveTelegramCredentials: (phone: string, apiId: string, apiHash: string): Promise<unknown> =>
+  saveTelegramCredentials: (phone: string, apiId: number, apiHash: string): Promise<unknown> =>
     call(
       "save_telegram_credentials",
       { phone, apiId, apiHash },

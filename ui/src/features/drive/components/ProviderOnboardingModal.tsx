@@ -159,7 +159,7 @@ function TelegramSection({
                 }
                 await DriveApi.saveTelegramCredentials(
                   formattedPhone,
-                  String(Number.parseInt(telegramApiId, 10) || 0),
+                  Number.parseInt(telegramApiId, 10) || 0,
                   telegramApiHash
                 );
                 return await DriveApi.sendTelegramLoginCode();
