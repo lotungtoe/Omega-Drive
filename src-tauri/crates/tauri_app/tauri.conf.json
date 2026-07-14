@@ -56,9 +56,8 @@
         "template": "../../../../installer/omega_drive.nsi"
       }
     },
-    "resources": {
-      "../../resources/player/player_ui.lua": "_resources/player_ui.lua",
-      "../../libs/mpv.dll": "mpv.dll"
-    }
+    "resources": [
+      "../../resources/player/player_ui.lua"
+    ]
   }
 }

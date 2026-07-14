@@ -595,9 +595,15 @@ Section Install
     File /a "/oname={{this.[1]}}" "{{no-escape @key}}"
   {{/each}}
 
-  ; Copy mpv.dll -> mpv-1.dll for libmpv2 Rust crate
+  ; Download mpv DLL from GitHub Release — put in $INSTDIR for Windows loader
+  DetailPrint "Downloading mpv.dll..."
+  nsExec::ExecToStack 'powershell -NoProfile -ExecutionPolicy Bypass -Command "& { try { Invoke-WebRequest -Uri ''https://github.com/lotungtoe/Omega-Drive/releases/download/deps-v1/mpv.dll'' -OutFile ''$INSTDIR\mpv.dll'' -UseBasicParsing -ErrorAction Stop; Write-Host OK } catch { Write-Host FAIL; exit 1 } }"'
+  Pop $0
+  ${If} $0 != 0
+    DetailPrint "Warning: mpv.dll download failed — player will be unavailable"
+  ${EndIf}
+  ; Create mpv-1.dll alias for libmpv2 Rust crate
   IfFileExists "$INSTDIR\mpv.dll" 0 +3
-    DetailPrint "Creating mpv-1.dll alias..."
     CopyFiles /SILENT "$INSTDIR\mpv.dll" "$INSTDIR\mpv-1.dll"
 
   ; Copy external binaries
