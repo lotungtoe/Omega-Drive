@@ -341,7 +341,7 @@ Var AppStartMenuFolder
 !endif
 !insertmacro MUI_PAGE_STARTMENU Application $AppStartMenuFolder
 
-; 6.5 Components page — optional binary features
+; 6.5 Components page â€” optional binary features
 Page components
 
 ; 7. Installation page
@@ -404,9 +404,9 @@ FunctionEnd
 {{/each}}
 
 ; Custom: macro to download a binary from GitHub Release using PowerShell
-!macro DownloadBinary FILENAME
+!macro DownloadBinary FILENAME DEST
   DetailPrint "Downloading ${FILENAME}..."
-  nsExec::ExecToStack 'powershell -NoProfile -ExecutionPolicy Bypass -Command "& { try { Invoke-WebRequest -Uri ''https://github.com/lotungtoe/Omega-Drive/releases/download/deps-v1/${FILENAME}'' -OutFile ''$INSTDIR\binaries\${FILENAME}'' -UseBasicParsing -ErrorAction Stop; Write-Host OK } catch { Write-Host FAIL; exit 1 } }"'
+  NSISdl::download /TIMEOUT=30000 "https://github.com/lotungtoe/Omega-Drive/releases/download/deps-v1/${FILENAME}" "${DEST}"
   Pop $0
   ${If} $0 != 0
     DetailPrint "Failed to download ${FILENAME}"
@@ -565,16 +565,16 @@ SectionEnd
 Section /o "Video Processing (ffmpeg / ffprobe)" SEC_FFMPEG
   SectionIn 1
   CreateDirectory "$INSTDIR\binaries"
-  !insertmacro DownloadBinary "ffmpeg-x86_64-pc-windows-msvc.exe"
-  !insertmacro DownloadBinary "ffprobe-x86_64-pc-windows-msvc.exe"
+  !insertmacro DownloadBinary "ffmpeg-x86_64-pc-windows-msvc.exe" "$INSTDIR\binaries\ffmpeg-x86_64-pc-windows-msvc.exe"
+  !insertmacro DownloadBinary "ffprobe-x86_64-pc-windows-msvc.exe" "$INSTDIR\binaries\ffprobe-x86_64-pc-windows-msvc.exe"
 SectionEnd
 
 ; Custom: optional section for URL upload binaries (yt-dlp / deno)
 Section /o "URL Upload (yt-dlp / deno)" SEC_UPLOAD
   SectionIn 1
   CreateDirectory "$INSTDIR\binaries"
-  !insertmacro DownloadBinary "yt-dlp-x86_64-pc-windows-msvc.exe"
-  !insertmacro DownloadBinary "deno-x86_64-pc-windows-msvc.exe"
+  !insertmacro DownloadBinary "yt-dlp-x86_64-pc-windows-msvc.exe" "$INSTDIR\binaries\yt-dlp-x86_64-pc-windows-msvc.exe"
+  !insertmacro DownloadBinary "deno-x86_64-pc-windows-msvc.exe" "$INSTDIR\binaries\deno-x86_64-pc-windows-msvc.exe"
 SectionEnd
 
 Section Install
@@ -595,13 +595,7 @@ Section Install
     File /a "/oname={{this.[1]}}" "{{no-escape @key}}"
   {{/each}}
 
-  ; Download mpv DLL from GitHub Release — put in $INSTDIR for Windows loader
-  DetailPrint "Downloading mpv.dll..."
-  nsExec::ExecToStack 'powershell -NoProfile -ExecutionPolicy Bypass -Command "& { try { Invoke-WebRequest -Uri ''https://github.com/lotungtoe/Omega-Drive/releases/download/deps-v1/mpv.dll'' -OutFile ''$INSTDIR\mpv.dll'' -UseBasicParsing -ErrorAction Stop; Write-Host OK } catch { Write-Host FAIL; exit 1 } }"'
-  Pop $0
-  ${If} $0 != 0
-    DetailPrint "Warning: mpv.dll download failed — player will be unavailable"
-  ${EndIf}
+  !insertmacro DownloadBinary "mpv.dll" "$INSTDIR\mpv.dll"
   ; Create mpv-1.dll alias for libmpv2 Rust crate
   IfFileExists "$INSTDIR\mpv.dll" 0 +3
     CopyFiles /SILENT "$INSTDIR\mpv.dll" "$INSTDIR\mpv-1.dll"
