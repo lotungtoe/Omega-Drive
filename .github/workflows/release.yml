@@ -11,7 +11,7 @@ jobs:
     outputs:
       upload_url: ${{ steps.create.outputs.upload_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Create Release
         id: create
         uses: softprops/action-gh-release@v2
@@ -43,15 +43,15 @@ jobs:
             ext: .dmg
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 1
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: ui/package-lock.json
       - uses: Swatinem/rust-cache@v2

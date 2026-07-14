@@ -22,15 +22,15 @@ jobs:
           #   target: x86_64-unknown-linux-gnu
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 1
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: ui/package-lock.json
       - uses: Swatinem/rust-cache@v2
@@ -49,10 +49,17 @@ jobs:
             libsoup-3.0-dev \
             libjavascriptcoregtk-4.1-dev \
             build-essential
+      - name: Download mpv DLLs
+        shell: pwsh
+        run: |
+          $dir = "src-tauri/crates/tauri_app"
+          curl -sL -o "$dir/mpv.dll" "https://github.com/lotungtoe/Omega-Drive/releases/download/deps-v1/mpv.dll"
+          curl -sL -o "$dir/libmpv-2.dll" "https://github.com/lotungtoe/Omega-Drive/releases/download/deps-v1/libmpv-2.dll"
+          Copy-Item "$dir/mpv.dll" "$dir/mpv-1.dll"
       - run: npm --prefix ui ci
       - run: npm --prefix ui run build
       - run: npx @tauri-apps/cli build --target ${{ matrix.target }} --config src-tauri/crates/tauri_app/tauri.conf.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: Omega-Drive-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/bundle/**/*

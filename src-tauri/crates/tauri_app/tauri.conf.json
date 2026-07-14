@@ -20,7 +20,7 @@
         "center": true,
         "dragDropEnabled": true,
         "visible": false,
-        "additionalBrowserArgs": "--no-sandbox --renderer-process-limit=1 --disable-features=RendererCodeIntegrity,SubresourceFilter,SafeBrowsing"
+        "additionalBrowserArgs": "--no-sandbox --renderer-process-limit=1 --disable-features=RendererCodeIntegrity,SubresourceFilter,SafeBrowsing --enable-features=msWebView2TreatAppSuspendAsDeviceSuspend"
       }
     ],
     "security": {
@@ -52,12 +52,13 @@
       "icons/icon.ico"
     ],
     "windows": {
-      "nsis": {
-        "installerHooks": "windows/hooks.nsh"
-      }
+      "nsis": {}
     },
     "resources": [
-      "../../resources/player/player_ui.lua"
+      "../../resources/player/player_ui.lua",
+      "mpv.dll",
+      "mpv-1.dll",
+      "libmpv-2.dll"
     ]
   }
 }
