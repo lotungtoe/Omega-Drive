@@ -56,7 +56,7 @@ jobs:
           node-version: 24
       - uses: Swatinem/rust-cache@v2
         with:
-          save-if: ${{ github.ref == 'refs/heads/main' }}
+          save-if: true
       - name: Download mpv DLLs
         shell: pwsh
         run: |
