@@ -1,6 +1,7 @@
 *
 
 !updater.json
+!portable-updater.json
 !.cargo/
 !.cargo/**
 !.github/
