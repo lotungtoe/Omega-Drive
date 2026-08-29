@@ -51,15 +51,6 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             ext: .exe
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            ext: .AppImage
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            ext: .dmg
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            ext: .dmg
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
@@ -69,6 +60,7 @@ jobs:
         with:
           name: frontend-dist
           path: ui/dist/
+      - uses: mozilla-actions/sccache-action@v0.0.9
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}
@@ -76,6 +68,8 @@ jobs:
         with:
           node-version: 24
       - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref_type == 'tag' }}
       - name: Install system dependencies
         if: runner.os == 'Linux'
         run: |
