@@ -68,7 +68,29 @@ jobs:
       - name: Show sccache stats
         if: always()
         run: sccache --show-stats
+      - name: Create portable ZIP (PR)
+        shell: pwsh
+        run: |
+          $exe = "target/x86_64-pc-windows-msvc/release-fast/Omega-Drive.exe"
+          if (-not (Test-Path $exe)) { $exe = "target/x86_64-pc-windows-msvc/release-fast/omega_drive.exe" }
+          if (-not (Test-Path $exe)) { $exe = "target/x86_64-pc-windows-msvc/release/Omega-Drive.exe" }
+          $zip = "target/x86_64-pc-windows-msvc/release-fast/Omega-Drive-portable.zip"
+          $tmp = "portable_tmp/Omega-Drive"
+          New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+          if (Test-Path $exe) { Copy-Item $exe "$tmp/" -Force } else { Write-Host "WARN: exe not found at $exe" }
+          Copy-Item "src-tauri/crates/tauri_app/mpv.dll" "$tmp/" -Force -ErrorAction SilentlyContinue
+          Copy-Item "src-tauri/crates/tauri_app/libmpv-2.dll" "$tmp/" -Force -ErrorAction SilentlyContinue
+          Copy-Item "src-tauri/crates/tauri_app/mpv-1.dll" "$tmp/" -Force -ErrorAction SilentlyContinue
+          if (Test-Path "src-tauri/resources") { Copy-Item "src-tauri/resources" "$tmp/resources" -Recurse -Force -ErrorAction SilentlyContinue }
+          Compress-Archive -Path "$tmp/*" -DestinationPath $zip -Force
+          Write-Host "Portable ZIP created at $zip"
+          Get-ChildItem $zip | Format-List
       - uses: actions/upload-artifact@v5
         with:
           name: Omega-Drive-x86_64-pc-windows-msvc
           path: target/x86_64-pc-windows-msvc/release-fast/bundle/**/*
+      - uses: actions/upload-artifact@v5
+        with:
+          name: Omega-Drive-portable
+          path: target/x86_64-pc-windows-msvc/release-fast/Omega-Drive-portable.zip
+          if-no-files-found: warn
