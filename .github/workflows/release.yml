@@ -100,10 +100,35 @@ jobs:
           curl -sL -o "$dir/libmpv-2.dll" "https://github.com/lotungtoe/Omega-Drive/releases/download/deps-v1/libmpv-2.dll"
           Copy-Item "$dir/mpv.dll" "$dir/mpv-1.dll"
       - run: npx @tauri-apps/cli build --target ${{ matrix.target }} --config src-tauri/crates/tauri_app/tauri.conf.json
+      - name: Create portable ZIP (Windows folder)
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        shell: pwsh
+        run: |
+          $exe = "target/${{ matrix.target }}/release/Omega-Drive.exe"
+          if (-not (Test-Path $exe)) { $exe = "target/${{ matrix.target }}/release/Omega-Drive${{ matrix.ext }}" }
+          $zip = "target/${{ matrix.target }}/release/Omega-Drive-portable.zip"
+          $tmp = "portable_tmp/Omega-Drive"
+          New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+          Copy-Item $exe "$tmp/" -Force
+          Copy-Item "src-tauri/crates/tauri_app/mpv.dll" "$tmp/" -Force
+          Copy-Item "src-tauri/crates/tauri_app/libmpv-2.dll" "$tmp/" -Force
+          Copy-Item "src-tauri/crates/tauri_app/mpv-1.dll" "$tmp/" -Force
+          if (Test-Path "src-tauri/resources") { Copy-Item "src-tauri/resources" "$tmp/resources" -Recurse -Force }
+          Compress-Archive -Path "$tmp/*" -DestinationPath $zip -Force
+          Write-Host "Portable ZIP created at $zip"
+          Get-ChildItem $zip | Format-List
       - name: Upload app installer
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           files: target/${{ matrix.target }}/release/Omega-Drive${{ matrix.ext }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload portable ZIP
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: target/${{ matrix.target }}/release/Omega-Drive-portable.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
