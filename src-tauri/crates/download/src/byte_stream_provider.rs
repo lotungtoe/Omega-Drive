@@ -129,13 +129,11 @@ async fn stream_range_impl(
 
     let first_idx = lower_bound_part(&sorted_idx, &part_starts, &all_parts, offset);
     let last_idx = lower_bound_part(&sorted_idx, &part_starts, &all_parts, offset + len - 1);
-    let first_part = sorted_idx[first_idx];
-    let last_part = sorted_idx[last_idx];
 
-    for part_num_u64 in first_part as u64..=last_part as u64 {
-        let part_num = part_num_u64 as u32;
+    // ponytail: duyệt slice có sẵn, không sinh số giả cho part_index thưa
+    for &part_num in &sorted_idx[first_idx..=last_idx] {
         let part_start = part_starts[&part_num];
-        let part_off = cur_file_off - part_start;
+        let part_off = cur_file_off.saturating_sub(part_start);
 
         let db_part = all_parts.get(&part_num)
             .ok_or_else(|| format!("Part {part_num} not found"))?;
@@ -148,11 +146,13 @@ async fn stream_range_impl(
             );
             break;
         }
-        let fetch_len = if part_num_u64 == first_part as u64 && part_num_u64 == last_part as u64 {
+        let is_first = part_num == sorted_idx[first_idx];
+        let is_last = part_num == sorted_idx[last_idx];
+        let fetch_len = if is_first && is_last {
             remaining.min(part_size - part_off)
-        } else if part_num_u64 == first_part as u64 {
+        } else if is_first {
             part_size - part_off
-        } else if part_num_u64 == last_part as u64 {
+        } else if is_last {
             remaining
         } else {
             part_size
