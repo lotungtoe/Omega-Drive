@@ -529,29 +529,26 @@ pub async fn run() {
     };
     app_state_init.book_bridge_port = book_bridge_port;
 
-    // --- Start HTTP Bridge (dynamic port) ---
+    // --- Start HTTP Bridge (dynamic port) — deferred to not block 20s UI ---
     #[cfg(feature = "player")]
     {
-        match ensure_video_bridge_child(
-            &base_dir,
-            app_state_init.bridge_port,
-            &app_state_init.player_runtime.video_bridge_processes,
-        )
-        .await
-        {
-            Ok(actual_port) => {
-                if actual_port != app_state_init.bridge_port {
-                    tracing::info!("Bridge port adjusted {} → {}", app_state_init.bridge_port, actual_port);
-                    app_state_init.bridge_port = actual_port;
+        let base = base_dir.clone();
+        let port = app_state_init.bridge_port;
+        let processes = Arc::clone(&app_state_init.player_runtime.video_bridge_processes);
+        let pctx = Arc::clone(&player_ctx);
+        // Spawn in background so frontend-ready (App.tsx:145 emit) can show UI ~450ms
+        tokio::spawn(async move {
+            match ensure_video_bridge_child(&base, port, &processes).await {
+                Ok(actual_port) => {
+                    pctx.bridge_port.store(actual_port, std::sync::atomic::Ordering::Relaxed);
+                    tracing::info!("Video bridge ready at {} (deferred)", actual_port);
                 }
-                // always sync player_ctx so nativeplayer.rs uses the actual port
-                player_ctx.bridge_port.store(actual_port, std::sync::atomic::Ordering::Relaxed);
+                Err(err) => {
+                    tracing::error!("Video bridge failed (deferred): {err}");
+                }
             }
-            Err(err) => {
-                eprintln!("Failed to start video bridge child process: {err}");
-                std::process::exit(1);
-            }
-        }
+        });
+        tracing::info!("Video bridge spawn deferred (port {}), UI not blocked", port);
     }
 
     let app_state = app_state_init;
