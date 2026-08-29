@@ -256,17 +256,16 @@ impl ProviderInstallResults {
 pub async fn install_builtin_providers(
     ctx: ProviderInstallContext,
 ) -> AppResult<ProviderInstallResults> {
-    use futures_util::StreamExt;
     use tokio::time::{timeout, Duration};
 
     let mut installed = ProviderInstallResults::default();
     let start = std::time::Instant::now();
 
-    let mut futures = futures_util::stream::FuturesUnordered::new();
+    let mut set = tokio::task::JoinSet::new();
     for installer in crate::providers::builtin_installers() {
         let ctx_clone = ctx.clone();
         let id = installer.id;
-        futures.push(async move {
+        set.spawn(async move {
             let t0 = std::time::Instant::now();
             // 8s timeout per provider to avoid 20s sequential block on second run
             let res = timeout(Duration::from_secs(8), installer.install(ctx_clone)).await;
@@ -288,10 +287,16 @@ pub async fn install_builtin_providers(
         });
     }
 
-    while let Some(res) = futures.next().await {
+    while let Some(res) = set.join_next().await {
         match res {
-            Ok((id, output)) => installed.merge(id, output)?,
-            Err(e) => return Err(e),
+            Ok(Ok((id, output))) => installed.merge(id, output)?,
+            Ok(Err(e)) => return Err(e),
+            Err(join_err) => {
+                return Err(AppError::new(
+                    "E_PROVIDER_JOIN",
+                    format!("Provider install join error: {join_err}"),
+                ))
+            }
         }
     }
 
