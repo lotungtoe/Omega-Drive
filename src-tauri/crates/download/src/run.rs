@@ -594,9 +594,8 @@ fn check_disk_space(path: &Path, remaining: u64) -> Result<(), DownloadJobError>
     Ok(())
 }
 
-// ponytail: player-aware throttle removed from download crate
-fn is_soft_limit_active(_state: &DownloadContext) -> bool {
-    false
+fn is_soft_limit_active(state: &DownloadContext) -> bool {
+    state.cfg.read().expect("cfg RwLock").adaptive_soft_limit
 }
 
 fn compute_effective_rate(state: &DownloadContext, throttle: &DownloadThrottle) -> f64 {
