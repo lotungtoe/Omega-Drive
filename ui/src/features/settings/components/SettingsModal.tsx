@@ -79,7 +79,7 @@ const SelectRow = ({ label, description, path, options, getConfigValue, updateCo
       {description && <div className="gd-settings-row-desc">{description}</div>}
     </div>
     <DropdownSelect
-      value={getConfigValue(path, options[0]?.value)}
+      value={getConfigValue(path, i18n.language)}
       onChange={(v) => updateConfig(path, v)}
       options={options}
       style={{ width: 220 }}
