@@ -126,9 +126,6 @@ struct RawDownload {
     part_delay_ms: Option<u64>,
     stream_buffer_kb: Option<usize>,
     large_file_threshold_mb: Option<u64>,
-    prefetch_concurrency: Option<usize>,
-    prefetch_chunks: Option<u32>,
-    prefetch_debounce_ms: Option<u64>,
     mpv_cache_secs: Option<u64>,
     mpv_demuxer_max_mb: Option<u64>,
     mpv_readahead_secs: Option<u64>,
@@ -142,7 +139,6 @@ struct RawDownload {
     hwdec_method: Option<String>,
     d3d11_adapter: Option<String>,
     cache_preview_max_mb: Option<u64>,
-    cache_player_max_mb: Option<u64>,
     cache_video_max_mb: Option<u64>,
     cache_audio_max_mb: Option<u64>,
 }
@@ -322,13 +318,9 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
     let part_delay_ms = clamp!(d.part_delay_ms, 150, 0, 5000);
     let stream_buffer_kb = clamp!(d.stream_buffer_kb, 64, 8, 4096);
     let large_file_threshold_mb = clamp_min!(d.large_file_threshold_mb, 500, 50);
-    let prefetch_concurrency = clamp!(d.prefetch_concurrency, 2, 1, 4);
-    let prefetch_chunks = clamp!(d.prefetch_chunks, 5, 0, 20);
-    let prefetch_debounce_ms = clamp!(d.prefetch_debounce_ms, 50, 0, 2000);
     let mpv_cache_secs = clamp!(d.mpv_cache_secs, 15, 1, 120);
     let mpv_demuxer_max_mb = clamp!(d.mpv_demuxer_max_mb, 64, 50, 2000);
-    let mpv_readahead_secs = clamp!(d.mpv_readahead_secs, 15, 1, 120);
-    let prevent_sleep_enabled = d.prevent_sleep_enabled.unwrap_or(true);
+    let mpv_readahead_secs = clamp!(d.mpv_readahead_secs, 15, 1, 120);    let prevent_sleep_enabled = d.prevent_sleep_enabled.unwrap_or(true);
     let bandwidth_limit_kbps = clamp!(d.bandwidth_limit_kbps, 0, 0, 2_000_000);
     let adaptive_soft_limit = d.adaptive_soft_limit.unwrap_or(true);
     let soft_limit_ratio = d
@@ -345,7 +337,6 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
         .unwrap_or_else(|| "Auto".to_string());
 
     let cache_preview_max_bytes = clamp!(d.cache_preview_max_mb, 50, 10, 2000) * 1024 * 1024;
-    let cache_player_max_bytes = clamp!(d.cache_player_max_mb, 500, 50, 5000) * 1024 * 1024;
     let cache_video_max_bytes = clamp!(d.cache_video_max_mb.or(d.cache_player_max_mb), 400, 50, 5000) * 1024 * 1024;
     let cache_audio_max_bytes = clamp!(d.cache_audio_max_mb.or(d.cache_player_max_mb.map(|v| v / 5)), 100, 10, 1000) * 1024 * 1024;
     let gc_interval_minutes = clamp!(m.gc_interval_minutes, 10, 1, 120);
@@ -399,9 +390,6 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
         part_delay_ms,
         read_buffer_bytes: stream_buffer_kb * 1024,
         large_file_threshold_mb,
-        prefetch_concurrency,
-        prefetch_chunks,
-        prefetch_debounce_ms,
         mpv_cache_secs,
         mpv_demuxer_max_mb,
         mpv_readahead_secs,
@@ -414,7 +402,6 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
         purge_days,
 
         cache_preview_max_bytes,
-        cache_player_max_bytes,
         cache_video_max_bytes,
         cache_audio_max_bytes,
         gc_interval_s: gc_interval_minutes * 60,
@@ -482,9 +469,6 @@ pub fn save_config_to_file(config: &Config, base_dir: &std::path::Path) -> anyho
             part_delay_ms: Some(config.part_delay_ms),
             stream_buffer_kb: Some(config.read_buffer_bytes / 1024),
             large_file_threshold_mb: Some(config.large_file_threshold_mb),
-            prefetch_concurrency: Some(config.prefetch_concurrency),
-            prefetch_chunks: Some(config.prefetch_chunks),
-            prefetch_debounce_ms: Some(config.prefetch_debounce_ms),
             mpv_cache_secs: Some(config.mpv_cache_secs),
             mpv_demuxer_max_mb: Some(config.mpv_demuxer_max_mb),
             mpv_readahead_secs: Some(config.mpv_readahead_secs),
@@ -497,7 +481,6 @@ pub fn save_config_to_file(config: &Config, base_dir: &std::path::Path) -> anyho
             purge_days: Some(config.purge_days),
             d3d11_adapter: Some(config.d3d11_adapter.clone()),
             cache_preview_max_mb: Some(config.cache_preview_max_bytes / 1024 / 1024),
-            cache_player_max_mb: Some(config.cache_player_max_bytes / 1024 / 1024),
             cache_video_max_mb: Some(config.cache_video_max_bytes / 1024 / 1024),
             cache_audio_max_mb: Some(config.cache_audio_max_bytes / 1024 / 1024),
             ..Default::default()

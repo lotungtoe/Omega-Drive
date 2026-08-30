@@ -516,12 +516,6 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
                     {...commonProps}
                   />
                   <InputRow
-                    label="Video cache max (MB)"
-                    description="Max RAM for video streaming cache"
-                    path="download.cache_player_max_mb"
-                    {...commonProps}
-                  />
-                  <InputRow
                     label="Video cache max (MB) — dedicated"
                     description="Dedicated RAM for video (default: player_max_mb)"
                     path="download.cache_video_max_mb"
