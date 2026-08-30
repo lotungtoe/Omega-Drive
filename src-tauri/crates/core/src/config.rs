@@ -158,12 +158,9 @@ struct RawRam {
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
 struct RawServer {
-    host: Option<String>,
-    port: Option<u16>,
     log_level: Option<String>,
     keep_alive_s: Option<u64>,
     max_concurrency: Option<usize>,
-    auto_sync_interval_s: Option<u64>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
@@ -444,12 +441,12 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
         gc_interval_s: gc_interval_minutes * 60,
         trash_ttl_days,
 
-        host: s.host.clone().unwrap_or_else(|| "0.0.0.0".to_string()),
-        port: s.port.unwrap_or(8000),
+        host: "0.0.0.0".to_string(),
+        port: 8000,
         log_level,
         keep_alive_s: clamp!(s.keep_alive_s, 600, 10, 3600),
         max_concurrency: clamp!(s.max_concurrency, 5, 1, 100),
-        auto_sync_interval_s: clamp!(s.auto_sync_interval_s, 10, 5, 3600),
+
 
         history_file: dt
             .history_file
@@ -552,12 +549,9 @@ pub fn save_config_to_file(config: &Config, base_dir: &std::path::Path) -> anyho
             trash_ttl_days: Some(config.trash_ttl_days),
         },
         server: RawServer {
-            host: Some(config.host.clone()),
-            port: Some(config.port),
             log_level: Some(config.log_level.clone()),
             keep_alive_s: Some(config.keep_alive_s),
             max_concurrency: Some(config.max_concurrency),
-            auto_sync_interval_s: Some(config.auto_sync_interval_s),
         },
         data: RawData {
             history_file: Some(config.history_file.clone()),
@@ -629,8 +623,8 @@ pub fn print_config_summary(config: &Config) {
         config.gc_interval_s / 60
     );
     println!(
-        " Server   : {}:{} log={} max_concurrency={}",
-        config.host, config.port, config.log_level, config.max_concurrency
+        " Server   : log={} max_concurrency={}",
+        config.log_level, config.max_concurrency
     );
     println!(
         " Backup   : {} snapshot={} days",

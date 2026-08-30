@@ -390,8 +390,6 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
 
               {activeTab === 'server' && (
                 <SettingsSection title={t('settings.server')} description={t('settings.serverDesc')}>
-                  <InputRow label={t('settings.host')} description={t('settings.hostDesc')} path="server.host" type="text" placeholder="127.0.0.1" {...commonProps} />
-                  <InputRow label={t('settings.port')} description={t('settings.portDesc')} path="server.port" placeholder="8080" {...commonProps} />
                   <SelectRow
                     label={t('settings.logLevel')}
                     description={t('settings.logLevelDesc')}
@@ -405,7 +403,6 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
                     ]}
                     {...commonProps}
                   />
-                  <InputRow label={t('settings.autoSync')} description={t('settings.autoSyncDesc')} path="server.auto_sync_interval_s" {...commonProps} />
                   <div className="gd-settings-divider" style={{ margin: '16px 0', borderTop: '1px solid var(--gd-outline)', opacity: 0.5 }} />
                   <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--gd-on-surface)', marginBottom: 12, opacity: 0.8 }}>BACKUP</h4>
                   <ToggleRow label={t('settings.backupEnabled')} description={t('settings.backupEnabledDesc')} path="backup.enabled" {...commonProps} />
