@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Search, BookOpen, Bookmark, Clock, X } from 'lucide-react'
 
 interface NavEntry {
@@ -29,6 +30,7 @@ interface Props {
 type Tab = 'contents' | 'bookmarks' | 'history'
 
 export function ReaderSidebar({ show, onClose, displayName, nav, spine, currentChapter, onChapterClick, bookmarks, history }: Props) {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<Tab>('contents')
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedVolumes, setExpandedVolumes] = useState<Set<number>>(new Set([0]))
@@ -124,7 +126,7 @@ export function ReaderSidebar({ show, onClose, displayName, nav, spine, currentC
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Tìm kiếm..."
+                placeholder={t('reader.search.placeholder')}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
@@ -154,12 +156,12 @@ export function ReaderSidebar({ show, onClose, displayName, nav, spine, currentC
               <button key={i} type="button" onClick={() => onChapterClick(bm.chapter)}
                 className="w-full text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
                 <div className="font-medium">{bm.label || 'Bookmark'}</div>
-                <div className="text-xs text-slate-400 mt-0.5">Chương {bm.chapter + 1}</div>
+                <div className="text-xs text-slate-400 mt-0.5">{t('reader.chapter', { n: bm.chapter + 1 })}</div>
               </button>
             )) : (
               <div className="flex flex-col items-center justify-center h-40 text-slate-400">
                 <Bookmark className="w-8 h-8 mb-2" />
-                <span className="text-sm">Chưa có đánh dấu</span>
+                <span className="text-sm">{t('reader.emptyBookmarks')}</span>
               </div>
             )
           )}
@@ -170,13 +172,13 @@ export function ReaderSidebar({ show, onClose, displayName, nav, spine, currentC
               return (
                 <button key={i} type="button" onClick={() => onChapterClick(chIndex)}
                   className="w-full text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-                  <div className="font-medium">{entry.title || `Chương ${chIndex + 1}`}</div>
+                  <div className="font-medium">{entry.title || t('reader.chapter', { n: chIndex + 1 })}</div>
                 </button>
               )
             }) : (
               <div className="flex flex-col items-center justify-center h-40 text-slate-400">
                 <Clock className="w-8 h-8 mb-2" />
-                <span className="text-sm">Chưa có lịch sử</span>
+                <span className="text-sm">{t('reader.emptyHistory')}</span>
               </div>
             )
           )}
@@ -184,9 +186,9 @@ export function ReaderSidebar({ show, onClose, displayName, nav, spine, currentC
 
         <div className="absolute bottom-0 left-0 right-0 h-12 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-stretch">
           {([
-            { id: 'contents', icon: BookOpen, label: 'Mục lục' },
-            { id: 'bookmarks', icon: Bookmark, label: 'Đánh dấu' },
-            { id: 'history', icon: Clock, label: 'Lịch sử' },
+            { id: 'contents', icon: BookOpen, label: t('reader.tabs.contents') },
+            { id: 'bookmarks', icon: Bookmark, label: t('reader.tabs.bookmarks') },
+            { id: 'history', icon: Clock, label: t('reader.tabs.history') },
           ] as const).map(tab => (
             <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
               className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-xs transition-colors ${
