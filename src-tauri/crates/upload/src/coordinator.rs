@@ -1386,7 +1386,7 @@ async fn auto_rename_filename(
 }
 
 async fn send_webhook_notification(url: &str, content: &str) {
-    let client = reqwest::Client::new();
+    let client = crate::http_client::http_client().clone();
     let payload = serde_json::json!({
         "content": content,
         "username": "Omega Drive",

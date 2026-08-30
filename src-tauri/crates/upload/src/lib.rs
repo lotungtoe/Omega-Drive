@@ -3,6 +3,7 @@ pub mod context;
 pub mod coordinator;
 pub mod derivative_upload;
 pub mod error;
+pub mod http_client;
 pub mod index_extractor;
 pub mod metadata;
 pub mod orchestrator;

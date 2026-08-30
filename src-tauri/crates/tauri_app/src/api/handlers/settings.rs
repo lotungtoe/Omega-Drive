@@ -132,6 +132,9 @@ pub async fn apply_settings(st: tauri::State<'_, AppState>, config: Value) -> Ap
             )
         })?;
     *st.cfg.write().expect("cfg RwLock write") = new_cfg;
+    let keep_alive_s = st.cfg.read().expect("cfg RwLock read").keep_alive_s;
+    omega_drive_download::provider::rebuild_http_client(keep_alive_s);
+    omega_drive_upload::http_client::rebuild_http_client(keep_alive_s);
 
     Ok(json!({ "success": true }))
 }

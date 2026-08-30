@@ -1,4 +1,4 @@
-use std::sync::OnceLock;
+use std::sync::RwLock;
 use std::time::Duration;
 
 use chrono::Utc;
@@ -13,18 +13,31 @@ use crate::DownloadContext;
 // ============================================================
 
 pub fn http_client() -> &'static reqwest::Client {
-    static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
-    CLIENT.get_or_init(|| {
-        reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
-            .connect_timeout(Duration::from_secs(10))
-            .pool_max_idle_per_host(0)
-            .pool_idle_timeout(Duration::from_secs(30))
-            .http1_only()
-            .build()
-            .expect("Failed to build reqwest client")
-    })
+    {
+        let guard = CLIENT.read().expect("CLIENT poisoned");
+        if let Some(c) = guard.as_ref() {
+            return c;
+        }
+    }
+    rebuild_http_client(600)
 }
+
+pub fn rebuild_http_client(keep_alive_s: u64) -> &'static reqwest::Client {
+    let new_client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .connect_timeout(Duration::from_secs(10))
+        .pool_max_idle_per_host(0)
+        .pool_idle_timeout(Duration::from_secs(30))
+        .tcp_keepalive(Duration::from_secs(keep_alive_s))
+        .http1_only()
+        .build()
+        .expect("Failed to build reqwest client");
+    let mut guard = CLIENT.write().expect("CLIENT poisoned");
+    *guard = Some(new_client);
+    guard.as_ref().expect("just inserted")
+}
+
+static CLIENT: RwLock<Option<reqwest::Client>> = RwLock::new(None);
 
 // ============================================================
 // Download helpers

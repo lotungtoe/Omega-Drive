@@ -136,6 +136,9 @@ pub async fn run() {
     let feature_logs = Arc::new(crate::app_wiring::infrastructure::feature_log::init_tracing(
         &cfg.read().expect("cfg RwLock"), &base_dir,
     ));
+    let keep_alive_s = cfg.read().expect("cfg RwLock").keep_alive_s;
+    omega_drive_download::provider::rebuild_http_client(keep_alive_s);
+    omega_drive_upload::http_client::rebuild_http_client(keep_alive_s);
     info!(" Data directory: {}", base_dir.display());
 
     // Check Deno runtime on startup if DEBUG is enabled
