@@ -157,7 +157,6 @@ struct RawRam {
 struct RawServer {
     log_level: Option<String>,
     keep_alive_s: Option<u64>,
-    max_concurrency: Option<usize>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
@@ -423,7 +422,6 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
 
         log_level,
         keep_alive_s: clamp!(s.keep_alive_s, 600, 10, 3600),
-        max_concurrency: clamp!(s.max_concurrency, 5, 1, 100),
 
         persistent_video_bridge: startup.persistent_video_bridge.unwrap_or(true),
 
@@ -511,7 +509,6 @@ pub fn save_config_to_file(config: &Config, base_dir: &std::path::Path) -> anyho
         server: RawServer {
             log_level: Some(config.log_level.clone()),
             keep_alive_s: Some(config.keep_alive_s),
-            max_concurrency: Some(config.max_concurrency),
         },
         providers,
         logging: RawLogging {
@@ -576,8 +573,8 @@ pub fn print_config_summary(config: &Config) {
         config.gc_interval_s / 60
     );
     println!(
-        " Server   : log={} max_concurrency={}",
-        config.log_level, config.max_concurrency
+        " Server   : log={}",
+        config.log_level
     );
     println!(
         " Backup   : {} snapshot={} days",

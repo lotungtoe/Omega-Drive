@@ -50,7 +50,6 @@ pub struct Config {
     pub trash_ttl_days: i64,
     pub log_level: String,
     pub keep_alive_s: u64,
-    pub max_concurrency: usize,
     pub persistent_video_bridge: bool,
     pub logging: LoggingConfig,
     pub backup_enabled: bool,
