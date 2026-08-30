@@ -99,35 +99,32 @@ jobs:
       - name: Show sccache stats
         if: always()
         run: sccache --show-stats
-      - name: Create portable ZIP (Windows folder)
+      - name: Stage portable folder
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         run: |
           $exe = "target/${{ matrix.target }}/release/Omega-Drive.exe"
           if (-not (Test-Path $exe)) { $exe = "target/${{ matrix.target }}/release/Omega-Drive${{ matrix.ext }}" }
-          $zip = "target/${{ matrix.target }}/release/Omega-Drive-portable.zip"
           $tmp = "portable_tmp/Omega-Drive"
+          if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
           New-Item -ItemType Directory -Force -Path $tmp | Out-Null
           Copy-Item $exe "$tmp/" -Force
           Copy-Item "src-tauri/crates/tauri_app/mpv.dll" "$tmp/" -Force
           Copy-Item "src-tauri/crates/tauri_app/libmpv-2.dll" "$tmp/" -Force
           Copy-Item "src-tauri/crates/tauri_app/mpv-1.dll" "$tmp/" -Force
           if (Test-Path "src-tauri/resources") { Copy-Item "src-tauri/resources" "$tmp/resources" -Recurse -Force }
-          Compress-Archive -Path "$tmp/*" -DestinationPath $zip -Force
-          Write-Host "Portable ZIP created at $zip"
-          Get-ChildItem $zip | Format-List
+          Write-Host "Portable folder staged at $tmp"
+          Get-ChildItem $tmp -Recurse | Format-List
       - name: Upload app installer
-        uses: softprops/action-gh-release@v2
+        uses: actions/upload-artifact@v5
         with:
-          tag_name: ${{ github.ref_name }}
-          files: target/${{ matrix.target }}/release/Omega-Drive${{ matrix.ext }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: Omega-Drive-installer
+          path: target/${{ matrix.target }}/release/Omega-Drive${{ matrix.ext }}
+          if-no-files-found: error
       - name: Upload portable ZIP
         if: matrix.target == 'x86_64-pc-windows-msvc'
-        uses: softprops/action-gh-release@v2
+        uses: actions/upload-artifact@v5
         with:
-          tag_name: ${{ github.ref_name }}
-          files: target/${{ matrix.target }}/release/Omega-Drive-portable.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: Omega-Drive-portable
+          path: portable_tmp/Omega-Drive/*
+          if-no-files-found: error

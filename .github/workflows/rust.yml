@@ -92,5 +92,5 @@ jobs:
       - uses: actions/upload-artifact@v5
         with:
           name: Omega-Drive-portable
-          path: target/x86_64-pc-windows-msvc/release-fast/Omega-Drive-portable.zip
+          path: portable_tmp/Omega-Drive/*
           if-no-files-found: warn
