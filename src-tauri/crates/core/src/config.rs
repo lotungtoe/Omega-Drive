@@ -151,7 +151,6 @@ struct RawDownload {
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
 struct RawRam {
-    session_ttl_minutes: Option<u64>,
     gc_interval_minutes: Option<u64>,
     trash_ttl_days: Option<i64>,
 }
@@ -164,15 +163,7 @@ struct RawServer {
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
-struct RawData {
-    history_file: Option<String>,
-    folders_file: Option<String>,
-    sessions_file: Option<String>,
-}
-
-#[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
 struct RawStartup {
-    auto_sync: Option<bool>,
     persistent_video_bridge: Option<bool>,
 }
 
@@ -228,8 +219,6 @@ struct RawConfig {
     ram: RawRam,
     #[serde(default)]
     server: RawServer,
-    #[serde(default)]
-    data: RawData,
     #[serde(default)]
     providers: HashMap<String, RawProviderConfig>,
     #[serde(default)]
@@ -318,7 +307,6 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
     let d = &r.download;
     let m = &r.ram;
     let s = &r.server;
-    let dt = &r.data;
     let logging = &r.logging;
     let startup = &r.startup;
     let mut raw_provider_configs = r.providers.clone();
@@ -365,7 +353,6 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
     let cache_player_max_bytes = clamp!(d.cache_player_max_mb, 500, 50, 5000) * 1024 * 1024;
     let cache_video_max_bytes = clamp!(d.cache_video_max_mb.or(d.cache_player_max_mb), 400, 50, 5000) * 1024 * 1024;
     let cache_audio_max_bytes = clamp!(d.cache_audio_max_mb.or(d.cache_player_max_mb.map(|v| v / 5)), 100, 10, 1000) * 1024 * 1024;
-    let session_ttl_minutes = clamp!(m.session_ttl_minutes, 60, 5, 1440);
     let gc_interval_minutes = clamp!(m.gc_interval_minutes, 10, 1, 120);
     let trash_ttl_days = clamp!(m.trash_ttl_days, 30, 1, 365);
 
@@ -437,7 +424,6 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
         cache_player_max_bytes,
         cache_video_max_bytes,
         cache_audio_max_bytes,
-        session_ttl_s: session_ttl_minutes * 60,
         gc_interval_s: gc_interval_minutes * 60,
         trash_ttl_days,
 
@@ -445,21 +431,6 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
         keep_alive_s: clamp!(s.keep_alive_s, 600, 10, 3600),
         max_concurrency: clamp!(s.max_concurrency, 5, 1, 100),
 
-
-        history_file: dt
-            .history_file
-            .clone()
-            .unwrap_or_else(|| "file_history.json".to_string()),
-        folders_file: dt
-            .folders_file
-            .clone()
-            .unwrap_or_else(|| "folders.json".to_string()),
-        sessions_file: dt
-            .sessions_file
-            .clone()
-            .unwrap_or_else(|| "upload_sessions.json".to_string()),
-
-        auto_sync_on_startup: startup.auto_sync.unwrap_or(false),
         persistent_video_bridge: startup.persistent_video_bridge.unwrap_or(true),
 
         logging: LoggingConfig {
@@ -542,7 +513,6 @@ pub fn save_config_to_file(config: &Config, base_dir: &std::path::Path) -> anyho
             ..Default::default()
         },
         ram: RawRam {
-            session_ttl_minutes: Some(config.session_ttl_s / 60),
             gc_interval_minutes: Some(config.gc_interval_s / 60),
             trash_ttl_days: Some(config.trash_ttl_days),
         },
@@ -551,18 +521,12 @@ pub fn save_config_to_file(config: &Config, base_dir: &std::path::Path) -> anyho
             keep_alive_s: Some(config.keep_alive_s),
             max_concurrency: Some(config.max_concurrency),
         },
-        data: RawData {
-            history_file: Some(config.history_file.clone()),
-            folders_file: Some(config.folders_file.clone()),
-            sessions_file: Some(config.sessions_file.clone()),
-        },
         providers,
         logging: RawLogging {
             feature_enabled: config.logging.feature_enabled.clone(),
             frontend_enabled: Some(config.logging.frontend_enabled),
         },
         startup: RawStartup {
-            auto_sync: Some(config.auto_sync_on_startup),
             persistent_video_bridge: Some(config.persistent_video_bridge),
         },
         backup: RawBackup {
@@ -616,8 +580,7 @@ pub fn print_config_summary(config: &Config) {
         config.http_timeout_s, config.download_retry, config.large_file_threshold_mb
     );
     println!(
-        " RAM      : session_ttl={}min gc={}min",
-        config.session_ttl_s / 60,
+        " RAM      : gc={}min",
         config.gc_interval_s / 60
     );
     println!(

@@ -14,7 +14,6 @@ import {
   MainAppUiStateContext,
 } from "./useMainAppContext";
 import { getBootstrapStatus } from "../../diagnostics/services/diagnosticsService";
-import { getSettings } from "../../settings/services/settingsService";
 import { useDeepLink } from "../hooks/useDeepLink";
 
 export function MainAppProvider({ children }) {
@@ -55,30 +54,6 @@ export function MainAppProvider({ children }) {
   useEffect(() => {
     uploadPathsRef.current = uploadPaths;
   }, [uploadPaths]);
-
-  useEffect(() => {
-    let mounted = true;
-    const bootAutoSync = async () => {
-      try {
-        const res = await getSettings();
-        if (!mounted || !(res as any)?.config?.startup?.auto_sync) {
-          return;
-        }
-
-        const bootstrapStatus = await getBootstrapStatus();
-        if (!mounted || !bootstrapStatus?.discordConfigured) {
-          return;
-        }
-
-
-      } catch (err) {
-        console.warn("Could not load auto_sync on startup", err);
-      }
-    };
-    bootAutoSync();
-    return () => { mounted = false; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const { removeSession } = useDriveEventSubscriptions({
     isInternalDragging: false,

@@ -374,12 +374,6 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
                     {...commonProps}
                   />
                   <ToggleRow
-                    label={t('settings.autoSyncOnStartup')}
-                    description={t('settings.autoSyncOnStartupDesc')}
-                    path="startup.auto_sync"
-                    {...commonProps}
-                  />
-                  <ToggleRow
                     label={t('settings.persistentVideoBridge')}
                     description={t('settings.persistentVideoBridgeDesc')}
                     path="startup.persistent_video_bridge"
@@ -436,8 +430,7 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
                   <InputRow label={t('settings.chunkSize')} description={t('settings.chunkSizeDesc')} path="upload.general.chunk_mb" {...commonProps} />
                   <InputRow label={t('settings.parallelChunks')} description={t('settings.parallelChunksDesc')} path="upload.general.parallel_sends" {...commonProps} />
                   <InputRow label={t('settings.zipLevel')} description={t('settings.zipLevelDesc')} path="upload.general.zip_level" {...commonProps} />
-                  <InputRow label={t('settings.safeRatio')} description={t('settings.safeRatioDesc')} path="upload.general.safe_ratio" step={0.01} {...commonProps} />
-                  
+
                   <div className="gd-settings-divider" style={{ margin: '16px 0', borderTop: '1px solid var(--gd-outline)', opacity: 0.5 }} />
                   
                   <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--gd-on-surface)', marginBottom: 12, opacity: 0.8 }}>DISCORD SETTINGS</h4>
