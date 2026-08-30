@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "notes": "Omega Drive portable for Windows. See https://github.com/lotungtoe/Omega-Drive/releases for changelog.",
+  "pub_date": "2026-08-29T00:00:00Z",
+  "platforms": {
+    "windows-x86_64": {
+      "url": "https://github.com/lotungtoe/Omega-Drive/releases/download/v1.0.0/Omega-Drive-portable.zip",
+      "signature": ""
+    }
+  }
+}

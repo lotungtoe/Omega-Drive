@@ -212,13 +212,14 @@ impl PartitionedMemCache {
     pub async fn read(&self, file_id: i64, offset: u64, len: u64) -> Option<Bytes> {
         let partitions: Vec<_> = {
             let map = self.partitions.read();
-            map.values().map(|p| p.clone()).collect()
+            map.values().cloned().collect()
         };
         let end = offset + len;
 
         for p in &partitions {
+            // ponytail: dùng match thay `?` để không early-return cả hàm
             let data = p.read();
-            let base = data.entries.range(..=(file_id, offset)).next_back()?;
+            let Some(base) = data.entries.range(..=(file_id, offset)).next_back() else { continue; };
             if base.0 .0 != file_id { continue; }
             let base_entry_off = base.0 .1;
             let base_entry_len = base.1.len;
@@ -226,17 +227,22 @@ impl PartitionedMemCache {
 
             let mut result = Vec::with_capacity(len as usize);
             let mut cur = offset;
+            let mut ok = true;
             while cur < end {
                 let Some((&k, e)) = data.entries.range(..=(file_id, cur)).next_back() else {
-                    return None;
+                    ok = false;
+                    break;
                 };
-                if k.0 != file_id || k.1 + e.len <= cur { return None; }
+                if k.0 != file_id || k.1 + e.len <= cur {
+                    ok = false;
+                    break;
+                }
                 let skip = (cur - k.1) as usize;
                 let take = ((e.data.len() - skip) as usize).min((end - cur) as usize);
                 result.extend_from_slice(&e.data[skip..][..take]);
                 cur += take as u64;
             }
-
+            if !ok { continue; } // gap trong partition này → thử partition kế
             drop(data);
             let mut w = p.write();
             w.update_window(file_id, offset, len);

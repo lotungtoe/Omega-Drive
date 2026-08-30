@@ -81,3 +81,24 @@ fn lower_bound_with_two_parts_at_mid() {
     let idx = lower_bound_part(&sorted, &starts, &parts, 60);
     assert_eq!(sorted[idx], 2);
 }
+
+#[test]
+fn lower_bound_and_loop_handles_gap_in_idx() {
+    let (sorted, starts, parts) = make_parts_data(&[(1, 100), (5, 100), (9, 100)]);
+    // sorted = [1,5,9], file offsets 0,100,200
+    let idx = lower_bound_part(&sorted, &starts, &parts, 150);
+    assert_eq!(sorted[idx], 5);
+    let idx2 = lower_bound_part(&sorted, &starts, &parts, 250);
+    assert_eq!(sorted[idx2], 9);
+}
+
+#[test]
+fn sorted_idx_slice_handles_sparse_loop() {
+    let sorted = vec![1u32, 5, 9];
+    let first_idx = 0; // tương ứng part 1
+    let last_idx = 2;  // tương ứng part 9
+    let slice = &sorted[first_idx..=last_idx];
+    assert_eq!(slice, &[1, 5, 9]);
+    // đảm bảo không có 2,3,4,6,7,8
+    assert!(!slice.contains(&2));
+}

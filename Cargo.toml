@@ -30,3 +30,9 @@ codegen-units  = 256
 lto            = "thin"
 strip          = "symbols"
 incremental    = true
+
+[profile.release-fast]
+inherits       = "release"
+lto            = "off"
+strip          = false
+incremental    = true

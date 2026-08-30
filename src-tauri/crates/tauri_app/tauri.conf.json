@@ -36,7 +36,7 @@
       "dialog": true,
       "pubkey": "",
       "endpoints": [
-        "https://api.github.com/repos/lotungtoe/Omega-Drive/releases/latest"
+        "https://raw.githubusercontent.com/lotungtoe/Omega-Drive/main/portable-updater.json"
       ],
       "windows": {
         "installMode": "passive"

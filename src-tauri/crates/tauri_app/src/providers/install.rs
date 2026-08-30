@@ -256,13 +256,51 @@ impl ProviderInstallResults {
 pub async fn install_builtin_providers(
     ctx: ProviderInstallContext,
 ) -> AppResult<ProviderInstallResults> {
-    let mut installed = ProviderInstallResults::default();
+    use tokio::time::{timeout, Duration};
 
+    let mut installed = ProviderInstallResults::default();
+    let start = std::time::Instant::now();
+
+    let mut set = tokio::task::JoinSet::new();
     for installer in crate::providers::builtin_installers() {
-        let output = installer.install(ctx.clone()).await?;
-        installed.merge(installer.id, output)?;
+        let ctx_clone = ctx.clone();
+        let id = installer.id;
+        set.spawn(async move {
+            let t0 = std::time::Instant::now();
+            // 8s timeout per provider to avoid 20s sequential block on second run
+            let res = timeout(Duration::from_secs(8), installer.install(ctx_clone)).await;
+            let elapsed = t0.elapsed();
+            match res {
+                Ok(Ok(output)) => {
+                    tracing::info!("[ProviderInstall] {} ok in {:.2}s", id, elapsed.as_secs_f64());
+                    Ok::<_, AppError>((id, output))
+                }
+                Ok(Err(e)) => {
+                    tracing::warn!("[ProviderInstall] {} failed after {:.2}s: {}", id, elapsed.as_secs_f64(), e);
+                    Err(e)
+                }
+                Err(_) => {
+                    tracing::warn!("[ProviderInstall] {} timeout after 8s", id);
+                    Err(AppError::new("E_PROVIDER_TIMEOUT", format!("Provider {id} install timeout 8s")))
+                }
+            }
+        });
     }
 
+    while let Some(res) = set.join_next().await {
+        match res {
+            Ok(Ok((id, output))) => installed.merge(id, output)?,
+            Ok(Err(e)) => return Err(e),
+            Err(join_err) => {
+                return Err(AppError::new(
+                    "E_PROVIDER_JOIN",
+                    format!("Provider install join error: {join_err}"),
+                ))
+            }
+        }
+    }
+
+    tracing::info!("[ProviderInstall] all done in {:.2}s", start.elapsed().as_secs_f64());
     Ok(installed)
 }
 

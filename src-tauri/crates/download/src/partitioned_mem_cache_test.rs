@@ -47,7 +47,8 @@ async fn test_read_within_merged_entry() {
     cache.write(1, 3, Bytes::from("BBB"), "test").await;
     cache.write(1, 6, Bytes::from("CCC"), "test").await;
     let data = cache.read(1, 2, 5).await;
-    assert_eq!(data, Some(Bytes::from("ABBCC")));
+    // offsets 2(A),3(B),4(B),5(B),6(C) => "ABBBC"
+    assert_eq!(data, Some(Bytes::from("ABBBC")));
 }
 
 #[tokio::test]
@@ -151,4 +152,32 @@ async fn test_multiple_partitions_isolated() {
     cache.write(1, 0, Bytes::from("aaaa"), "a").await;
     cache.write(1, 0, Bytes::from("bbbb"), "b").await;
     assert_eq!(cache.read(1, 0, 4).await, Some(Bytes::from("aaaa")));
+}
+
+#[tokio::test]
+async fn test_read_fallback_across_partitions() {
+    let mut cfg = HashMap::new();
+    cfg.insert("a".into(), PartitionConfig { max_bytes: None });
+    cfg.insert("b".into(), PartitionConfig { max_bytes: None });
+    let cache = PartitionedMemCache::new(cfg);
+    // chỉ partition "b" có data, read phải tìm qua cả "a" rồi sang "b"
+    cache.write(99, 0, Bytes::from("hello-b"), "b").await;
+    // nếu bug ? thì 50% chạy sẽ return None khi duyệt "a" trước
+    let mut found = false;
+    for _ in 0..20 {
+        if let Some(d) = cache.read(99, 0, 7).await {
+            assert_eq!(d, Bytes::from("hello-b"));
+            found = true;
+        }
+    }
+    assert!(found);
+}
+
+#[tokio::test]
+async fn test_read_chain_across_gap_returns_none_not_panic() {
+    let cache = make_cache(None);
+    cache.write(1, 0, Bytes::from("AAA"), "test").await;
+    cache.write(1, 10, Bytes::from("BBB"), "test").await; // gap 3..10
+    assert!(cache.read(1, 0, 13).await.is_none());
+    assert!(cache.read(1, 0, 3).await.is_some());
 }
