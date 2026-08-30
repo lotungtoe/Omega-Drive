@@ -39,8 +39,6 @@ pub struct Config {
     pub bandwidth_limit_kbps: u64,
     pub adaptive_soft_limit: bool,
     pub soft_limit_ratio: f64,
-    pub soft_limit_when_player_active: bool,
-    pub soft_limit_when_minimized: bool,
     pub disk_check_interval_parts: u32,
     pub auto_resume_on_startup: bool,
     pub purge_days: u32,

@@ -136,8 +136,6 @@ struct RawDownload {
     bandwidth_limit_kbps: Option<u64>,
     adaptive_soft_limit: Option<bool>,
     soft_limit_ratio: Option<f64>,
-    soft_limit_when_player_active: Option<bool>,
-    soft_limit_when_minimized: Option<bool>,
     disk_check_interval_parts: Option<u32>,
     auto_resume_on_startup: Option<bool>,
     purge_days: Option<u32>,
@@ -338,8 +336,6 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
         .soft_limit_ratio
         .filter(|v| (0.5..=0.95).contains(v))
         .unwrap_or(0.8);
-    let soft_limit_when_player_active = d.soft_limit_when_player_active.unwrap_or(true);
-    let soft_limit_when_minimized = d.soft_limit_when_minimized.unwrap_or(true);
     let disk_check_interval_parts = clamp!(d.disk_check_interval_parts, 5, 1, 50);
     let auto_resume_on_startup = d.auto_resume_on_startup.unwrap_or(true);
     let purge_days = clamp!(d.purge_days, 7, 1, 30);
@@ -414,8 +410,6 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
         bandwidth_limit_kbps,
         adaptive_soft_limit,
         soft_limit_ratio,
-        soft_limit_when_player_active,
-        soft_limit_when_minimized,
         disk_check_interval_parts,
         auto_resume_on_startup,
         purge_days,
@@ -500,8 +494,6 @@ pub fn save_config_to_file(config: &Config, base_dir: &std::path::Path) -> anyho
             bandwidth_limit_kbps: Some(config.bandwidth_limit_kbps),
             adaptive_soft_limit: Some(config.adaptive_soft_limit),
             soft_limit_ratio: Some(config.soft_limit_ratio),
-            soft_limit_when_player_active: Some(config.soft_limit_when_player_active),
-            soft_limit_when_minimized: Some(config.soft_limit_when_minimized),
             disk_check_interval_parts: Some(config.disk_check_interval_parts),
             auto_resume_on_startup: Some(config.auto_resume_on_startup),
             purge_days: Some(config.purge_days),

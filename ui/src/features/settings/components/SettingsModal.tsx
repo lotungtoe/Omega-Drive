@@ -497,18 +497,6 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
                     step={0.05}
                     {...commonProps}
                   />
-                  <ToggleRow
-                    label={t('settings.softLimitWhenPlayerActive')}
-                    description={t('settings.softLimitWhenPlayerActiveDesc')}
-                    path="download.soft_limit_when_player_active"
-                    {...commonProps}
-                  />
-                  <ToggleRow
-                    label={t('settings.softLimitWhenMinimized')}
-                    description={t('settings.softLimitWhenMinimizedDesc')}
-                    path="download.soft_limit_when_minimized"
-                    {...commonProps}
-                  />
                   <InputRow
                     label={t('settings.diskCheckInterval')}
                     description={t('settings.diskCheckIntervalDesc')}
