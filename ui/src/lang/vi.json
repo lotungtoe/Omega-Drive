@@ -552,5 +552,21 @@
     "save": "Lưu tên",
     "current": "Đang chọn",
     "useThis": "Dùng DB này"
+  },
+  "reader": {
+    "search": { "placeholder": "Tìm kiếm..." },
+    "tabs": { "contents": "Mục lục", "bookmarks": "Đánh dấu", "history": "Lịch sử" },
+    "chapter": "Chương {{n}}",
+    "emptyBookmarks": "Chưa có đánh dấu",
+    "emptyHistory": "Chưa có lịch sử"
+  },
+  "readerSettings": {
+    "size": "Cỡ chữ",
+    "lineHeight": "Dãn dòng",
+    "theme": "Nền",
+    "themeLight": "Sáng",
+    "themeSepia": "Sepia",
+    "themeDark": "Tối",
+    "themeBlack": "Đen"
   }
 }

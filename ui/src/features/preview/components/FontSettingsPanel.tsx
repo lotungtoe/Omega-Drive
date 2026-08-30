@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ReaderSettings } from '../utils/injectReaderStyles'
 import type { ThemeName } from '../utils/themes'
 import { themes } from '../utils/themes'
@@ -11,14 +13,15 @@ interface Props {
 }
 
 const FONTS = ['Noto Serif', 'Literata', 'Georgia', 'Inter', 'OpenDyslexic']
-const THEME_NAMES: { name: ThemeName; label: string }[] = [
-  { name: 'light', label: 'Sáng' },
-  { name: 'sepia', label: 'Sepia' },
-  { name: 'dark', label: 'Tối' },
-  { name: 'black', label: 'Đen' },
-]
 
 export function FontSettingsPanel({ settings, onFontChange, onSizeChange, onLineHeightChange, onThemeChange }: Props) {
+  const { t } = useTranslation()
+  const themeNames = useMemo<{ name: ThemeName; label: string }[]>(() => [
+    { name: 'light', label: t('readerSettings.themeLight') },
+    { name: 'sepia', label: t('readerSettings.themeSepia') },
+    { name: 'dark', label: t('readerSettings.themeDark') },
+    { name: 'black', label: t('readerSettings.themeBlack') },
+  ], [t])
   return (
     <div className="absolute top-full right-0 mt-1 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-4 z-50">
       <div className="space-y-4">
@@ -30,7 +33,7 @@ export function FontSettingsPanel({ settings, onFontChange, onSizeChange, onLine
           </select>
         </div>
         <div>
-          <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cỡ chữ</label>
+          <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('readerSettings.size')}</label>
           <div className="mt-1 flex items-center gap-3">
             <button type="button" onClick={() => onSizeChange(Math.max(12, settings.fontSize - 1))}
               disabled={settings.fontSize <= 12}
@@ -42,7 +45,7 @@ export function FontSettingsPanel({ settings, onFontChange, onSizeChange, onLine
           </div>
         </div>
         <div>
-          <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Dãn dòng</label>
+          <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('readerSettings.lineHeight')}</label>
           <div className="mt-1 flex items-center gap-3">
             <button type="button" onClick={() => onLineHeightChange(Math.round((settings.lineHeight - 0.1) * 10) / 10)}
               disabled={settings.lineHeight <= 1.0}
@@ -54,15 +57,15 @@ export function FontSettingsPanel({ settings, onFontChange, onSizeChange, onLine
           </div>
         </div>
         <div>
-          <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Nền</label>
+          <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('readerSettings.theme')}</label>
           <div className="mt-1 flex gap-2">
-            {THEME_NAMES.map(t => (
-              <button key={t.name} type="button" onClick={() => onThemeChange(t.name)}
+            {themeNames.map(tn => (
+              <button key={tn.name} type="button" onClick={() => onThemeChange(tn.name)}
                 className={`flex-1 h-10 rounded-lg border-2 transition-all flex items-center justify-center text-xs font-medium ${
-                  settings.theme === t.name ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-200 dark:border-slate-700'
+                  settings.theme === tn.name ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-200 dark:border-slate-700'
                 }`}
-                style={{ background: themes[t.name].background, color: themes[t.name].text }}>
-                {t.label}
+                style={{ background: themes[tn.name].background, color: themes[tn.name].text }}>
+                {tn.label}
               </button>
             ))}
           </div>

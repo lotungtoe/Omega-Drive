@@ -551,5 +551,21 @@
     "save": "Save name",
     "current": "Selected",
     "useThis": "Use this DB"
+  },
+  "reader": {
+    "search": { "placeholder": "Search..." },
+    "tabs": { "contents": "Contents", "bookmarks": "Bookmarks", "history": "History" },
+    "chapter": "Chapter {{n}}",
+    "emptyBookmarks": "No bookmarks yet",
+    "emptyHistory": "No history yet"
+  },
+  "readerSettings": {
+    "size": "Size",
+    "lineHeight": "Line height",
+    "theme": "Background",
+    "themeLight": "Light",
+    "themeSepia": "Sepia",
+    "themeDark": "Dark",
+    "themeBlack": "Black"
   }
 }
