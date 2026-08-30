@@ -337,8 +337,8 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
         .unwrap_or_else(|| "Auto".to_string());
 
     let cache_preview_max_bytes = clamp!(d.cache_preview_max_mb, 50, 10, 2000) * 1024 * 1024;
-    let cache_video_max_bytes = clamp!(d.cache_video_max_mb.or(d.cache_player_max_mb), 400, 50, 5000) * 1024 * 1024;
-    let cache_audio_max_bytes = clamp!(d.cache_audio_max_mb.or(d.cache_player_max_mb.map(|v| v / 5)), 100, 10, 1000) * 1024 * 1024;
+    let cache_video_max_bytes = clamp!(d.cache_video_max_mb, 400, 50, 5000) * 1024 * 1024;
+    let cache_audio_max_bytes = clamp!(d.cache_audio_max_mb, 100, 10, 1000) * 1024 * 1024;
     let gc_interval_minutes = clamp!(m.gc_interval_minutes, 10, 1, 120);
     let trash_ttl_days = clamp!(m.trash_ttl_days, 30, 1, 365);
 
