@@ -132,7 +132,10 @@ pub async fn get_transfers_paginated(
     let limit = limit.unwrap_or(50).min(200);
     let files = ctx.file_repo
         .get_transfers_paginated(cursor, limit).await
-        .map_err(|e| DriveError::db("DB error when loading transfer list.", e))?;
+        .map_err(|e| {
+            tracing::error!("get_transfers_paginated failed: {}", e);
+            DriveError::db("DB error when loading transfer list.", e)
+        })?;
     let file_ids: Vec<i64> = files.iter().map(|f| f.id).collect();
     let parts_counts = ctx.file_repo
         .get_part_counts_for_files(&file_ids).await

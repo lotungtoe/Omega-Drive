@@ -15,6 +15,10 @@ export function useDownloads(toast) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+  const tRef = useRef(t);
+  tRef.current = t;
 
   const refresh = useCallback(async () => {
     try {
@@ -25,9 +29,9 @@ export function useDownloads(toast) {
     } catch (err) {
       const msg = toUserMessage(err);
       console.error('Failed to list download jobs:', err);
-      toast?.show?.(msg.message || t('downloads.loadFailed'), 'error');
+      toastRef.current?.show?.(msg.message || tRef.current('downloads.loadFailed'), 'error');
     }
-  }, [toast, t]);
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -75,10 +79,10 @@ export function useDownloads(toast) {
       } catch (err) {
         const msg = toUserMessage(err);
         console.error('Pause download failed:', err);
-        toast?.show?.(msg.message || t('downloads.pauseFailed'), 'error');
+        toastRef.current?.show?.(msg.message || tRef.current('downloads.pauseFailed'), 'error');
       }
     },
-    [refresh, toast, t]
+    [refresh]
   );
 
   const resumeJob = useCallback(
@@ -89,10 +93,10 @@ export function useDownloads(toast) {
       } catch (err) {
         const msg = toUserMessage(err);
         console.error('Resume download failed:', err);
-        toast?.show?.(msg.message || t('downloads.resumeFailed'), 'error');
+        toastRef.current?.show?.(msg.message || tRef.current('downloads.resumeFailed'), 'error');
       }
     },
-    [refresh, toast, t]
+    [refresh]
   );
 
   const cancelJob = useCallback(
@@ -103,10 +107,10 @@ export function useDownloads(toast) {
       } catch (err) {
         const msg = toUserMessage(err);
         console.error('Cancel download failed:', err);
-        toast?.show?.(msg.message || t('downloads.cancelFailed'), 'error');
+        toastRef.current?.show?.(msg.message || tRef.current('downloads.cancelFailed'), 'error');
       }
     },
-    [refresh, toast, t]
+    [refresh]
   );
 
   const retryJob = useCallback(
@@ -117,10 +121,10 @@ export function useDownloads(toast) {
       } catch (err) {
         const msg = toUserMessage(err);
         console.error('Retry download failed:', err);
-        toast?.show?.(msg.message || t('downloads.retryFailed'), 'error');
+        toastRef.current?.show?.(msg.message || tRef.current('downloads.retryFailed'), 'error');
       }
     },
-    [refresh, toast, t]
+    [refresh]
   );
 
   return {

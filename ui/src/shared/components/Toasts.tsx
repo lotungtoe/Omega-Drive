@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, createContext, useContext } from 'react'
+﻿import { useState, useCallback, createContext, useContext, useRef } from 'react'
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react'
 import { Button } from '../../components/ui/be-ui-button'
 
@@ -10,9 +10,16 @@ export const useToast = () => useContext(ToastCtx)
 // eslint-disable-next-line react-refresh/only-export-components
 export function useToastState() {
   const [toasts, setToasts] = useState([])
+  const lastShownRef = useRef<{ key: string, ts: number } | null>(null)
   const remove = (id) => setToasts(p => p.filter(t => t.id !== id))
   const show = useCallback((message, type = 'info', duration = 3000, actions = null) => {
-    const id = Date.now() + Math.random()
+    const key = `${type}:${message}`
+    const now = Date.now()
+    if (lastShownRef.current && lastShownRef.current.key === key && now - lastShownRef.current.ts < 2000) {
+      return
+    }
+    lastShownRef.current = { key, ts: now }
+    const id = now + Math.random()
     setToasts(p => [...p, { id, message, type, actions }].slice(-5))
     setTimeout(() => remove(id), duration)
   }, [])
