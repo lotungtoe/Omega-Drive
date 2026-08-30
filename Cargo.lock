@@ -3840,7 +3840,6 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-util",
- "zip 2.4.2",
 ]
 
 [[package]]
@@ -3850,11 +3849,9 @@ dependencies = [
  "axum",
  "bytes",
  "chrono",
- "fastrand",
  "futures-util",
  "libmpv2",
  "omega_drive_gateway",
- "parking_lot",
  "serde",
  "serde_json",
  "tokio",
