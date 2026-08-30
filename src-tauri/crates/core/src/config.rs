@@ -441,8 +441,6 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
         gc_interval_s: gc_interval_minutes * 60,
         trash_ttl_days,
 
-        host: "0.0.0.0".to_string(),
-        port: 8000,
         log_level,
         keep_alive_s: clamp!(s.keep_alive_s, 600, 10, 3600),
         max_concurrency: clamp!(s.max_concurrency, 5, 1, 100),
