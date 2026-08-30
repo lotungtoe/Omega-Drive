@@ -2,6 +2,25 @@
 /// Returns list of adapter names; first entry is always "Auto".
 
 fn gpu_names_from_powershell() -> Vec<String> {
+    // ponytail: CREATE_NO_WINDOW (0x08000000) to hide powershell.exe console flash
+    // when opening the Decode settings tab.
+    #[cfg(windows)]
+    let output = {
+        use std::os::windows::process::CommandExt;
+        match std::process::Command::new("powershell")
+            .args([
+                "-NoProfile",
+                "-Command",
+                "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name",
+            ])
+            .creation_flags(0x08000000)
+            .output()
+        {
+            Ok(o) if o.status.success() => o,
+            _ => return vec![],
+        }
+    };
+    #[cfg(not(windows))]
     let output = match std::process::Command::new("powershell")
         .args([
             "-NoProfile",

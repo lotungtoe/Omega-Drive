@@ -30,7 +30,9 @@ fn get_binary_version(name: &str) -> Option<String> {
     if !path.exists() {
         return None;
     }
-    let output = std::process::Command::new(&path).arg("--version").output().ok()?;
+    let mut cmd = std::process::Command::new(&path);
+    omega_drive_gateway::suppress_console!(&mut cmd);
+    let output = cmd.arg("--version").output().ok()?;
     let stdout = String::from_utf8_lossy(&output.stdout);
     // ponytail: simple version extraction per binary, add semver comparison later
     match name {
