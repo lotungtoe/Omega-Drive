@@ -542,6 +542,9 @@
     "setupCompact": "Mở thiết lập"
   },
   "tenantManager": {
+    "description": "Quản lý danh sách DB trong scope này.",
+    "empty": "Chưa có DB tenant nào trong scope này.",
+    "openSetup": "Mở thiết lập",
     "active": "Đang dùng",
     "inactive": "Sẵn sàng",
     "placeholder": "Tên hiển thị tùy chỉnh",

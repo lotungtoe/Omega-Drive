@@ -541,6 +541,9 @@
     "setupCompact": "Open setup"
   },
   "tenantManager": {
+    "description": "Manage the list of databases in this scope.",
+    "empty": "No tenant databases in this scope yet.",
+    "openSetup": "Open setup",
     "active": "Active",
     "inactive": "Ready",
     "placeholder": "Custom display name",
