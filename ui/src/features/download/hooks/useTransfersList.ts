@@ -11,11 +11,17 @@ export function useTransfersList(toast) {
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const loadingMoreRef = useRef(false);
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+  const cursorRef = useRef(cursor);
+  cursorRef.current = cursor;
+  const hasMoreRef = useRef(hasMore);
+  hasMoreRef.current = hasMore;
 
   const loadUploads = useCallback(async (reset = false) => {
     try {
-      const fetchCursor = reset ? null : cursor;
-      if (!reset && (!hasMore || loadingMoreRef.current)) return;
+      const fetchCursor = reset ? null : cursorRef.current;
+      if (!reset && (!hasMoreRef.current || loadingMoreRef.current)) return;
 
       if (reset) {
         setLoading(true);
@@ -24,19 +30,19 @@ export function useTransfersList(toast) {
       }
 
       const res: any = await fetchTransfersPaginated(fetchCursor, 50);
-      
+
       setUploads(prev => reset ? res.files : [...prev, ...res.files]);
       setCursor(res.next_cursor);
       setHasMore(res.has_more);
     } catch (err) {
       console.error('Failed to load uploads:', err);
       const msg = toUserMessage(err);
-      toast?.show?.(msg.message || 'Error loading upload list', 'error');
+      toastRef.current?.show?.(msg.message || 'Error loading upload list', 'error');
     } finally {
       setLoading(false);
       loadingMoreRef.current = false;
     }
-  }, [cursor, hasMore, toast]);
+  }, []);
 
   useEffect(() => {
     void loadUploads(true);
@@ -58,9 +64,9 @@ export function useTransfersList(toast) {
       await resumeUploadByPath(file as any);
     } catch (err) {
       const msg = toUserMessage(err);
-      toast?.show?.(msg.message || 'Could not resume upload', 'error');
+      toastRef.current?.show?.(msg.message || 'Could not resume upload', 'error');
     }
-  }, [toast]);
+  }, []);
 
   const cancelUpload = useCallback(async (fileId: number) => {
     try {
@@ -68,9 +74,9 @@ export function useTransfersList(toast) {
       void loadUploads(true);
     } catch (err) {
       const msg = toUserMessage(err);
-      toast?.show?.(msg.message || 'Could not cancel upload', 'error');
+      toastRef.current?.show?.(msg.message || 'Could not cancel upload', 'error');
     }
-  }, [loadUploads, toast]);
+  }, [loadUploads]);
 
   return { uploads, loading, hasMore, loadMore: () => loadUploads(false), refresh: () => loadUploads(true), resumeUpload, cancelUpload };
 }
