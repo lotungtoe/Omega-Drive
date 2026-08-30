@@ -236,17 +236,6 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
         toggleDark()
       }
     }
-    if (path === 'startup.launch_on_boot') {
-      const toggleAutostart = async () => {
-        try {
-          if (value) await enable()
-          else await disable()
-        } catch (e) {
-          console.error('Failed to toggle autostart', e)
-        }
-      }
-      toggleAutostart()
-    }
     const keys = path.split('.')
     const next = { ...config }
     let cur = next
@@ -265,11 +254,33 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
     return path.split('.').reduce((obj, key) => obj?.[key], config) ?? defaultValue
   }
 
+  const applyAutostartFromConfig = async () => {
+    const target = getConfigValue('startup.launch_on_boot')
+    if (typeof target !== 'boolean') return { changed: false }
+    try {
+      if (target) await enable()
+      else await disable()
+      return { changed: true, enabled: target }
+    } catch (err) {
+      console.error('settings.autostart_failed', err)
+      const msg = toUserMessage(err)
+      toast.show(msg.message || t('settings.autostartFailed'), 'error')
+      return { changed: false, failed: true }
+    }
+  }
+
   const handleSave = async () => {
     try {
       await saveSettings(config)
+      const autostart = await applyAutostartFromConfig()
       setDirty(false)
-      toast.show(t('settings.saveSuccess', 'Saved'), 'success')
+      const baseMsg = t('settings.saveSuccess', 'Saved')
+      const msg = autostart.changed
+        ? `${baseMsg} ${autostart.enabled
+            ? t('settings.autostartEnabled', 'Auto-launch enabled.')
+            : t('settings.autostartDisabled', 'Auto-launch disabled.')}`
+        : baseMsg
+      toast.show(msg, 'success')
     } catch (err) {
       const msg = toUserMessage(err)
       console.error('settings.save_failed', err)
@@ -280,8 +291,15 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
   const handleApply = async () => {
     try {
       await applySettings(config)
+      const autostart = await applyAutostartFromConfig()
       setDirty(false)
-      toast.show(t('settings.applySuccess', 'Applied'), 'success')
+      const baseMsg = t('settings.applySuccess', 'Applied')
+      const msg = autostart.changed
+        ? `${baseMsg} ${autostart.enabled
+            ? t('settings.autostartEnabled', 'Auto-launch enabled.')
+            : t('settings.autostartDisabled', 'Auto-launch disabled.')}`
+        : baseMsg
+      toast.show(msg, 'success')
     } catch (err) {
       const msg = toUserMessage(err)
       console.error('settings.apply_failed', err)
