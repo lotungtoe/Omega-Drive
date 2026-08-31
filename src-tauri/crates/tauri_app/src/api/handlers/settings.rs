@@ -52,16 +52,7 @@ pub async fn get_settings(st: tauri::State<'_, AppState>) -> AppResult<Value> {
     // enabled.drive, ...) and what save_config_to_file writes to disk. The
     // Config struct is flat (http_timeout_s at top level) so we cannot merge
     // it directly into the UI paths; we have to round-trip through RawConfig.
-    let raw_defaults = omega_drive_core::config::raw_from_config(&cfg);
-    let raw_defaults_value = serde_json::to_value(&raw_defaults).map_err(|e| {
-        wrap_error(
-            "settings",
-            codes::E_JSON,
-            "Error serialising default config.",
-            ctx.clone(),
-            e,
-        )
-    })?;
+    let raw_defaults_value = omega_drive_core::config::raw_from_config(&cfg);
 
     // Fill every missing key (recursively) in the raw on-disk config from
     // the RawConfig defaults. User-set values win at every level.

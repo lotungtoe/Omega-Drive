@@ -436,8 +436,14 @@ pub fn save_config_to_file(config: &Config, base_dir: &std::path::Path) -> anyho
 /// Settings UI. This is the same conversion save_config_to_file performs
 /// (so the on-disk format and the in-memory default map stay in lockstep),
 /// exposed publicly so the get_settings handler can build a defaults map
-/// for fields the user has not yet set.
-pub fn raw_from_config(config: &Config) -> RawConfig {
+/// for fields the user has not yet set. Returns a generic JSON Value so the
+/// RawConfig type itself can stay private.
+pub fn raw_from_config(config: &Config) -> serde_json::Value {
+    let raw = raw_from_config_inner(config);
+    serde_json::to_value(&raw).unwrap_or(serde_json::json!({}))
+}
+
+fn raw_from_config_inner(config: &Config) -> RawConfig {
     let providers = config
         .providers
         .iter()
