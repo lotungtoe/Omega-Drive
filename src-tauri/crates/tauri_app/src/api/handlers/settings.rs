@@ -46,28 +46,30 @@ pub async fn get_settings(st: tauri::State<'_, AppState>) -> AppResult<Value> {
             )
         })?;
 
-    let validated_config_value = serde_json::to_value(&cfg).map_err(|e| {
+    // Build a RawConfig-shaped defaults map from the validated Config. This
+    // shape matches what the UI reads (download.http_timeout_s, upload.general
+    // .chunk_mb, providers.telegram.limits.file_limit_mb, logging.feature_
+    // enabled.drive, ...) and what save_config_to_file writes to disk. The
+    // Config struct is flat (http_timeout_s at top level) so we cannot merge
+    // it directly into the UI paths; we have to round-trip through RawConfig.
+    let raw_defaults = omega_drive_core::config::raw_from_config(&cfg);
+    let raw_defaults_value = serde_json::to_value(&raw_defaults).map_err(|e| {
         wrap_error(
             "settings",
             codes::E_JSON,
-            "Error serializing configuration.",
+            "Error serialising default config.",
             ctx.clone(),
             e,
         )
     })?;
 
-    // Merge validated defaults into raw config (fills missing fields).
-    // The validated snapshot already has every clamp!() / unwrap_or() default
-    // applied via config_from_raw. We only fill keys the user has not
-    // explicitly set on disk; existing user values are preserved.
-    // `providers` is skipped here - the deeper 3-level merge (transfer /
-    // retry / limits) is handled by merge_providers below.
-    merge_defaults(&mut config_val, &validated_config_value);
+    // Fill every missing key (recursively) in the raw on-disk config from
+    // the RawConfig defaults. User-set values win at every level.
+    merge_grouped_defaults(&mut config_val, &raw_defaults_value);
 
-    // Provider defaults also fill batch_size / file_limit_mb etc.
-    if let Some(validated_providers) = validated_config_value.get("providers") {
-        merge_providers(&mut config_val, validated_providers);
-    }
+    // Provider defaults (transfer / retry / limits) are already covered by
+    // merge_grouped_defaults above - the recursive walk handles the
+    // 3-level nesting just like the other groups.
 
     Ok(json!({
         "config": config_val,
@@ -75,70 +77,23 @@ pub async fn get_settings(st: tauri::State<'_, AppState>) -> AppResult<Value> {
     }))
 }
 
-/// Deep-merge validated defaults into raw config (only fills missing keys).
-/// `validated` is the result of `serde_json::to_value(&cfg)` where `cfg` came
-/// from `omega_drive_core::config::load_config(...)` - so it already has
-/// every `clamp!()` and `unwrap_or()` default applied. We only insert keys
-/// the user has not explicitly set on disk; existing user values are kept.
-/// The `providers` group is skipped because its deeper 3-level merge
-/// (transfer / retry / limits) is handled by `merge_providers`.
-fn merge_defaults(raw: &mut Value, validated: &Value) {
-    let Some(validated) = validated.as_object() else { return };
-    let raw_obj = match raw.as_object_mut() {
-        Some(o) => o,
-        None => return,
-    };
-    for (group, validated_value) in validated {
-        if group == "providers" {
-            continue;
-        }
-        let Some(validated_group) = validated_value.as_object() else { continue };
-        let raw_group = raw_obj
-            .entry(group.clone())
-            .or_insert_with(|| json!({}));
-        let Some(raw_group_obj) = raw_group.as_object_mut() else { continue };
-        for (key, validated_leaf) in validated_group {
-            if !raw_group_obj.contains_key(key) {
-                raw_group_obj.insert(key.clone(), validated_leaf.clone());
+/// Deep-merge RawConfig-shaped defaults into the on-disk config (only fills
+/// missing keys). Recursive: handles arbitrary nesting (download.*,
+/// upload.general.*, providers.telegram.limits.*, logging.feature_enabled.*).
+/// User values win at every level via the missing-key check.
+fn merge_grouped_defaults(raw: &mut Value, defaults: &Value) {
+    if let (Value::Object(raw_obj), Value::Object(default_obj)) = (raw, defaults) {
+        for (k, default_leaf) in default_obj {
+            match raw_obj.get_mut(k) {
+                None => {
+                    raw_obj.insert(k.clone(), default_leaf.clone());
+                }
+                Some(existing) => merge_grouped_defaults(existing, default_leaf),
             }
         }
     }
-}
-
-/// Deep-merge validated provider defaults into raw config (only fills missing keys).
-fn merge_providers(raw: &mut Value, validated: &Value) {
-    let Some(validated_providers) = validated.as_object() else { return };
-    if !raw.is_object() {
-        return;
-    }
-    let raw_providers = raw
-        .as_object_mut()
-        .expect("just checked is_object()")
-        .entry("providers")
-        .or_insert_with(|| json!({}));
-    let Some(raw_providers) = raw_providers.as_object_mut() else { return };
-
-    for (provider_id, validated_provider_value) in validated_providers {
-        let Some(validated_provider) = validated_provider_value.as_object() else { continue };
-        let raw_provider = raw_providers
-            .entry(provider_id.clone())
-            .or_insert_with(|| json!({}));
-        let Some(raw_provider) = raw_provider.as_object_mut() else { continue };
-
-        for (section_name, validated_section_value) in validated_provider {
-            if section_name != "transfer" && section_name != "retry" && section_name != "limits" {
-                continue;
-            }
-            let Some(validated_section) = validated_section_value.as_object() else { continue };
-            let raw_section = raw_provider
-                .entry(section_name.clone())
-                .or_insert_with(|| json!({}));
-            let Some(raw_section) = raw_section.as_object_mut() else { continue };
-            for (field_name, field_value) in validated_section {
-                raw_section.entry(field_name.clone()).or_insert_with(|| field_value.clone());
-            }
-        }
-    }
+    // Mismatched types (existing is a leaf, default is an object, or vice
+    // versa): leave the user value alone.
 }
 
 #[tauri::command]

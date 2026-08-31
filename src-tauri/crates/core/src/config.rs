@@ -426,6 +426,18 @@ fn config_from_raw(r: RawConfig, provider_descriptors: &[ProviderConfigDescripto
 
 pub fn save_config_to_file(config: &Config, base_dir: &std::path::Path) -> anyhow::Result<()> {
     let path = base_dir.join("config.json");
+    let raw = raw_from_config(config);
+    let json = serde_json::to_string_pretty(&raw)?;
+    std::fs::write(path, json)?;
+    Ok(())
+}
+
+/// Serialise a Config into the RawConfig shape used on disk and by the
+/// Settings UI. This is the same conversion save_config_to_file performs
+/// (so the on-disk format and the in-memory default map stay in lockstep),
+/// exposed publicly so the get_settings handler can build a defaults map
+/// for fields the user has not yet set.
+pub fn raw_from_config(config: &Config) -> RawConfig {
     let providers = config
         .providers
         .iter()
@@ -453,7 +465,7 @@ pub fn save_config_to_file(config: &Config, base_dir: &std::path::Path) -> anyho
         })
         .collect::<HashMap<_, _>>();
 
-    let raw = RawConfig {
+    RawConfig {
         upload: RawUpload {
             upload_mode: Some(config.upload_mode),
             general: RawGroup {
@@ -505,11 +517,7 @@ pub fn save_config_to_file(config: &Config, base_dir: &std::path::Path) -> anyho
             enabled: Some(config.backup_enabled),
             snapshot_interval_days: Some(config.backup_snapshot_interval_days),
         },
-    };
-
-    let json = serde_json::to_string_pretty(&raw)?;
-    std::fs::write(path, json)?;
-    Ok(())
+    }
 }
 
 pub fn print_config_summary(config: &Config) {
