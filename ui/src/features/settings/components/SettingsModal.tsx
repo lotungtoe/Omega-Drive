@@ -31,8 +31,9 @@ const SettingsSection = ({ title, description, children }) => (
   </div>
 )
 
-const ToggleRow = ({ label, description, path, getConfigValue, updateConfig }) => {
-  const isEnabled = !!getConfigValue(path, false)
+const ToggleRow = (props) => {
+  const { label, description, path, getConfigValue, updateConfig, liveValue } = props
+  const isEnabled = liveValue !== undefined ? !!liveValue : !!getConfigValue(path, false)
   return (
     <div className="gd-settings-row">
       <div style={{ flex: 1 }}>
@@ -72,22 +73,26 @@ const InputRow = ({ label, description, path, type = 'number', step = 1, placeho
   </div>
 )
 
-const SelectRow = ({ label, description, path, options, getConfigValue, updateConfig }) => (
-  <div className="gd-settings-row">
-    <div style={{ flex: 1 }}>
-      <div className="gd-settings-row-label">{label}</div>
-      {description && <div className="gd-settings-row-desc">{description}</div>}
+const SelectRow = (props) => {
+  const { label, description, path, options, getConfigValue, updateConfig, liveValue } = props
+  const displayValue = liveValue !== undefined ? liveValue : getConfigValue(path, i18n.language)
+  return (
+    <div className="gd-settings-row">
+      <div style={{ flex: 1 }}>
+        <div className="gd-settings-row-label">{label}</div>
+        {description && <div className="gd-settings-row-desc">{description}</div>}
+      </div>
+      <DropdownSelect
+        value={displayValue}
+        onChange={(v) => updateConfig(path, v)}
+        options={options}
+        style={{ width: 220 }}
+        disabled={false}
+        onDoubleClick={undefined}
+      />
     </div>
-    <DropdownSelect
-      value={getConfigValue(path, i18n.language)}
-      onChange={(v) => updateConfig(path, v)}
-      options={options}
-      style={{ width: 220 }}
-      disabled={false}
-      onDoubleClick={undefined}
-    />
-  </div>
-)
+  )
+}
 
 export function SettingsModal({ onClose, toast, dark, toggleDark }) {
   const { t } = useTranslation()
@@ -371,6 +376,7 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
                     label={t('settings.darkMode')}
                     description={t('settings.darkModeDesc')}
                     path="ui.dark_mode"
+                    liveValue={dark}
                     {...commonProps}
                   />
                   <SelectRow
@@ -378,6 +384,7 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
                     description={t('settings.languageDesc')}
                     path="ui.language"
                     options={languageOptions}
+                    liveValue={i18n.language}
                     {...commonProps}
                   />
                 </SettingsSection>
