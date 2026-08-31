@@ -56,7 +56,15 @@ pub async fn get_settings(st: tauri::State<'_, AppState>) -> AppResult<Value> {
         )
     })?;
 
-    // Merge validated providers into raw config (fills missing fields like batch_size)
+    // Merge validated defaults into raw config (fills missing fields).
+    // The validated snapshot already has every clamp!() / unwrap_or() default
+    // applied via config_from_raw. We only fill keys the user has not
+    // explicitly set on disk; existing user values are preserved.
+    // `providers` is skipped here - the deeper 3-level merge (transfer /
+    // retry / limits) is handled by merge_providers below.
+    merge_defaults(&mut config_val, &validated_config_value);
+
+    // Provider defaults also fill batch_size / file_limit_mb etc.
     if let Some(validated_providers) = validated_config_value.get("providers") {
         merge_providers(&mut config_val, validated_providers);
     }
@@ -65,6 +73,36 @@ pub async fn get_settings(st: tauri::State<'_, AppState>) -> AppResult<Value> {
         "config": config_val,
         "env": json!({})
     }))
+}
+
+/// Deep-merge validated defaults into raw config (only fills missing keys).
+/// `validated` is the result of `serde_json::to_value(&cfg)` where `cfg` came
+/// from `omega_drive_core::config::load_config(...)` - so it already has
+/// every `clamp!()` and `unwrap_or()` default applied. We only insert keys
+/// the user has not explicitly set on disk; existing user values are kept.
+/// The `providers` group is skipped because its deeper 3-level merge
+/// (transfer / retry / limits) is handled by `merge_providers`.
+fn merge_defaults(raw: &mut Value, validated: &Value) {
+    let Some(validated) = validated.as_object() else { return };
+    let raw_obj = match raw.as_object_mut() {
+        Some(o) => o,
+        None => return,
+    };
+    for (group, validated_value) in validated {
+        if group == "providers" {
+            continue;
+        }
+        let Some(validated_group) = validated_value.as_object() else { continue };
+        let raw_group = raw_obj
+            .entry(group.clone())
+            .or_insert_with(|| json!({}));
+        let Some(raw_group_obj) = raw_group.as_object_mut() else { continue };
+        for (key, validated_leaf) in validated_group {
+            if !raw_group_obj.contains_key(key) {
+                raw_group_obj.insert(key.clone(), validated_leaf.clone());
+            }
+        }
+    }
 }
 
 /// Deep-merge validated provider defaults into raw config (only fills missing keys).
