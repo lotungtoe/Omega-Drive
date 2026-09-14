@@ -2,6 +2,7 @@
 
 !updater.json
 !portable-updater.json
+!AGENTS.md
 !.cargo/
 !.cargo/**
 !.github/

@@ -23,7 +23,7 @@ pub async fn dispatch_original_part(
     strategy: UploadStrategy,
     providers: &[ProviderType],
     _file_id: i64,
-    data: Vec<u8>,
+    mut data: Vec<u8>,
     file_name: &str,
     part_num: u32,
     _total_parts: usize,
@@ -47,8 +47,9 @@ pub async fn dispatch_original_part(
     };
 
     let mut results = Vec::with_capacity(targets.len());
+    let last_target = targets.len().saturating_sub(1);
 
-    for target_provider in targets {
+    for (idx, target_provider) in targets.into_iter().enumerate() {
         let platform_id = format!("{:?}", target_provider).to_lowercase();
 
         if platform_id == "telegram" && !tg_authorized {
@@ -72,10 +73,17 @@ pub async fn dispatch_original_part(
             file_name.to_string()
         };
 
+        // Move the buffer into the last target instead of cloning per target.
+        let payload = if idx == last_target {
+            std::mem::take(&mut data)
+        } else {
+            data.clone()
+        };
+
         let receipt = gateway
             .upload_part(UploadPartRequest {
                 target: upload_target.clone(),
-                data: data.clone(),
+                data: payload,
                 file_name: upload_filename,
                 caption: caption.clone(),
                 part_num,
@@ -124,37 +132,37 @@ pub(crate) async fn dispatch_discord_batch(
 
     let caption = String::new();
 
-    let requests: Vec<UploadPartRequest> = parts
-        .iter()
-        .map(|(data, part_num, _)| {
-            let upload_filename = build_discord_attachment_name(file_name, *part_num);
-            UploadPartRequest {
-                target: upload_target.clone(),
-                data: data.clone(),
-                file_name: upload_filename,
-                caption: caption.clone(),
-                part_num: *part_num,
-                telegram_progress_tx: None,
-            }
-        })
-        .collect();
+    // Consume `parts`: move each buffer into its request instead of cloning.
+    let mut requests = Vec::with_capacity(parts.len());
+    let mut meta = Vec::with_capacity(parts.len());
+    for (data, part_num, checksum) in parts {
+        requests.push(UploadPartRequest {
+            target: upload_target.clone(),
+            data,
+            file_name: build_discord_attachment_name(file_name, part_num),
+            caption: caption.clone(),
+            part_num,
+            telegram_progress_tx: None,
+        });
+        meta.push((part_num, checksum));
+    }
 
     let receipts = gateway
         .upload_parts_batch(requests)
         .await
         .map_err(|err| UploadError::provider("Failed to batch upload parts to discord", err))?;
 
-    let results = parts
-        .iter()
+    let results = meta
+        .into_iter()
         .zip(receipts.iter())
-        .map(|((_, part_num, checksum), receipt)| UploadedPart {
+        .map(|((part_num, checksum), receipt)| UploadedPart {
             message_id: receipt.message_id,
             platform: receipt.platform.clone(),
             attachment_name: receipt.attachment_name.clone(),
-            part_index: *part_num,
+            part_index: part_num,
             size: receipt.size,
             logical_size: None,
-            checksum: checksum.clone(),
+            checksum,
         })
         .collect();
 

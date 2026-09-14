@@ -7,7 +7,7 @@
 use tokio::{
     fs,
     io::{AsyncReadExt, BufReader},
-    sync::{mpsc::UnboundedSender, Semaphore},
+    sync::{mpsc::UnboundedSender, OwnedSemaphorePermit, Semaphore},
 };
 use tokio_util::sync::CancellationToken;
 
@@ -693,8 +693,21 @@ async fn run_discord_worker(
                         current_batch.push(chunk);
                         if current_batch.len() >= batch_multiplier {
                             let batch = std::mem::take(&mut current_batch);
+                            // Acquire the send slot BEFORE spawn so backpressure holds here:
+                            // a spawned task waiting on the semaphore would keep the whole
+                            // batch in RAM, growing with file size instead of permit count.
+                            let permit = tokio::select! {
+                                biased;
+                                _ = cancel_token.cancelled() => {
+                                    warn!("Discord worker: cancellation received while waiting for send slot.");
+                                    break;
+                                }
+                                res = sem.clone().acquire_owned() => res.map_err(|err| {
+                                    UploadError::internal("Semaphore acquire failed", err)
+                                })?,
+                            };
                             handles.push(spawn_discord_batch_task(
-                                &state, &record, &prepared, &session, &advanced, &sem, batch,
+                                &state, &record, &prepared, &session, &advanced, permit, batch,
                                 cancel_token.clone(),
                             ));
                         }
@@ -712,16 +725,25 @@ async fn run_discord_worker(
     }
 
     if !current_batch.is_empty() {
-        handles.push(spawn_discord_batch_task(
-            &state,
-            &record,
-            &prepared,
-            &session,
-            &advanced,
-            &sem,
-            current_batch,
-            cancel_token.clone(),
-        ));
+        let permit = tokio::select! {
+            biased;
+            _ = cancel_token.cancelled() => None,
+            res = sem.clone().acquire_owned() => Some(
+                res.map_err(|err| UploadError::internal("Semaphore acquire failed", err))?,
+            ),
+        };
+        if let Some(permit) = permit {
+            handles.push(spawn_discord_batch_task(
+                &state,
+                &record,
+                &prepared,
+                &session,
+                &advanced,
+                permit,
+                current_batch,
+                cancel_token.clone(),
+            ));
+        }
     }
 
     for h in handles {
@@ -737,7 +759,7 @@ fn spawn_discord_batch_task(
     prepared: &plan::PreparedUploadPlan,
     session: &UploadSessionTracker,
     advanced: &Option<AdvancedLimits>,
-    sem: &Arc<Semaphore>,
+    permit: OwnedSemaphorePermit,
     batch: Vec<Arc<UploadChunk>>,
     cancel_token: CancellationToken,
 ) -> tokio::task::JoinHandle<UploadResult<()>> {
@@ -746,14 +768,8 @@ fn spawn_discord_batch_task(
     let prepared = prepared.clone();
     let session = session.clone();
     let advanced = advanced.clone();
-    let sem = Arc::clone(sem);
 
     tokio::spawn(async move {
-        let permit = sem
-            .acquire_owned()
-            .await
-            .map_err(|err| UploadError::internal("Semaphore acquire failed", err))?;
-
         if cancel_token.is_cancelled() {
             drop(permit);
             return Ok(());
@@ -878,13 +894,25 @@ async fn run_telegram_worker(
                             continue;
                         }
 
+                        // Same backpressure rule as the Discord worker: hold the send
+                        // slot before spawn, never inside the spawned task.
+                        let permit = tokio::select! {
+                            biased;
+                            _ = cancel_token.cancelled() => {
+                                warn!("Telegram worker: cancellation received while waiting for send slot.");
+                                break;
+                            }
+                            res = sem.clone().acquire_owned() => res.map_err(|err| {
+                                UploadError::internal("Semaphore acquire failed", err)
+                            })?,
+                        };
                         handles.push(spawn_telegram_chunk_task(
                             &state,
                             &record,
                             &prepared,
                             &session,
                             &advanced,
-                            &sem,
+                            permit,
                             chunk,
                             tg_progress_tx.clone(),
                             cancel_token.clone(),
@@ -916,7 +944,7 @@ fn spawn_telegram_chunk_task(
     prepared: &plan::PreparedUploadPlan,
     session: &UploadSessionTracker,
     advanced: &Option<AdvancedLimits>,
-    sem: &Arc<Semaphore>,
+    permit: OwnedSemaphorePermit,
     chunk: Arc<UploadChunk>,
     tg_progress_tx: UnboundedSender<usize>,
     cancel_token: CancellationToken,
@@ -926,14 +954,8 @@ fn spawn_telegram_chunk_task(
     let prepared = prepared.clone();
     let session = session.clone();
     let advanced = advanced.clone();
-    let sem = Arc::clone(sem);
 
     tokio::spawn(async move {
-        let permit = sem
-            .acquire_owned()
-            .await
-            .map_err(|err| UploadError::internal("Semaphore acquire failed", err))?;
-
         if cancel_token.is_cancelled() {
             drop(permit);
             return Ok(());
