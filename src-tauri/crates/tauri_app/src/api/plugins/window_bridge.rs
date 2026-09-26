@@ -31,14 +31,10 @@ pub fn playback_active(
         !windows.is_empty()
     };
 
-    if let Some(ctx) = state.app_ctx_emit() {
-        ctx.emit_event("playback-state-changed", serde_json::json!(any_active));
-        Ok(())
-    } else {
-        let msg = "AppHandle not ready to emit playback-state-changed";
-        tracing::error!("{}", msg);
-        Err(msg.to_string())
-    }
+    state
+        .app_ctx_emit()
+        .emit_event("playback-state-changed", serde_json::json!(any_active));
+    Ok(())
 }
 
 #[tauri::command]

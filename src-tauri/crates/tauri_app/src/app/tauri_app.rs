@@ -118,11 +118,11 @@ pub(super) fn run_tauri(app_state: AppState) {
             
             tracing::info!("🔒 Setup: Attempting AppHandle LOCK...");
             let ctx: Arc<dyn AppContext> = Arc::new(TauriAppContext(handle.clone()));
-            if let Ok(mut lock) = state_in_tauri.app_ctx.lock() {
-                *lock = Some(ctx);
+            if let Ok(mut lock) = state_in_tauri.app_ctx.write() {
+                *lock = ctx;
                 tracing::info!("🔒 Setup: AppContext set");
             }
-            if let Ok(mut lock) = state_in_tauri.sidecar.lock() {
+            if let Ok(mut lock) = state_in_tauri.sidecar.write() {
                 *lock = Some(Arc::new(TauriSidecarProvider(handle.clone())));
             }
             

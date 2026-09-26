@@ -24,6 +24,7 @@ use crate::providers::install::{
     ProviderInstallContext,
 };
 
+use omega_drive_gateway::provider::app_context::AppContext;
 use omega_drive_core::ports::app_context::NoopAppContext;
 use omega_drive_engine::integrity::EngineIntegrityService;
 use omega_drive_engine::zip_utils::EngineZipService;
@@ -141,7 +142,7 @@ pub(super) async fn run_video_bridge_process(
     let provider_runtime_raw = build_provider_runtime(
         install_results,
     );
-    let provider_runtime = Arc::new(std::sync::RwLock::new(Arc::clone(&provider_runtime_raw)));
+    let provider_runtime = Arc::new(std::sync::RwLock::new((*provider_runtime_raw).clone()));
     let engine_ctx = EngineContext {
         integrity: Arc::new(EngineIntegrityService),
         zip: Arc::new(EngineZipService),
@@ -200,8 +201,8 @@ pub(super) async fn run_video_bridge_process(
         disk_semaphore: Arc::new(tokio::sync::Semaphore::new(2)),
         stream_registry: {
             let guard = match provider_runtime.read() {
-                Ok(g) => Arc::clone(&g),
-                Err(poisoned) => Arc::clone(&poisoned.into_inner()),
+                Ok(g) => g.clone(),
+                Err(poisoned) => poisoned.into_inner().clone(),
             };
             Arc::clone(&guard.stream_registry)
         },
@@ -256,8 +257,8 @@ pub(super) async fn run_video_bridge_process(
                 }
             },
         )),
-        app_ctx: Arc::new(std::sync::Mutex::new(None)),
-        sidecar: Arc::new(std::sync::Mutex::new(None)),
+        app_ctx: Arc::new(std::sync::RwLock::new(Arc::new(NoopAppContext) as Arc<dyn AppContext>)),
+        sidecar: Arc::new(std::sync::RwLock::new(None)),
         ui_ping_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
         ui_heartbeats: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
         backup_service: None,

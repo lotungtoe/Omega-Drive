@@ -27,6 +27,7 @@ use crate::providers::install::{
     render_builtin_bot_env_template, ProviderInstallContext,
 };
 use crate::providers::runtime::ProviderRuntime;
+use omega_drive_gateway::provider::app_context::AppContext;
 use omega_drive_core::ports::app_context::NoopAppContext;
 use omega_drive_engine::integrity::EngineIntegrityService;
 use omega_drive_engine::zip_utils::EngineZipService;
@@ -291,7 +292,7 @@ pub async fn run() {
     // (This version doesn't have bridge_port yet because bridge hasn't started)
     let download_manager = Arc::new(omega_drive_download::DownloadManager::new());
     let provider_runtime_raw = build_provider_runtime(install_results);
-    let provider_runtime = Arc::new(std::sync::RwLock::new(Arc::clone(&provider_runtime_raw)));
+    let provider_runtime = Arc::new(std::sync::RwLock::new((*provider_runtime_raw).clone()));
 
     let backup_enabled = cfg.read().expect("cfg RwLock").backup_enabled;
     let backup_snapshot_interval_days = cfg.read().expect("cfg RwLock").backup_snapshot_interval_days;
@@ -370,8 +371,8 @@ pub async fn run() {
         disk_semaphore: Arc::new(tokio::sync::Semaphore::new(2)),
         stream_registry: {
             let guard = match provider_runtime.read() {
-                Ok(g) => Arc::clone(&g),
-                Err(poisoned) => Arc::clone(&poisoned.into_inner()),
+                Ok(g) => g.clone(),
+                Err(poisoned) => poisoned.into_inner().clone(),
             };
             Arc::clone(&guard.stream_registry)
         },
@@ -422,8 +423,8 @@ pub async fn run() {
                 }
             },
         )),
-        app_ctx: Arc::new(std::sync::Mutex::new(None)),
-        sidecar: Arc::new(std::sync::Mutex::new(None)),
+        app_ctx: Arc::new(std::sync::RwLock::new(Arc::new(NoopAppContext) as Arc<dyn AppContext>)),
+        sidecar: Arc::new(std::sync::RwLock::new(None)),
         ui_ping_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
         ui_heartbeats: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
         backup_service: Some(Arc::clone(&backup_service)),
@@ -566,7 +567,7 @@ pub async fn run() {
 async fn gc_task(
     cfg: Arc<RwLock<Config>>,
     db: Arc<DbWriteQueue>,
-    provider_runtime: Arc<std::sync::RwLock<Arc<ProviderRuntime>>>,
+    provider_runtime: Arc<std::sync::RwLock<ProviderRuntime>>,
     backup_service: Arc<BackupService>,
 ) {
     use omega_drive_db::files as db_files;
@@ -636,8 +637,8 @@ async fn gc_task(
             }
             for (platform, parts) in parts_by_platform {
                 let runtime = match provider_runtime.read() {
-                    Ok(guard) => Arc::clone(&guard),
-                    Err(poisoned) => Arc::clone(&poisoned.into_inner()),
+                    Ok(guard) => guard.clone(),
+                    Err(poisoned) => poisoned.into_inner().clone(),
                 };
                 let Some(gateway) = runtime.remote_object_registry.get(&platform) else {
                     error!(

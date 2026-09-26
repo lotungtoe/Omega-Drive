@@ -8,6 +8,7 @@ use omega_drive_upload::coordinator::{run_upload, UploadDataSource};
 use omega_drive_gateway::{core::scope::DriveScope, upload::upload_plan::UploadPlan};
 use omega_drive_player::nativeplayer::{MpvSessionType, MpvStatus};
 
+#[cfg(not(feature = "player"))]
 fn player_disabled<T>() -> Result<T, String> {
     Err("player feature disabled".to_string())
 }

@@ -1,5 +1,7 @@
 #![deny(unused_imports)]
 
+pub use omega_drive_gateway::core::error_codes;
+pub use omega_drive_gateway::core::events;
 pub mod provider_runtime;
 pub mod scope;
 pub mod tenant;

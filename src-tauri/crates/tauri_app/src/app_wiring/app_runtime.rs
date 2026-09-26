@@ -2,14 +2,13 @@
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::OnceLock;
 use std::sync::RwLock as StdRwLock;
 
 use tokio::sync::RwLock;
 
 use omega_drive_gateway::core::engine_context::EngineContext;
 use omega_drive_gateway::provider::app_context::AppContext;
-use omega_drive_core::ports::app_context::NoopAppContext;
 use omega_drive_gateway::provider::app_context::SidecarProvider;
 use omega_drive_core::provider_runtime::ProviderRuntime;
 use omega_drive_player::{PlayerContext};
@@ -31,6 +30,9 @@ use omega_drive_core::services::{
     DefaultExtensionNormalizer, DefaultFileTypeClassifier,
     DefaultMediaParser, DefaultSystemProfileProvider,
 };
+use omega_drive_gateway::core::services::{
+    ExtensionNormalizer, FileTypeClassifier, MediaParser, SystemProfileProvider,
+};
 use omega_drive_gateway::core::tenant::TenantDescriptor;
 use omega_drive_download as download_crate;
 
@@ -38,13 +40,33 @@ pub use omega_drive_gateway::core::types::PlatformProgress;
 pub use omega_drive_gateway::core::types::ProgressInfo;
 pub use omega_drive_gateway::core::types::UiHeartbeatStatus;
 
+fn shared_file_classifier() -> Arc<dyn FileTypeClassifier> {
+    static C: OnceLock<Arc<dyn FileTypeClassifier>> = OnceLock::new();
+    Arc::clone(C.get_or_init(|| Arc::new(DefaultFileTypeClassifier)))
+}
+
+fn shared_ext_normalizer() -> Arc<dyn ExtensionNormalizer> {
+    static C: OnceLock<Arc<dyn ExtensionNormalizer>> = OnceLock::new();
+    Arc::clone(C.get_or_init(|| Arc::new(DefaultExtensionNormalizer)))
+}
+
+fn shared_media_parser() -> Arc<dyn MediaParser> {
+    static C: OnceLock<Arc<dyn MediaParser>> = OnceLock::new();
+    Arc::clone(C.get_or_init(|| Arc::new(DefaultMediaParser)))
+}
+
+fn shared_profile_provider() -> Arc<dyn SystemProfileProvider> {
+    static C: OnceLock<Arc<dyn SystemProfileProvider>> = OnceLock::new();
+    Arc::clone(C.get_or_init(|| Arc::new(DefaultSystemProfileProvider)))
+}
+
 #[derive(Clone)]
 pub struct AppState {
     pub cfg: Arc<StdRwLock<Config>>,
     pub db_read: Arc<omega_drive_db::ReadDbPool>,
     pub db_write: Arc<omega_drive_db::DbWriteQueue>,
     pub drive_db_read: Arc<omega_drive_db::ReadDbPool>,
-    pub provider_runtime: Arc<std::sync::RwLock<Arc<ProviderRuntime>>>,
+    pub provider_runtime: Arc<std::sync::RwLock<ProviderRuntime>>,
     pub senders: SenderMap,
     pub progress_map: Arc<RwLock<HashMap<String, ProgressInfo>>>,
     pub base_dir: PathBuf,
@@ -63,8 +85,8 @@ pub struct AppState {
     pub stream_spool_bytes: Arc<AtomicU64>,
     pub stream_spool_limit_bytes: u64,
     pub ui_last_heartbeat: Arc<std::sync::atomic::AtomicU64>,
-    pub app_ctx: Arc<Mutex<Option<Arc<dyn AppContext>>>>,
-    pub sidecar: Arc<Mutex<Option<Arc<dyn SidecarProvider>>>>,
+    pub app_ctx: Arc<StdRwLock<Arc<dyn AppContext>>>,
+    pub sidecar: Arc<StdRwLock<Option<Arc<dyn SidecarProvider>>>>,
     pub ui_ping_count: Arc<std::sync::atomic::AtomicU64>,
     pub ui_heartbeats: Arc<std::sync::Mutex<HashMap<String, UiHeartbeatStatus>>>,
     pub engine: EngineContext,
@@ -80,17 +102,17 @@ pub struct AppState {
 impl AppState {
     pub fn provider_runtime(&self) -> Arc<ProviderRuntime> {
         match self.provider_runtime.read() {
-            Ok(guard) => Arc::clone(&guard),
-            Err(poisoned) => Arc::clone(&poisoned.into_inner()),
+            Ok(guard) => Arc::new(guard.clone()),
+            Err(poisoned) => Arc::new(poisoned.into_inner().clone()),
         }
     }
 
     pub fn replace_provider_runtime(&self, runtime: Arc<ProviderRuntime>) {
         match self.provider_runtime.write() {
-            Ok(mut guard) => *guard = runtime,
+            Ok(mut guard) => *guard = (*runtime).clone(),
             Err(poisoned) => {
                 let mut guard = poisoned.into_inner();
-                *guard = runtime;
+                *guard = (*runtime).clone();
             }
         }
     }
@@ -102,7 +124,7 @@ impl AppState {
             stats_cache_repo: Arc::new(DbDriveStatsCacheRepository::new(Arc::clone(&self.db_write))),
             cfg: Arc::clone(&self.cfg),
             thumbnail_dir: self.thumbnail_dir.clone(),
-            file_classifier: Arc::new(DefaultFileTypeClassifier),
+            file_classifier: shared_file_classifier(),
             engine: self.engine.clone(),
         }
     }
@@ -129,16 +151,16 @@ impl AppState {
             thumbnail_dir: self.thumbnail_dir.clone(),
             feature_log: Arc::new(StateFeatureLog),
             disk_semaphore: Arc::clone(&self.disk_semaphore),
-            app_ctx: self.app_ctx_emit().unwrap_or_else(|| Arc::new(NoopAppContext)),
-            sidecar: self.sidecar.lock().ok().and_then(|g| g.clone()),
+            app_ctx: self.app_ctx_emit(),
+            sidecar: self.sidecar.read().ok().and_then(|g| g.clone()),
             ui_ping_count: Arc::clone(&self.ui_ping_count),
             ui_heartbeats: Arc::clone(&self.ui_heartbeats),
             events: Arc::clone(&self.events),
             backup_service: self.backup_service.as_ref().map(|s| Arc::clone(s) as Arc<dyn omega_drive_gateway::provider::backup_service::BackupService>),
-            file_classifier: Arc::new(DefaultFileTypeClassifier),
-            ext_normalizer: Arc::new(DefaultExtensionNormalizer),
-            media_parser: Arc::new(DefaultMediaParser),
-            profile_provider: Arc::new(DefaultSystemProfileProvider),
+            file_classifier: shared_file_classifier(),
+            ext_normalizer: shared_ext_normalizer(),
+            media_parser: shared_media_parser(),
+            profile_provider: shared_profile_provider(),
             orchestrator: Arc::new(omega_drive_upload::UploadOrchestratorImpl),
             engine: self.engine.clone(),
         }
@@ -150,7 +172,7 @@ impl AppState {
             file_repo: Arc::clone(&self.file_repo),
             download_job_repo: Arc::clone(&self.download_job_repo),
             provider_runtime: self.provider_runtime(),
-            app_ctx: self.app_ctx_emit().unwrap_or_else(|| Arc::new(NoopAppContext)),
+            app_ctx: self.app_ctx_emit(),
             ui_heartbeats: Arc::clone(&self.ui_heartbeats),
             engine: self.engine.clone(),
             cdn_link_cache: Arc::clone(&self.cdn_link_cache),
@@ -163,7 +185,10 @@ impl AppState {
         }
     }
 
-    pub fn app_ctx_emit(&self) -> Option<Arc<dyn AppContext>> {
-        self.app_ctx.lock().ok().and_then(|g| g.clone())
+    pub fn app_ctx_emit(&self) -> Arc<dyn AppContext> {
+        match self.app_ctx.read() {
+            Ok(guard) => Arc::clone(&guard),
+            Err(poisoned) => Arc::clone(&poisoned.into_inner()),
+        }
     }
 }
