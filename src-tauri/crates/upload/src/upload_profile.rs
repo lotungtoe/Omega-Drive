@@ -16,6 +16,10 @@ pub fn prepare_upload_rules(
             continue;
         }
         rule.extensions = normalizer.normalize_extensions(&rule.extensions);
+        // Canonicalize regardless of normalizer impl: drop empties, sort, dedup.
+        rule.extensions.retain(|e| !e.is_empty());
+        rule.extensions.sort();
+        rule.extensions.dedup();
         prepared.push(rule);
     }
     prepared
