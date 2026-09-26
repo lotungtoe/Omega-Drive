@@ -10,6 +10,7 @@ use crate::progress::{emit_progress_with_platforms, platform_progress};
 const UPLOAD_EVENT_NAME: &str = "upload-progress";
 
 /// -1 means "no file id assigned yet".
+// ponytail: sentinel, not Option — AtomicI64 has no niche for None and keeps set_file_id lock-free; -1 is never a SQLite rowid, back to Mutex<Option> if ids stop being rowids.
 const NO_FILE_ID: i64 = -1;
 
 #[derive(Clone)]
