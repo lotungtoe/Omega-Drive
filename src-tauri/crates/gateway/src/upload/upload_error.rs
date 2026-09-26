@@ -41,6 +41,9 @@ impl UploadError {
     pub fn internal(message: impl Into<String>, err: impl ToString) -> Self {
         Self::Internal { message: message.into(), source: Some(err.to_string()) }
     }
+    pub fn internal_message(message: impl Into<String>) -> Self {
+        Self::Internal { message: message.into(), source: None }
+    }
 }
 
 impl fmt::Display for UploadError {
