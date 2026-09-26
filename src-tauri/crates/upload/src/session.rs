@@ -2,6 +2,7 @@
 use std::sync::atomic::{AtomicI64, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 
+use omega_drive_gateway::core::platform::{platform_display_name, PLATFORM_DISCORD, PLATFORM_TELEGRAM};
 use omega_drive_gateway::provider::ui_events::UiEventEmitter;
 use tokio::sync::mpsc;
 
@@ -110,10 +111,10 @@ impl UploadSessionTracker {
             let mut last_emitted = 0u64;
             let threshold = 5 * 1024 * 1024;
             while let Some(bytes) = rx.recv().await {
-                let telegram_total = { let totals = session.lock_platform_totals(); *totals.get("telegram").unwrap_or(&0) };
+                let telegram_total = { let totals = session.lock_platform_totals(); *totals.get(PLATFORM_TELEGRAM).unwrap_or(&0) };
                 let current = {
                     let mut done = session.lock_platform_done();
-                    let val = done.entry("telegram".to_string()).or_insert(0);
+                    let val = done.entry(PLATFORM_TELEGRAM.to_string()).or_insert(0);
                     let updated = val.saturating_add(bytes as u64);
                     *val = if telegram_total > 0 { updated.min(telegram_total) } else { updated };
                     *val
@@ -170,12 +171,12 @@ impl UploadSessionTracker {
 
     fn emit(&self, phase: &str, done_parts: usize, total_parts: usize, detail: &str, totals: &HashMap<String, u64>, done: &HashMap<String, u64>) {
         let mut platforms = Vec::new();
-        let providers = ["discord", "telegram"];
+        let providers = [PLATFORM_DISCORD, PLATFORM_TELEGRAM];
         for p_name in providers {
             if let Some(&total) = totals.get(p_name) {
                 if total > 0 {
                     let d = *done.get(p_name).unwrap_or(&0);
-                    let display_name = match p_name { "discord" => "Discord", "telegram" => "Telegram", _ => p_name };
+                    let display_name = platform_display_name(p_name);
                     if let Some(platform) = platform_progress(display_name, d, total) {
                         platforms.push(platform);
                     }

@@ -15,6 +15,7 @@ use omega_drive_gateway::core::error::AppError;
 use omega_drive_gateway::provider::provider_types::ByteRange;
 use omega_drive_gateway::provider::storage::PartMetadata;
 use omega_drive_gateway::core::data::DownloadJob;
+use omega_drive_gateway::core::platform::{PLATFORM_DISCORD, PLATFORM_TELEGRAM};
 
 use crate::context::DownloadContext;
 use crate::throttle::DownloadThrottle;
@@ -113,7 +114,7 @@ pub async fn run_download_job(
                 e.insert(p);
             }
             Entry::Occupied(mut e) => {
-                if p.platform == "telegram" && e.get().platform == "discord" {
+                if p.platform == PLATFORM_TELEGRAM && e.get().platform == PLATFORM_DISCORD {
                     e.insert(p);
                 }
             }

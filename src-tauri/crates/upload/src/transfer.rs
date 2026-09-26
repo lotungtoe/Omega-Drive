@@ -12,6 +12,7 @@ use omega_drive_gateway::{
         config::DEFAULT_DISCORD_PARTS_PER_MESSAGE,
         engine_context::IntegrityService,
         file_types::FileType,
+        platform::PLATFORM_DISCORD,
         scope::DriveScope,
     },
     provider::provider_types::{RemoteFolderRef, RemoteUploadTarget, UploadPartRequest},
@@ -111,7 +112,7 @@ fn shared_batch_sizing(entry: &SharedBatchEntry) -> SharedBatchSizing {
     let configured_limit = entry
         .prepared
         .provider_settings
-        .get("discord")
+        .get(PLATFORM_DISCORD)
         .map(|settings| settings.chunk_size)
         .unwrap_or(entry.prepared.base_chunk_size);
 
@@ -369,7 +370,7 @@ async fn run_upload_batch(
             let discord_gateway = ctx
                 .provider_runtime
                 .part_store_registry
-                .get("discord")
+                .get(PLATFORM_DISCORD)
                 .ok_or_else(|| {
                     UploadError::provider_message("discord part store gateway not available")
                 })?;
@@ -474,7 +475,7 @@ async fn run_upload_batch(
             }
 
             if let Some(thread_id) = thread_to_archive {
-                if let Some(gateway) = ctx.provider_runtime.remote_object_registry.get("discord") {
+                if let Some(gateway) = ctx.provider_runtime.remote_object_registry.get(PLATFORM_DISCORD) {
                     let _ = gateway
                         .archive_object(
                             &omega_drive_gateway::provider::provider_types::RemoteObjectRef::DiscordThread {

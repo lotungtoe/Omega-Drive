@@ -3,6 +3,7 @@
 use crate::app_wiring::app_runtime::AppState;
 use omega_drive_db::db_executor::DbExecutor;
 use omega_drive_gateway::core::error::{AppError, AppResult};
+use omega_drive_gateway::core::platform::PLATFORM_DISCORD;
 
 fn read_discord_token() -> String {
     std::env::var("DISCORD_TOKEN").unwrap_or_default().trim().to_string()
@@ -19,7 +20,7 @@ pub async fn trigger_backup_snapshot(
 
     // Precondition: Discord must be connected
     let provider_runtime = st.provider_runtime();
-    let discord_ok = match provider_runtime.provider_admin_registry.get("discord") {
+    let discord_ok = match provider_runtime.provider_admin_registry.get(PLATFORM_DISCORD) {
         Some(gateway) => gateway.connection_status().await.ok()
             .map(|s| s.connected).unwrap_or(false),
         None => false,

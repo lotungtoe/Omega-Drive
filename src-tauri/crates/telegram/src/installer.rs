@@ -11,6 +11,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use omega_drive_gateway::core::events::{EventBus, OmegaEvent};
+use omega_drive_gateway::core::platform::PLATFORM_TELEGRAM;
 use omega_drive_gateway::provider::{
     file_repository::FileRepository,
     remote_folder::RemoteFolderGateway,
@@ -204,7 +205,7 @@ fn spawn_telegram_connection_probe(
 
 fn telegram_metadata() -> ProviderMetadata {
     ProviderMetadata {
-        id: "telegram".to_string(),
+        id: PLATFORM_TELEGRAM.to_string(),
         display_name: "Telegram Storage".to_string(),
         icon: "mdi-telegram".to_string(),
         description: "Luu tru dung luong lon thong qua Telegram MTProto.".to_string(),
@@ -225,7 +226,7 @@ fn telegram_capabilities(enabled: bool) -> Vec<ProviderCapability> {
 #[async_trait]
 impl ProviderAdminGateway for TelegramAdminGateway {
     fn provider_id(&self) -> &str {
-        "telegram"
+        PLATFORM_TELEGRAM
     }
 
     fn metadata(&self) -> ProviderMetadata {
@@ -246,7 +247,7 @@ impl ProviderAdminGateway for TelegramAdminGateway {
         if let Some(storage) = &self.storage {
             storage.get_quota().await
         } else {
-            let used = self.shared.file_repo.get_platform_usage("telegram").await.unwrap_or(0) as u64;
+            let used = self.shared.file_repo.get_platform_usage(PLATFORM_TELEGRAM).await.unwrap_or(0) as u64;
             Ok(ProviderQuota {
                 total_bytes: None,
                 used_bytes: used,
@@ -274,7 +275,7 @@ impl ProviderAdminGateway for TelegramAdminGateway {
 #[async_trait]
 impl PartStoreGateway for TelegramPartStoreGateway {
     fn provider_id(&self) -> &str {
-        "telegram"
+        PLATFORM_TELEGRAM
     }
 
     async fn upload_part(&self, request: UploadPartRequest) -> Result<UploadPartReceipt> {
@@ -295,7 +296,7 @@ impl PartStoreGateway for TelegramPartStoreGateway {
             .await?;
         Ok(UploadPartReceipt {
             message_id,
-            platform: "telegram".to_string(),
+            platform: PLATFORM_TELEGRAM.to_string(),
             size,
             attachment_name: None,
         })
@@ -323,7 +324,7 @@ impl PartStoreGateway for TelegramPartStoreGateway {
             .await?;
         Ok(UploadPartReceipt {
             message_id: new_msg_id,
-            platform: "telegram".to_string(),
+            platform: PLATFORM_TELEGRAM.to_string(),
             size: part.size as u64,
             attachment_name: None,
         })
@@ -333,7 +334,7 @@ impl PartStoreGateway for TelegramPartStoreGateway {
 #[async_trait]
 impl StreamGateway for TelegramStreamGateway {
     fn provider_id(&self) -> &str {
-        "telegram"
+        PLATFORM_TELEGRAM
     }
 
     async fn download_part_bytes(&self, part: &PartMetadata) -> Result<Vec<u8>> {
@@ -454,7 +455,7 @@ impl StreamGateway for TelegramStreamGateway {
 #[async_trait]
 impl RemoteObjectGateway for TelegramRemoteObjectGateway {
     fn provider_id(&self) -> &str {
-        "telegram"
+        PLATFORM_TELEGRAM
     }
 
     async fn archive_object(&self, _object: &RemoteObjectRef) -> Result<()> {
@@ -482,7 +483,7 @@ impl RemoteObjectGateway for TelegramRemoteObjectGateway {
             .as_ref()
             .ok_or_else(|| anyhow!("Telegram not configured"))?;
         let mut message_ids = Vec::with_capacity(parts.len());
-        for part in parts.iter().filter(|part| part.platform == "telegram") {
+        for part in parts.iter().filter(|part| part.platform == PLATFORM_TELEGRAM) {
             let message_id = part.message_id.parse::<i64>().with_context(|| {
                 format!(
                     "Telegram part {} has invalid message_id '{}'",

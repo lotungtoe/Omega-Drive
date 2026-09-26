@@ -8,6 +8,7 @@ use omega_drive_gateway::core::{
     error::AppResult,
     events::EventBus,
     file_types::FileType,
+    platform::PLATFORM_DISCORD,
 };
 use omega_drive_gateway::provider::{
     part_store::PartStoreGateway,
@@ -218,7 +219,7 @@ fn build_install_output(
     let remote_folder_provider_id = if input.tenant_scope == "shared" {
         "discord_shared"
     } else {
-        "discord"
+        PLATFORM_DISCORD
     };
 
     let shared = Arc::new(DiscordProviderShared {
@@ -256,7 +257,7 @@ fn build_install_output(
     let mut remote_object_gateways: Vec<Arc<dyn RemoteObjectGateway>> =
         vec![Arc::new(DiscordRemoteObjectGateway {
             shared: Arc::clone(&shared),
-            provider_id: "discord",
+            provider_id: PLATFORM_DISCORD,
         }) as Arc<dyn RemoteObjectGateway>];
 
     if input.tenant_scope == "shared" {
@@ -322,7 +323,7 @@ fn slice_bytes(data: Vec<u8>, range: Option<ByteRange>) -> Vec<u8> {
 #[async_trait]
 impl ProviderAdminGateway for DiscordAdminGateway {
     fn provider_id(&self) -> &str {
-        "discord"
+        PLATFORM_DISCORD
     }
 
     fn metadata(&self) -> ProviderMetadata {
@@ -386,7 +387,7 @@ impl ProviderAdminGateway for DiscordAdminGateway {
 #[async_trait]
 impl PartStoreGateway for DiscordPartStoreGateway {
     fn provider_id(&self) -> &str {
-        "discord"
+        PLATFORM_DISCORD
     }
 
     async fn upload_part(&self, request: UploadPartRequest) -> Result<UploadPartReceipt> {
@@ -403,7 +404,7 @@ impl PartStoreGateway for DiscordPartStoreGateway {
         .await?;
         Ok(UploadPartReceipt {
             message_id,
-            platform: "discord".to_string(),
+            platform: PLATFORM_DISCORD.to_string(),
             size,
             attachment_name: Some(attachment_name),
         })
@@ -447,7 +448,7 @@ impl PartStoreGateway for DiscordPartStoreGateway {
             .into_iter()
             .map(|(size, file_name)| UploadPartReceipt {
                 message_id,
-                platform: "discord".to_string(),
+                platform: PLATFORM_DISCORD.to_string(),
                 size,
                 attachment_name: Some(file_name),
             })
@@ -481,7 +482,7 @@ impl PartStoreGateway for DiscordPartStoreGateway {
         .await?;
         Ok(UploadPartReceipt {
             message_id,
-            platform: "discord".to_string(),
+            platform: PLATFORM_DISCORD.to_string(),
             size: part.size as u64,
             attachment_name: Some(attachment_name),
         })
@@ -491,7 +492,7 @@ impl PartStoreGateway for DiscordPartStoreGateway {
 #[async_trait]
 impl StreamGateway for DiscordStreamGateway {
     fn provider_id(&self) -> &str {
-        "discord"
+        PLATFORM_DISCORD
     }
 
     async fn download_part_bytes(&self, part: &PartMetadata) -> Result<Vec<u8>> {

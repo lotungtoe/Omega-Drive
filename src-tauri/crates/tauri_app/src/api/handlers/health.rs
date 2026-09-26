@@ -1,6 +1,7 @@
 ﻿use serde_json::{json, Value};
 use tracing::info;
 
+use omega_drive_gateway::core::platform::{PLATFORM_DISCORD, PLATFORM_TELEGRAM};
 use crate::{app_runtime::AppState, core::error::AppResult, db::files as db_files};
 
 #[tauri::command]
@@ -13,11 +14,11 @@ pub async fn check_backend_health() -> AppResult<Value> {
 pub async fn get_connection_status(st: tauri::State<'_, AppState>) -> AppResult<Value> {
     info!("[IPC Audit] Calling handler: get_connection_status");
     let provider_runtime = st.provider_runtime();
-    let discord_status = match provider_runtime.provider_admin_registry.get("discord") {
+    let discord_status = match provider_runtime.provider_admin_registry.get(PLATFORM_DISCORD) {
         Some(gateway) => gateway.connection_status().await.ok(),
         None => None,
     };
-    let telegram_status = match provider_runtime.provider_admin_registry.get("telegram") {
+    let telegram_status = match provider_runtime.provider_admin_registry.get(PLATFORM_TELEGRAM) {
         Some(gateway) => gateway.connection_status().await.ok(),
         None => None,
     };

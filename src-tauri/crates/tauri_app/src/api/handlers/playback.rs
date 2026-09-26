@@ -10,6 +10,8 @@ use crate::{
     db::files as db_files,
 };
 
+use omega_drive_gateway::core::platform::PLATFORM_DISCORD;
+
 const PLAYBACK_RESUME_MIN_SECS: f64 = 10.0;
 
 fn playback_completion_tail(duration_sec: f64) -> f64 {
@@ -210,7 +212,7 @@ pub async fn update_video_player_config(
 
     if let Some(val) = data.get("discord_hard_limit_mb").and_then(|v| v.as_u64()) {
         let limit_bytes = val * 1024 * 1024;
-        if let Some(provider) = new_cfg.providers.get_mut("discord") {
+        if let Some(provider) = new_cfg.providers.get_mut(PLATFORM_DISCORD) {
             provider.limits.hard_limit_bytes = limit_bytes;
             provider.limits.file_limit_bytes = limit_bytes;
         }

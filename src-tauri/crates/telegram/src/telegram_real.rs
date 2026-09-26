@@ -5,6 +5,7 @@
 //! - Supports login via OTP and 2FA password.
 //! - Automatically manages sessions via SQLite.
 
+use omega_drive_gateway::core::platform::PLATFORM_TELEGRAM;
 use omega_drive_gateway::provider::{
     file_repository::FileRepository,
     provider_types::ByteRange,
@@ -1135,7 +1136,7 @@ impl TelegramClient {
 impl StorageProvider for TelegramClient {
     fn metadata(&self) -> ProviderMetadata {
         ProviderMetadata {
-            id: "telegram".to_string(),
+            id: PLATFORM_TELEGRAM.to_string(),
             display_name: "Telegram Storage".to_string(),
             icon: "mdi-telegram".to_string(),
             description: "Large file storage via Telegram MTProto.".to_string(),
@@ -1151,7 +1152,7 @@ impl StorageProvider for TelegramClient {
 
     async fn get_quota(&self) -> Result<ProviderQuota> {
         let used = if let Some(file_repo) = self.file_repo.get() {
-            file_repo.get_platform_usage("telegram").await.unwrap_or(0) as u64
+            file_repo.get_platform_usage(PLATFORM_TELEGRAM).await.unwrap_or(0) as u64
         } else {
             0
         };

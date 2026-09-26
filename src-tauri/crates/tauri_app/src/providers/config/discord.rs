@@ -1,5 +1,7 @@
 ﻿use serde_json::Value;
 
+use omega_drive_gateway::core::platform::PLATFORM_DISCORD;
+
 use crate::core::config::{
     GroupSettings, ProviderConfigDefaults, ProviderConfigDescriptor,
 };
@@ -7,7 +9,7 @@ use crate::core::config::{
 use super::{cloned_nested, set_nested_if_missing};
 
 pub(crate) fn descriptor() -> ProviderConfigDescriptor {
-    ProviderConfigDescriptor::new("discord", defaults, Some(apply_legacy_json))
+    ProviderConfigDescriptor::new(PLATFORM_DISCORD, defaults, Some(apply_legacy_json))
 }
 
 fn defaults(_general: &GroupSettings) -> ProviderConfigDefaults {

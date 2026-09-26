@@ -1,6 +1,7 @@
 ﻿use std::path::Path;
 use tokio::sync::mpsc::UnboundedSender;
 
+use omega_drive_gateway::core::platform::{PLATFORM_DISCORD, PLATFORM_TELEGRAM};
 use omega_drive_gateway::provider::provider_types::{RemoteUploadTarget, UploadPartRequest};
 use omega_drive_gateway::upload::upload_plan::{ProviderType, UploadStrategy};
 pub use omega_drive_gateway::upload::upload_types::UploadedPart;
@@ -52,7 +53,7 @@ pub async fn dispatch_original_part(
     for (idx, target_provider) in targets.into_iter().enumerate() {
         let platform_id = format!("{:?}", target_provider).to_lowercase();
 
-        if platform_id == "telegram" && !tg_authorized {
+        if platform_id == PLATFORM_TELEGRAM && !tg_authorized {
             return Err(UploadError::provider_message("Telegram is not authorized"));
         }
 
@@ -67,7 +68,7 @@ pub async fn dispatch_original_part(
                 ))
             })?;
 
-        let upload_filename = if platform_id == "discord" {
+        let upload_filename = if platform_id == PLATFORM_DISCORD {
             build_discord_attachment_name(file_name, part_num)
         } else {
             file_name.to_string()
@@ -87,7 +88,7 @@ pub async fn dispatch_original_part(
                 file_name: upload_filename,
                 caption: caption.clone(),
                 part_num,
-                telegram_progress_tx: if platform_id == "telegram" {
+                telegram_progress_tx: if platform_id == PLATFORM_TELEGRAM {
                     telegram_progress_tx.clone()
                 } else {
                     None
@@ -127,7 +128,7 @@ pub(crate) async fn dispatch_discord_batch(
     let gateway = state
         .provider_runtime
         .part_store_registry
-        .get("discord")
+        .get(PLATFORM_DISCORD)
         .ok_or_else(|| UploadError::provider_message("discord part store gateway not available"))?;
 
     let caption = String::new();

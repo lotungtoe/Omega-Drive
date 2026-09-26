@@ -7,6 +7,7 @@ use futures_util::StreamExt;
 use reqwest::StatusCode;
 use tokio::sync::mpsc;
 
+use omega_drive_gateway::core::platform::{PLATFORM_DISCORD, PLATFORM_TELEGRAM};
 use omega_drive_gateway::download::byte_stream_provider::{ByteStreamProvider, StreamChunk};
 use omega_drive_gateway::provider::provider_types::ByteRange;
 use omega_drive_gateway::provider::storage::PartMetadata;
@@ -175,12 +176,12 @@ async fn stream_range_impl(
         // Cache miss — download, write to cache, and forward data in one pass
         let part_meta = db_part.clone();
 
-        if part_meta.platform == "discord" {
+        if part_meta.platform == PLATFORM_DISCORD {
             download_and_forward_discord(
                 &ctx, file_id, &part_meta,
                 part_start, cur_file_off, fetch_len, namespace, &tx,
             ).await?;
-        } else if part_meta.platform == "telegram" {
+        } else if part_meta.platform == PLATFORM_TELEGRAM {
             download_and_forward_telegram(
                 &ctx, file_id, &part_meta,
                 part_start, cur_file_off, fetch_len, namespace, &tx,
@@ -294,7 +295,7 @@ async fn download_and_forward_telegram(
     let gateway = ctx
         .provider_runtime
         .stream_registry
-        .get("telegram")
+        .get(PLATFORM_TELEGRAM)
         .ok_or_else(|| "Telegram gateway unavailable".to_string())?;
 
     let skip = request_off.saturating_sub(part_start);

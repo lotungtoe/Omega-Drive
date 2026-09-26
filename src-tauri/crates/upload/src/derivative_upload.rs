@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use tokio::fs;
 use tokio::io::{AsyncReadExt, BufReader};
 
+use omega_drive_gateway::core::platform::{PLATFORM_DISCORD, PLATFORM_TELEGRAM};
 use omega_drive_gateway::provider::provider_types::RemoteUploadTarget;
 use omega_drive_gateway::upload::upload_plan::{ProviderType, UploadStrategy};
 
@@ -27,7 +28,7 @@ pub(crate) async fn upload_derivative_file(
     let total_bytes = metadata.len();
 
     let safe_limit = state.cfg.read().expect("cfg RwLock")
-        .providers.get("discord")
+        .providers.get(PLATFORM_DISCORD)
         .map(|p| p.limits.hard_limit_bytes)
         .unwrap_or(0) as u64;
     let chunk_size = std::cmp::min(state.cfg.read().expect("cfg RwLock").general.chunk_bytes, safe_limit).max(1);
@@ -56,7 +57,7 @@ pub(crate) async fn upload_derivative_file(
     let tg_authorized = match state
         .provider_runtime
         .provider_admin_registry
-        .get("telegram")
+        .get(PLATFORM_TELEGRAM)
     {
         Some(gateway) => gateway
             .connection_status()

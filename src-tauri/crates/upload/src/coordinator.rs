@@ -16,6 +16,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::{info, warn};
 
 use omega_drive_gateway::{
+    core::platform::{PLATFORM_DISCORD, PLATFORM_TELEGRAM},
     core::scope::DriveScope,
     provider::provider_types::{RemoteObjectRef, RemoteUploadTarget},
     upload::upload_plan::{AdvancedLimits, DerivativesPlan, ProviderType, UploadPlan, UploadStrategy},
@@ -125,7 +126,7 @@ pub async fn run_upload(
     let tg_authorized = match state
         .provider_runtime
         .provider_admin_registry
-        .get("telegram")
+        .get(PLATFORM_TELEGRAM)
     {
         Some(gateway) => gateway
             .connection_status()
@@ -241,7 +242,7 @@ pub async fn run_upload(
     );
 
     if let Some(thread_id) = record.thread_to_archive {
-        if let Some(gateway) = state.provider_runtime.remote_object_registry.get("discord") {
+        if let Some(gateway) = state.provider_runtime.remote_object_registry.get(PLATFORM_DISCORD) {
             let _ = gateway
                 .archive_object(&RemoteObjectRef::DiscordThread { thread_id })
                 .await;
@@ -308,7 +309,7 @@ async fn run_original_upload(
     let (discord_tx, discord_rx) = if has_discord {
         let parallel = prepared
             .provider_settings
-            .get("discord")
+            .get(PLATFORM_DISCORD)
             .map(|s| s.parallel_sends)
             .unwrap_or(1);
         let (tx, rx) = tokio::sync::mpsc::channel(parallel * 4);
@@ -320,7 +321,7 @@ async fn run_original_upload(
     let (telegram_tx, telegram_rx) = if has_telegram {
         let parallel = prepared
             .provider_settings
-            .get("telegram")
+            .get(PLATFORM_TELEGRAM)
             .map(|s| s.parallel_sends)
             .unwrap_or(1);
         let (tx, rx) = tokio::sync::mpsc::channel(parallel * 4);
@@ -578,10 +579,10 @@ async fn emit_telegram_backed_manifest_note(
         }
     };
 
-    let has_discord_parts = parts.iter().any(|part| part.platform == "discord");
+    let has_discord_parts = parts.iter().any(|part| part.platform == PLATFORM_DISCORD);
     let mut telegram_message_ids = parts
         .iter()
-        .filter(|part| part.platform == "telegram")
+        .filter(|part| part.platform == PLATFORM_TELEGRAM)
         .map(|part| part.message_id.clone())
         .collect::<Vec<_>>();
     telegram_message_ids.sort();
@@ -607,12 +608,12 @@ async fn emit_telegram_backed_manifest_note(
         "SHARED DRIVE MANIFEST\nfile: `{}`\nkind: `{}`\nstorage_backend: `telegram`\ntelegram_parts: `{}`\ntelegram_messages: `{}`{}",
         prepared.filename,
         state.file_classifier.storage_kind_from_filename(&prepared.filename),
-        parts.iter().filter(|part| part.platform == "telegram").count(),
+        parts.iter().filter(|part| part.platform == PLATFORM_TELEGRAM).count(),
         preview_ids.join(", "),
         suffix,
     );
 
-    let Some(gateway) = state.provider_runtime.remote_object_registry.get("discord") else {
+    let Some(gateway) = state.provider_runtime.remote_object_registry.get(PLATFORM_DISCORD) else {
         return;
     };
 
@@ -664,7 +665,7 @@ async fn run_discord_worker(
 ) -> UploadResult<()> {
     let settings = prepared
         .provider_settings
-        .get("discord")
+        .get(PLATFORM_DISCORD)
         .ok_or_else(|| UploadError::internal("Missing discord provider settings", ""))?;
 
     let batch_multiplier = settings.batch_multiplier;
@@ -685,7 +686,7 @@ async fn run_discord_worker(
                         let is_done = record
                             .existing_parts
                             .iter()
-                            .any(|p| p.part_index == chunk.index && p.platform == "discord");
+                            .any(|p| p.part_index == chunk.index && p.platform == PLATFORM_DISCORD);
                         if is_done {
                             continue;
                         }
@@ -889,7 +890,7 @@ async fn run_telegram_worker(
                         let is_done = record
                             .existing_parts
                             .iter()
-                            .any(|p| p.part_index == chunk.index && p.platform == "telegram");
+                            .any(|p| p.part_index == chunk.index && p.platform == PLATFORM_TELEGRAM);
                         if is_done {
                             continue;
                         }
@@ -1289,7 +1290,7 @@ async fn upload_hidden_audio_file(
     };
 
     let safe_limit = state.cfg.read().expect("cfg RwLock")
-        .providers.get("discord")
+        .providers.get(PLATFORM_DISCORD)
         .map(|p| p.limits.hard_limit_bytes)
         .unwrap_or(0) as u64;
     let chunk_size = std::cmp::min(

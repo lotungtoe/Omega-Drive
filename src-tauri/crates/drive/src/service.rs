@@ -8,6 +8,7 @@ use omega_drive_gateway::provider::file_repository::FileRepository;
 use omega_drive_gateway::provider::folder_repository::FolderRepository;
 use omega_drive_gateway::core::provider_runtime::ProviderRuntime;
 use omega_drive_gateway::core::scope::DriveScope;
+use omega_drive_gateway::core::platform::{PLATFORM_DISCORD, PLATFORM_TELEGRAM};
 use tokio::sync::Mutex;
 use tracing::{error, info};
 
@@ -195,7 +196,7 @@ impl DriveService {
         let mut unique_parts_map = std::collections::BTreeMap::new();
         for p in parts {
             let entry = unique_parts_map.entry(p.part_index).or_insert_with(|| p.clone());
-            if p.platform == "telegram" && entry.platform == "discord" {
+            if p.platform == PLATFORM_TELEGRAM && entry.platform == PLATFORM_DISCORD {
                 *entry = p;
             }
         }

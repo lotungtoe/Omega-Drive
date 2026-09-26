@@ -1,6 +1,7 @@
 ﻿use std::path::Path;
 use std::collections::HashMap;
 
+use omega_drive_gateway::core::platform::PLATFORM_DISCORD;
 use omega_drive_gateway::core::config::DEFAULT_DISCORD_PARTS_PER_MESSAGE;
 pub use omega_drive_gateway::upload::upload_plan::{PreparedUploadPlan, ProviderExecutionSettings, UploadSourceInfo};
 use omega_drive_gateway::upload::upload_plan::{PriorityMode, ProviderType, UploadPlan, UploadStrategy};
@@ -58,11 +59,11 @@ pub async fn build_execution_plan(
     }
 
     let discord_safe_limit = state.cfg.read().expect("cfg RwLock")
-        .providers.get("discord")
+        .providers.get(PLATFORM_DISCORD)
         .map(|p| p.limits.hard_limit_bytes)
         .unwrap_or(0) as u64;
     for (provider_id, (_parallel, chunk_bytes, batch_size)) in &mut provider_configs {
-        if provider_id == "discord" {
+        if provider_id == PLATFORM_DISCORD {
             let discord_limit = load_discord_max_bytes(state).await;
             let effective_limit = if discord_safe_limit > 0 { discord_limit.min(discord_safe_limit) } else { discord_limit };
             let limit_mb = effective_limit / 1024 / 1024;
@@ -100,12 +101,12 @@ pub async fn build_execution_plan(
 
     let mut provider_settings = HashMap::new();
     for (provider_id, (parallel, _requested_bytes, configured_batch_size)) in provider_configs {
-        let batch_multiplier = if provider_id == "discord" {
+        let batch_multiplier = if provider_id == PLATFORM_DISCORD {
             configured_batch_size.unwrap_or(DEFAULT_DISCORD_PARTS_PER_MESSAGE).max(1)
         } else {
             1
         };
-        let actual_provider_chunk = if provider_id == "discord" {
+        let actual_provider_chunk = if provider_id == PLATFORM_DISCORD {
             min_chunk_bytes * batch_multiplier as u64
         } else {
             min_chunk_bytes
@@ -188,7 +189,7 @@ fn build_provider_byte_totals(total_bytes: u64, base_chunk_size: u64, strategy: 
 }
 
 async fn load_discord_max_bytes(state: &UploadContext) -> u64 {
-    match state.provider_runtime.provider_admin_registry.get("discord") {
+    match state.provider_runtime.provider_admin_registry.get(PLATFORM_DISCORD) {
         Some(gateway) => match gateway.fetch_upload_limits().await {
             Ok(constraints) => constraints.max_part_bytes.unwrap_or(25 * 1024 * 1024),
             Err(err) => { warn!("Unable to read Discord upload constraints, using 25MB: {}", err); 25 * 1024 * 1024 }

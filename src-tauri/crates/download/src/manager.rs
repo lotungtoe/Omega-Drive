@@ -11,6 +11,7 @@ use tracing::{info, warn};
 use omega_drive_gateway::core::error::AppResult;
 use omega_drive_gateway::core::error::wrap_error;
 use omega_drive_gateway::core::error_codes as codes;
+use omega_drive_gateway::core::platform::{PLATFORM_DISCORD, PLATFORM_TELEGRAM};
 use omega_drive_gateway::provider::storage::PartMetadata;
 use omega_drive_gateway::core::data::DownloadJob;
 
@@ -567,7 +568,7 @@ fn build_unique_parts(parts: Vec<PartMetadata>) -> Vec<PartMetadata> {
                 e.insert(p);
             }
             Entry::Occupied(mut e) => {
-                if p.platform == "telegram" && e.get().platform == "discord" {
+                if p.platform == PLATFORM_TELEGRAM && e.get().platform == PLATFORM_DISCORD {
                     e.insert(p);
                 }
             }

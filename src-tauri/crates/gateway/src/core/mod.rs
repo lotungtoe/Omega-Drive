@@ -7,6 +7,7 @@ pub mod error_codes;
 pub mod events;
 pub mod file_types;
 pub mod filemeta;
+pub mod platform;
 pub mod scope;
 pub mod tenant;
 pub mod types;

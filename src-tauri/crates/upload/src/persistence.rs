@@ -1,6 +1,7 @@
 ﻿use std::collections::HashMap;
 
 use omega_drive_gateway::core::events::OmegaEvent;
+use omega_drive_gateway::core::platform::{PLATFORM_DISCORD, PLATFORM_TELEGRAM};
 use omega_drive_gateway::core::filemeta::FullMetadata;
 use omega_drive_gateway::provider::provider_types::{RemoteFolderRef, RemoteObjectRef, RemoteUploadTarget};
 use omega_drive_gateway::provider::storage::PartMetadata;
@@ -53,8 +54,8 @@ fn cleanup_provider_id(object: &RemoteObjectRef) -> &'static str {
     match object {
         RemoteObjectRef::DiscordThread { .. }
         | RemoteObjectRef::DiscordChannel { .. }
-        | RemoteObjectRef::DiscordMessage { .. } => "discord",
-        RemoteObjectRef::TelegramMessages { .. } => "telegram",
+        | RemoteObjectRef::DiscordMessage { .. } => PLATFORM_DISCORD,
+        RemoteObjectRef::TelegramMessages { .. } => PLATFORM_TELEGRAM,
     }
 }
 
@@ -106,7 +107,7 @@ pub(crate) async fn cleanup_failed_upload_artifacts(
     }
 
     for (platform, provider_parts) in parts_by_platform {
-        if skip_discord_parts && platform == "discord" { continue; }
+        if skip_discord_parts && platform == PLATFORM_DISCORD { continue; }
         let Some(gateway) = state.provider_runtime.remote_object_registry.get(&platform) else {
             cleanup_errors.push(format!("Missing remote cleanup gateway '{}' for file {}", platform, file_sqlite_id));
             continue;
@@ -154,7 +155,7 @@ pub(crate) async fn cleanup_uploaded_parts_without_db(
     }
     let mut cleanup_errors = Vec::new();
     for (platform, provider_parts) in by_platform {
-        if platform == "discord" { continue; }
+        if platform == PLATFORM_DISCORD { continue; }
         let Some(gateway) = state.provider_runtime.remote_object_registry.get(&platform) else {
             cleanup_errors.push(format!("Missing remote cleanup gateway '{}' for inline cleanup", platform));
             continue;

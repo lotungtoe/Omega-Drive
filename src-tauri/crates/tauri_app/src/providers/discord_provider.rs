@@ -4,7 +4,7 @@ use anyhow::anyhow;
 use omega_drive_core::tenant_registry::{persist_active_tenant, resolve_active_tenant_for_scope, tenant_db_path};
 use omega_drive_db::Db;
 use omega_drive_db::repos::DbFileRepository;
-use omega_drive_gateway::core::{error_codes as codes, tenant::TENANT_SCOPE_SHARED};
+use omega_drive_gateway::core::{error_codes as codes, platform::PLATFORM_DISCORD, tenant::TENANT_SCOPE_SHARED};
 use omega_drive_discord::discord_types::{DiscordGuildId, DiscordHttp};
 use tokio::sync::OnceCell;
 
@@ -27,7 +27,7 @@ static DISCORD_HTTP: OnceCell<Arc<DiscordHttp>> = OnceCell::const_new();
 
 pub fn build_provider_installer() -> ProviderInstaller {
     ProviderInstaller::new(
-        "discord",
+        PLATFORM_DISCORD,
         ProviderBootstrapHooks::new(Some(DISCORD_ENV_TEMPLATE), None, None),
         install_entry,
     )

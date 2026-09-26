@@ -20,6 +20,7 @@ use omega_drive_gateway::provider::storage::{
     ProviderCapability, ProviderMetadata, ProviderQuota, StorageProvider,
 };
 use omega_drive_gateway::provider::file_repository::FileRepository;
+use omega_drive_gateway::core::platform::PLATFORM_DISCORD;
 use omega_drive_gateway::provider::storage::PartMetadata;
 
 // ─── Handler ────────────────────────────────────────────────────────────────────────
@@ -142,7 +143,7 @@ pub struct DiscordStorageProvider {
 impl StorageProvider for DiscordStorageProvider {
     fn metadata(&self) -> ProviderMetadata {
         ProviderMetadata {
-            id: "discord".to_string(),
+            id: PLATFORM_DISCORD.to_string(),
             display_name: "Discord Cloud".to_string(),
             icon: "mdi-discord".to_string(),
             description: "Store via Discord platform (using text channels).".to_string(),
@@ -157,7 +158,7 @@ impl StorageProvider for DiscordStorageProvider {
     }
 
     async fn get_quota(&self) -> Result<ProviderQuota> {
-        let used = self.file_repo.get_platform_usage("discord").await.unwrap_or(0);
+        let used = self.file_repo.get_platform_usage(PLATFORM_DISCORD).await.unwrap_or(0);
         Ok(ProviderQuota {
             total_bytes: None,
             used_bytes: used,

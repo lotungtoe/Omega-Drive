@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use chrono::Utc;
 
+use omega_drive_gateway::core::platform::PLATFORM_DISCORD;
 use omega_drive_gateway::provider::provider_types::MediaSource;
 use omega_drive_gateway::provider::storage::PartMetadata;
 
@@ -64,7 +65,7 @@ pub async fn resolve_cached_discord_url(
     }
 
     let gateway = state.provider_runtime.stream_registry
-        .get("discord")
+        .get(PLATFORM_DISCORD)
         .ok_or_else(|| "Discord stream gateway unavailable".to_string())?;
     let source = gateway
         .resolve_media_source(part)

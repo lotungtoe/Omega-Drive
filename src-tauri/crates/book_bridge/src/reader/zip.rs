@@ -5,6 +5,7 @@ use crate::formats::epub::spine::SpineEntry;
 use crate::formats::epub::nav::NavEntry;
 
 use omega_drive_gateway::download::ByteStreamProvider;
+use omega_drive_gateway::core::platform::PLATFORM_DISCORD;
 use omega_drive_gateway::provider::storage::PartMetadata;
 
 struct ZipEntryMeta {
@@ -48,7 +49,7 @@ impl ZipReader {
             .into_iter()
             .fold(BTreeMap::<u32, PartMetadata>::new(), |mut map, p| {
                 match map.get(&p.part_index) {
-                    Some(ex) if ex.platform == "discord" && p.platform != "discord" => {
+                    Some(ex) if ex.platform == PLATFORM_DISCORD && p.platform != PLATFORM_DISCORD => {
                         map.insert(p.part_index, p);
                     }
                     None => { map.insert(p.part_index, p); }

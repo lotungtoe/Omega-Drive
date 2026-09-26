@@ -1,6 +1,7 @@
 ﻿use std::{path::Path, sync::Arc, time::Duration};
 
 use omega_drive_db::repos::DbFileRepository;
+use omega_drive_gateway::core::platform::PLATFORM_TELEGRAM;
 use omega_drive_gateway::provider::file_repository::FileRepository;
 use omega_drive_telegram::installer::TelegramInstallInput;
 use omega_drive_telegram::telegram_real::TelegramClient;
@@ -19,7 +20,7 @@ TELEGRAM_API_HASH=
 
 pub fn build_provider_installer() -> ProviderInstaller {
     ProviderInstaller::new(
-        "telegram",
+        PLATFORM_TELEGRAM,
         ProviderBootstrapHooks::new(Some(TELEGRAM_ENV_TEMPLATE), Some(cleanup_temp_files), None),
         install_entry,
     )

@@ -7,6 +7,7 @@ use crate::app_wiring::app_runtime::AppState;
 use crate::app_wiring::infrastructure::diagnostics::helpers::collect_bootstrap_status;
 use crate::app_wiring::infrastructure::feature_log::FEATURE_KEYS;
 use omega_drive_gateway::core::error::AppResult;
+use omega_drive_gateway::core::platform::{PLATFORM_DISCORD, PLATFORM_TELEGRAM};
 use omega_drive_db::files as db_files;
 
 use super::ports::{
@@ -62,11 +63,11 @@ impl DiagnosticsPort for DiagnosticsPortAdapter {
 
     async fn get_connection_status(&self) -> AppResult<Value> {
         let provider_runtime = self.state.provider_runtime();
-        let discord_status = match provider_runtime.provider_admin_registry.get("discord") {
+        let discord_status = match provider_runtime.provider_admin_registry.get(PLATFORM_DISCORD) {
             Some(gateway) => gateway.connection_status().await.ok(),
             None => None,
         };
-        let telegram_status = match provider_runtime.provider_admin_registry.get("telegram") {
+        let telegram_status = match provider_runtime.provider_admin_registry.get(PLATFORM_TELEGRAM) {
             Some(gateway) => gateway.connection_status().await.ok(),
             None => None,
         };
