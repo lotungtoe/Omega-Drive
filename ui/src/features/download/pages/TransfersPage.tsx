@@ -22,6 +22,15 @@ function formatPercent(done: number, total: number) {
   return Math.min(Math.round((done / total) * 100), 100);
 }
 
+function formatEta(secs: number | null | undefined, t: (k: string, o?: any) => string): string {
+  if (secs == null || !Number.isFinite(secs) || secs < 0) return "";
+  const s = Math.round(secs);
+  if (s < 60) return t('downloads.timeSecs', { n: s });
+  const m = Math.round(s / 60);
+  if (m < 60) return t('downloads.timeMins', { n: m });
+  return t('downloads.timeHours', { n: Math.round(m / 60) });
+}
+
 function getExt(filename: string) {
   const dot = filename.lastIndexOf('.');
   return dot >= 0 ? filename.slice(dot + 1).toLowerCase() : '';
@@ -159,7 +168,7 @@ export function TransfersPage({ toast }: { toast: unknown }) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('uploads');
 
-  const { jobs: downloadJobs, loading: downloadsLoading, pauseJob, resumeJob, cancelJob, retryJob } = useDownloads(toast);
+  const { jobs: downloadJobs, loading: downloadsLoading, stats: dlStats, pauseJob, resumeJob, cancelJob, retryJob } = useDownloads(toast);
   const { uploads, loading: uploadsLoading, resumeUpload, cancelUpload } = useTransfersList(toast);
 
   const tabBtn = (active: boolean) => ({
@@ -232,7 +241,7 @@ export function TransfersPage({ toast }: { toast: unknown }) {
                 transition: 'background 0.15s',
               }}>
                 {/* File icon */}
-                <FileIcon filename={file.filename} kind={file.kind} />
+                <FileIcon filename={file.filename} kind={null} />
 
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -246,7 +255,6 @@ export function TransfersPage({ toast }: { toast: unknown }) {
                   <span style={{ fontSize: 12, color: 'var(--gd-on-surface-variant)', lineHeight: 1.4 }}>
                     {formatSize(file.size || 0)} &nbsp;Â·&nbsp; {statusLabel}
                   </span>
-                  <ThinProgressBar percent={0} indeterminate={!isProcessing} />
                   {isProcessing && (
                     <span style={{ fontSize: 11, color: 'var(--gd-on-surface-variant)' }}>
                       Processing (export, mp4, encode)...
@@ -288,9 +296,14 @@ export function TransfersPage({ toast }: { toast: unknown }) {
             const isActive = job.state === 'downloading';
             const isPaused = job.state === 'paused';
             const isFailed = job.state === 'failed';
-            const isQueued = job.state === 'queued';
             const isDone   = job.state === 'completed' || job.state === 'done';
             const canCancel = ['queued', 'downloading', 'paused', 'failed'].includes(job.state);
+
+            // Live event stats first, static preview fields (mock-only) as fallback.
+            const st = (dlStats as Record<number, any>)[job.id]
+              ?? (Number.isFinite(job.speed_bps)
+                ? { speedBps: job.speed_bps, etaSecs: job.eta_secs ?? null, bytesDone: job.bytes_done ?? 0, bytesTotal: job.bytes_total ?? 0 }
+                : null);
 
             const stateLabel = {
               downloading: 'Downloading',
@@ -327,19 +340,23 @@ export function TransfersPage({ toast }: { toast: unknown }) {
                     {filename}
                   </span>
                   <span style={{ fontSize: 12, color: isFailed ? '#ef4444' : 'var(--gd-on-surface-variant)', lineHeight: 1.4 }}>
-                    {t('downloads.part', { current: done, total })}
-                    &nbsp;Â·&nbsp;{stateLabel}
-                    {job.error_code ? ` (${job.error_code})` : ''}
+                    {isActive && st ? (
+                      <>
+                        {formatSize(st.speedBps)}/s&nbsp;·&nbsp;{formatSize(st.bytesDone)} {t('downloads.ofWord')} {formatSize(st.bytesTotal)}
+                        {st.etaSecs != null && Number.isFinite(st.etaSecs) ? t('downloads.eta', { time: formatEta(st.etaSecs, t) }) : ''}
+                      </>
+                    ) : (
+                      <>
+                        {t('downloads.part', { current: done, total })}
+                        &nbsp;·&nbsp;{stateLabel}
+                        {job.error_code ? ` (${job.error_code})` : ''}
+                      </>
+                    )}
                   </span>
                   {job.error && (
                     <span style={{ fontSize: 11, color: '#ef4444' }}>{job.error}</span>
                   )}
-                  {!isDone && (
-                    <ThinProgressBar percent={percent} indeterminate={isQueued} />
-                  )}
-                  {isDone && (
-                    <ThinProgressBar percent={100} />
-                  )}
+                  <ThinProgressBar percent={isDone ? 100 : percent} />
                 </div>
 
                 {/* Actions */}

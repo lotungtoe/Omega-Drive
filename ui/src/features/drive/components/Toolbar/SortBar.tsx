@@ -37,7 +37,7 @@ export const SortBar = ({ sort, setSort }) => {
             background: sort.field === s.field ? 'var(--gd-blue-surface)' : 'transparent',
             border: 'none',
             cursor: 'pointer',
-            transition: 'all 0.15s'
+            transition: 'color 0.15s, background-color 0.15s'
           }}
         >
           {s.label}

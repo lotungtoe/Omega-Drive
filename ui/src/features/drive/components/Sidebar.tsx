@@ -4,6 +4,7 @@ import { Home, Clock, Star, Trash2, HardDrive, Plus, Settings, ArrowDownUp, User
 import { useTranslation } from 'react-i18next'
 import { formatSize, cn } from '../../../shared/utils/index'
 import { invoke } from '@tauri-apps/api/core'
+import { DriveApi } from '../../../shared/api/DriveApi'
 import {
   DRIVE_SECTION_HOME,
   DRIVE_SECTION_MY,
@@ -79,8 +80,12 @@ export const Sidebar = memo(function Sidebar(props: any) {
   type TenantState = { my: any; shared: any; current: any; scope?: string }
 
   const fetchTenantState = async () => {
-    const rememberedTenants = await invoke('get_active_tenants') as TenantState | null
-    return rememberedTenants || { my: null, shared: null, current: null }
+    // DriveApi routes to the browser mock outside Tauri; normalize empty shapes.
+    const rememberedTenants = await DriveApi.getActiveTenants() as TenantState | null
+    if (rememberedTenants && (rememberedTenants.my || rememberedTenants.shared || rememberedTenants.current)) {
+      return rememberedTenants
+    }
+    return { my: null, shared: null, current: null }
   }
 
   useEffect(() => {

@@ -19,7 +19,7 @@ export function ReaderBottomNav({ currentChapter, totalChapters, onPrev, onNext,
       autoHide ? (visible ? 'opacity-100' : 'opacity-0 pointer-events-none') : 'opacity-100'
     }`}>
       <div className="h-0.5 bg-slate-100 dark:bg-slate-800">
-        <div className="h-full bg-amber-500 transition-all duration-300" style={{ width: `${Math.min(100, progressPercent)}%` }} />
+        <div className="h-full bg-amber-500 transition-[width] duration-300" style={{ width: `${Math.min(100, progressPercent)}%` }} />
       </div>
       <div className="flex items-center justify-between px-8 py-4">
         <button type="button" disabled={currentChapter <= 0} onClick={onPrev}

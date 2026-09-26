@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { listen } from '@tauri-apps/api/event';
+import { safeListen as listen } from '../shared/api/tauri';
 import { open } from '@tauri-apps/plugin-dialog';
 import { uploadAudioAttachment, addAudioTrack } from '../features/player/services/playerService';
 import { MainAppContent } from '../features/drive/pages/MainAppContent';

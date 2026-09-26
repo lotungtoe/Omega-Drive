@@ -1,4 +1,4 @@
-﻿import { motion, AnimatePresence } from 'framer-motion'
+﻿import { m, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../../shared/utils/index'
 import { AlertTriangle, Trash2 } from 'lucide-react'
@@ -37,14 +37,14 @@ export function DeleteConfirmModal({ isOpen, onClose, onConfirm, item }) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
           className="fixed inset-0 z-[150] flex items-center justify-center bg-black/50 backdrop-blur-md"
         >
-          <motion.div
+          <m.div
             initial={{ scale: 0.95, y: 10, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.95, y: 10, opacity: 0 }}
@@ -72,8 +72,8 @@ export function DeleteConfirmModal({ isOpen, onClose, onConfirm, item }) {
                 {isPermanent ? t('drive.deleteForever') : t('common.delete')}
               </Button>
             </div>
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       )}
     </AnimatePresence>
   )

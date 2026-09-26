@@ -40,13 +40,15 @@ export function useDriveQuery(
   const snapshotRef = useRef(null);
   const prevActiveSection = useRef(activeSection);
 
-  if (
-    prevActiveSection.current !== activeSection &&
-    !isScopedDriveSection(activeSection)
-  ) {
-    setCurrentFolderId(null);
-  }
-  prevActiveSection.current = activeSection;
+  useEffect(() => {
+    if (
+      prevActiveSection.current !== activeSection &&
+      !isScopedDriveSection(activeSection)
+    ) {
+      setCurrentFolderId(null);
+    }
+    prevActiveSection.current = activeSection;
+  });
 
   const rootDriveScope = getDriveScopeForSection(activeDriveRoot);
   const driveScope =

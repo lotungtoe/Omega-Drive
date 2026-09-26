@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { X, RefreshCw } from 'lucide-react'
 import {
   getSettings,
@@ -331,7 +331,7 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
   ]
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -631,7 +631,7 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
             type="button"
             onClick={handleSave}
             disabled={!dirty}
-            className="rounded-2xl border border-[var(--gd-outline)] px-8 py-3 text-[11px] font-bold uppercase text-[var(--gd-on-surface-variant)] transition-all disabled:opacity-50"
+            className="rounded-2xl border border-[var(--gd-outline)] px-8 py-3 text-[11px] font-bold uppercase text-[var(--gd-on-surface-variant)] transition-opacity disabled:opacity-50"
           >
             {t('common.save', 'LÆ°u')}
           </button>
@@ -639,7 +639,7 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
             type="button"
             onClick={handleApply}
             disabled={!dirty}
-            className="rounded-2xl bg-blue-500 px-8 py-3 text-[11px] font-bold uppercase text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-600 disabled:opacity-50 focus:ring-2 focus:ring-blue-500/50"
+            className="rounded-2xl bg-blue-500 px-8 py-3 text-[11px] font-bold uppercase text-white shadow-lg shadow-blue-500/20 transition-[background-color,box-shadow,opacity] hover:bg-blue-600 disabled:opacity-50 focus:ring-2 focus:ring-blue-500/50"
           >
             {t('common.apply', 'Apply')}
           </button>
@@ -654,7 +654,7 @@ export function SettingsModal({ onClose, toast, dark, toggleDark }) {
         </div>
 
       </div>
-    </motion.div>
+    </m.div>
   )
 }
 

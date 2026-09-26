@@ -54,7 +54,9 @@ export function useBookProgress(fileId: number) {
   }, [fileId])
 
   const autoSaveRef = useRef(saveProgress)
-  autoSaveRef.current = saveProgress
+  useEffect(() => {
+    autoSaveRef.current = saveProgress
+  })
   useEffect(() => {
     const timer = setInterval(() => {
       if (lastSave.current) {

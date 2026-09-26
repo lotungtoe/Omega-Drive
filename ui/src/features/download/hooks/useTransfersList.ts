@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { listen } from '@tauri-apps/api/event';
+import { safeListen as listen } from '../../../shared/api/tauri';
 import { fetchTransfersPaginated } from '../../drive/services/driveService';
 import { toUserMessage } from '../../../shared/services/errors/toUserMessage';
 import { resumeUploadByPath } from '../../upload/services/uploadService';
@@ -12,11 +12,13 @@ export function useTransfersList(toast) {
   const [hasMore, setHasMore] = useState(false);
   const loadingMoreRef = useRef(false);
   const toastRef = useRef(toast);
-  toastRef.current = toast;
   const cursorRef = useRef(cursor);
-  cursorRef.current = cursor;
   const hasMoreRef = useRef(hasMore);
-  hasMoreRef.current = hasMore;
+  useEffect(() => {
+    toastRef.current = toast;
+    cursorRef.current = cursor;
+    hasMoreRef.current = hasMore;
+  });
 
   const loadUploads = useCallback(async (reset = false) => {
     try {
@@ -31,7 +33,8 @@ export function useTransfersList(toast) {
 
       const res: any = await fetchTransfersPaginated(fetchCursor, 50);
 
-      setUploads(prev => reset ? res.files : [...prev, ...res.files]);
+      const files = Array.isArray(res?.files) ? res.files : [];
+      setUploads(prev => reset ? files : [...prev, ...files]);
       setCursor(res.next_cursor);
       setHasMore(res.has_more);
     } catch (err) {

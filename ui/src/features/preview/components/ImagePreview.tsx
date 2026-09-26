@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useRef, useCallback } from 'react'
-import { motion, AnimatePresence, useMotionValue, animate, useTransform, useMotionValueEvent } from 'framer-motion'
+import { m, AnimatePresence, useMotionValue, animate, useTransform, useMotionValueEvent } from 'framer-motion'
 import { X, Download, Loader2, AlertCircle, ZoomIn, ZoomOut, Maximize, Maximize2, Minimize2, RotateCcw, QrCode, Copy, ExternalLink, Check, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { invoke } from '@tauri-apps/api/core'
@@ -278,7 +278,7 @@ export function ImagePreview({ file, onClose, onDownload }) {
   const renderContent = () => {
     if (loading) {
       return (
-        <motion.div
+        <m.div
           key='loading'
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -290,13 +290,13 @@ export function ImagePreview({ file, onClose, onDownload }) {
           <p className='text-white/60 text-sm font-medium'>
             {t('modal.preview.loadingFullFile', 'Dang tai anh chat luong goc...')}
           </p>
-        </motion.div>
+        </m.div>
       )
     }
 
     if (error) {
       return (
-        <motion.div
+        <m.div
           key='error'
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -317,12 +317,12 @@ export function ImagePreview({ file, onClose, onDownload }) {
           >
             <RotateCcw size={14} /> {t('common.retry', 'Thu lai')}
           </button>
-        </motion.div>
+        </m.div>
       )
     }
 
     return (
-      <motion.div
+      <m.div
         key='image-container'
         style={{ x, y, scale: motionScale }}
         drag={true}
@@ -340,12 +340,12 @@ export function ImagePreview({ file, onClose, onDownload }) {
           className='max-w-full max-h-full object-contain shadow-2xl rounded-sm pointer-events-none'
           draggable={false}
         />
-      </motion.div>
+      </m.div>
     )
   }
 
   return (
-    <motion.div
+    <m.div
       ref={modalRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -386,20 +386,20 @@ export function ImagePreview({ file, onClose, onDownload }) {
                   setShowQrMenu(false)
                 }}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-1.5 bg-[#2B2D31]/90 hover:bg-[#313338] backdrop-blur-md text-white border rounded-md transition-all shadow-lg min-w-[80px] justify-between',
+                  'flex items-center gap-2 px-3 py-1.5 bg-[#2B2D31]/90 hover:bg-[#313338] backdrop-blur-md text-white border rounded-md transition-colors shadow-lg min-w-[80px] justify-between',
                   showZoomMenu ? 'border-blue-500/50 ring-2 ring-blue-500/20' : 'border-[#1E1F22]'
                 )}
                 title={t('preview.zoomLevel', 'Chon muc thu phong')}
               >
-                <motion.span className='text-[13px] font-bold'>
+                <m.span className='text-[13px] font-bold'>
                   {scalePercentText}
-                </motion.span>
+                </m.span>
                 <ChevronDown size={14} className={cn('text-white/60 transition-transform duration-200', showZoomMenu && 'rotate-180')} />
               </button>
 
               <AnimatePresence>
                 {showZoomMenu && (
-                  <motion.div
+                  <m.div
                     initial={{ opacity: 0, scale: 0.95, y: -10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -10 }}
@@ -425,7 +425,7 @@ export function ImagePreview({ file, onClose, onDownload }) {
                         </button>
                       ))}
                     </div>
-                  </motion.div>
+                  </m.div>
                 )}
               </AnimatePresence>
             </div>
@@ -442,7 +442,7 @@ export function ImagePreview({ file, onClose, onDownload }) {
                 <ZoomOut size={20} />
               </button>
 
-              <motion.input
+              <m.input
                 ref={sliderRef}
                 type='range'
                 min='10'
@@ -502,7 +502,7 @@ export function ImagePreview({ file, onClose, onDownload }) {
                       setShowZoomMenu(false)
                     }}
                     className={cn(
-                      'px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 bg-[#2B2D31]/90 hover:bg-[#313338] backdrop-blur-md border shadow-lg',
+                      'px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 bg-[#2B2D31]/90 hover:bg-[#313338] backdrop-blur-md border shadow-lg',
                       showQrMenu ? 'text-blue-400 border-blue-500/30' : 'text-white/80 border-[#1E1F22]'
                     )}
                     title={t('preview.qrFound', { count: foundCodes.length })}
@@ -515,7 +515,7 @@ export function ImagePreview({ file, onClose, onDownload }) {
 
                   <AnimatePresence>
                     {showQrMenu && (
-                      <motion.div
+                      <m.div
                         initial={{ opacity: 0, scale: 0.95, y: -10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -10 }}
@@ -532,7 +532,7 @@ export function ImagePreview({ file, onClose, onDownload }) {
                             const isUrl = /^https?:\/\//i.test(code.text)
                             const key = `${code.text}-${idx}`
                             return (
-                              <div key={key} className='bg-white/5 rounded-lg p-3 group border border-transparent hover:border-white/5 transition-all'>
+                              <div key={key} className='bg-white/5 rounded-lg p-3 group border border-transparent hover:border-white/5 transition-colors'>
                                 <div className='text-[12px] text-white/90 break-all font-mono leading-relaxed mb-3 selection:bg-blue-500/30'>
                                   {code.text}
                                 </div>
@@ -562,7 +562,7 @@ export function ImagePreview({ file, onClose, onDownload }) {
                             )
                           })}
                         </div>
-                      </motion.div>
+                      </m.div>
                     )}
                   </AnimatePresence>
                 </div>
@@ -611,6 +611,6 @@ export function ImagePreview({ file, onClose, onDownload }) {
           {renderContent()}
         </AnimatePresence>
       </div>
-    </motion.div>
+    </m.div>
   )
 }

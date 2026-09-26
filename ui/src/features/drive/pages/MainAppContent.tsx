@@ -6,7 +6,8 @@ import { Upload } from "lucide-react";
 import { FileIcon, FolderIcon } from "../../../shared/components/Icons";
 import { ProgressOverlay } from "../../../shared/components/ProgressOverlay";
 import { OverlayLoader } from "../../../shared/components/OverlayLoader";
-import { ToastContainer, ToastCtx } from "../../../shared/components/Toasts";
+import { ToastContainer } from "../../../shared/components/Toasts";
+import { ToastCtx } from "../../../shared/components/toast-context";
 import { FileGrid } from "../components/FileGrid";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
@@ -29,10 +30,7 @@ import {
 
 import { toUserMessage } from "../../../shared/services/errors/toUserMessage";
 import { openBotEnv, openDiscordAuth } from "../../diagnostics/services/diagnosticsService";
-import { BtnNewFolder } from "../../../shared/ui/atoms/BtnNewFolder";
-import { BtnUpload } from "../../../shared/ui/atoms/BtnUpload";
-import { BtnViewToggle } from "../../../shared/ui/atoms/BtnViewToggle";
-import { BreadcrumbItem } from "../../../shared/ui/atoms/BreadcrumbItem";
+import { BreadcrumbItem, BtnNewFolder, BtnUpload, BtnViewToggle } from "../../../shared/ui/atoms/buttons";
 import TransfersPage from "../../download/pages/TransfersPage";
 import { GlobalAudioBridge } from "../../player/components/GlobalAudioBridge";
 import { MiniAudioPlayer } from "../../player/components/MiniAudioPlayer";
@@ -111,7 +109,7 @@ function MorphingDragOverlay({ activeDragData, dark }) {
         ...targetStyle,
         position: "relative",
         overflow: "hidden",
-        transition: "all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)",
+        transition: "width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), border-radius 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.35s, border-color 0.35s, box-shadow 0.35s",
         pointerEvents: "none",
         fontFamily: "'Google Sans', sans-serif",
       }}
@@ -142,7 +140,7 @@ export function MainAppContent() {
 
   const { t } = useTranslation();
   useWindowStateTracker();
-  useEffect(() => { getCurrentWindow().emit("frontend-ready", {}).catch(() => {}); }, []);
+  useEffect(() => { try { getCurrentWindow().emit("frontend-ready", {}).catch(() => {}); } catch {} }, []);
   const uiState = useMainAppUiStateContext();
   const uiActions = useMainAppUiActions();
   const driveController = useDriveControllerContext();

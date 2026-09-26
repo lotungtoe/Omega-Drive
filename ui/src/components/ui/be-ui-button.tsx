@@ -2,7 +2,7 @@
 
 import {
   AnimatePresence,
-  motion,
+  m,
   useReducedMotion,
   type HTMLMotionProps,
 } from "framer-motion";
@@ -18,41 +18,41 @@ import {
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-export const EASE_OUT = [0.16, 1, 0.3, 1] as const;
-export const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const;
-export const EASE_DRAWER = [0.32, 0.72, 0, 1] as const;
+const EASE_OUT = [0.16, 1, 0.3, 1] as const;
+const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const;
+const EASE_DRAWER = [0.32, 0.72, 0, 1] as const;
 
 export const EASE_OUT_CSS = "cubic-bezier(0.16, 1, 0.3, 1)";
 
-export const SPRING_PRESS = {
+const SPRING_PRESS = {
   type: "spring",
   stiffness: 500,
   damping: 30,
   mass: 0.6,
 } as const;
 
-export const SPRING_SWAP = {
+const SPRING_SWAP = {
   type: "spring",
   stiffness: 460,
   damping: 30,
   mass: 0.55,
 } as const;
 
-export const SPRING_PANEL = {
+const SPRING_PANEL = {
   type: "spring",
   stiffness: 420,
   damping: 40,
   mass: 0.5,
 } as const;
 
-export const SPRING_LAYOUT = {
+const SPRING_LAYOUT = {
   type: "spring",
   stiffness: 360,
   damping: 32,
   mass: 0.6,
 } as const;
 
-export const SPRING_MOUSE = {
+const SPRING_MOUSE = {
   stiffness: 200,
   damping: 15,
   mass: 0.3,
@@ -76,7 +76,7 @@ export function useHoverCapable() {
   return canHover;
 }
 
-export function cn(...inputs: ClassValue[]) {
+function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
@@ -137,16 +137,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         if (ripple && !reduce) {
           const rect = event.currentTarget.getBoundingClientRect();
           const size = Math.max(rect.width, rect.height) * 2;
+          const id = nextId.current;
+          nextId.current += 1;
+          const rippleItem: Ripple = {
+            id,
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top,
+            size,
+          };
 
-          setRipples((prev) => [
-            ...prev,
-            {
-              id: nextId.current++,
-              x: event.clientX - rect.left,
-              y: event.clientY - rect.top,
-              size,
-            },
-          ]);
+          setRipples((prev) => [...prev, rippleItem]);
         }
 
         onPointerDown?.(event);
@@ -155,7 +155,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     );
 
     return (
-      <motion.button
+      <m.button
         ref={ref}
         type="button"
         whileTap={reduce ? undefined : { scale: pressScale }}
@@ -173,11 +173,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         {...rest}
       >
-        {ripple && !reduce ? (
-          <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
-            <AnimatePresence>
-              {ripples.map((r) => (
-                <motion.span
+        <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
+          <AnimatePresence>
+            {ripple && !reduce
+              ? ripples.map((r) => (
+                <m.span
                   key={r.id}
                   className="absolute rounded-full bg-current"
                   style={{
@@ -196,13 +196,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                     setRipples((prev) => prev.filter((x) => x.id !== r.id))
                   }
                 />
-              ))}
-            </AnimatePresence>
-          </span>
-        ) : null}
+              ))
+              : null}
+          </AnimatePresence>
+        </span>
 
         {children}
-      </motion.button>
+      </m.button>
     );
   },
 );

@@ -1,9 +1,8 @@
-﻿import { useState, useCallback, createContext, useContext, useRef } from 'react'
+﻿import { useState, useCallback, useContext, useRef } from 'react'
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react'
 import { Button } from '../../components/ui/be-ui-button'
+import { ToastCtx } from './toast-context'
 
-// eslint-disable-next-line react-refresh/only-export-components
-export const ToastCtx = createContext({ show: () => {} })
 // eslint-disable-next-line react-refresh/only-export-components
 export const useToast = () => useContext(ToastCtx)
 

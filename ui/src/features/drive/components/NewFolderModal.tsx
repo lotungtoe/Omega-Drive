@@ -1,5 +1,5 @@
 ﻿import { useState, useRef, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/be-ui-button'
 
@@ -14,14 +14,14 @@ export function NewFolderModal({ onClose, onCreate }) {
   }
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
       className="fixed inset-0 z-[150] flex items-center justify-center bg-black/50 backdrop-blur-sm"
     >
-      <motion.div
+      <m.div
         initial={{ scale: 0.95, y: 10 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 10 }}
@@ -38,7 +38,7 @@ export function NewFolderModal({ onClose, onCreate }) {
             if (e.key === 'Escape') onClose()
           }}
           placeholder={t('modal.newFolder.placeholder')}
-          className="w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all bg-[var(--gd-input-bg)] border-[var(--gd-input-border)] text-[var(--gd-modal-text)] placeholder-[var(--gd-modal-text-secondary)] focus:ring-blue-500/40"
+          className="w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-[border-color,box-shadow] bg-[var(--gd-input-bg)] border-[var(--gd-input-border)] text-[var(--gd-modal-text)] placeholder-[var(--gd-modal-text-secondary)] focus:ring-blue-500/40"
         />
         <div className="flex gap-2 mt-4">
           <Button variant="ghost" size="md" onClick={onClose} className="flex-1">
@@ -48,7 +48,7 @@ export function NewFolderModal({ onClose, onCreate }) {
             {t('common.create')}
           </Button>
         </div>
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   )
 }

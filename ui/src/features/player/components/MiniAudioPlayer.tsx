@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { m, AnimatePresence } from 'framer-motion'
 import { invoke } from '@tauri-apps/api/core'
 import { 
   Play, Pause, X, Maximize2, Music, Loader2,
@@ -108,7 +108,7 @@ export function MiniAudioPlayer() {
 
   return (
     <AnimatePresence>
-      <motion.div
+      <m.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 100, opacity: 0 }}
@@ -162,7 +162,7 @@ export function MiniAudioPlayer() {
               <button type="button"
                 onClick={togglePlay}
                 disabled={loading}
-                className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-50"
+                className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-[transform,opacity] shadow-md disabled:opacity-50"
               >
                 {playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
               </button>
@@ -201,7 +201,7 @@ export function MiniAudioPlayer() {
               >
                 <div className="absolute inset-0 py-2 -top-2 flex items-center">
                   <div className="w-full h-1 relative overflow-hidden rounded-full">
-                    <motion.div 
+                    <m.div 
                       initial={false}
                       className={cn(
                         "absolute left-0 top-0 h-full rounded-full transition-colors",
@@ -211,7 +211,7 @@ export function MiniAudioPlayer() {
                     />
                   </div>
                   {/* The Knob */}
-                  <motion.div 
+                  <m.div 
                     initial={false}
                     className={cn(
                       "absolute w-3 h-3 bg-white rounded-full shadow-lg -ml-1.5 transition-opacity",
@@ -304,7 +304,7 @@ export function MiniAudioPlayer() {
           </div>
 
         </div>
-      </motion.div>
+      </m.div>
     </AnimatePresence>
   )
 }

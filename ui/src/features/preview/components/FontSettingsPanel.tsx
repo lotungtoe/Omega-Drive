@@ -61,7 +61,7 @@ export function FontSettingsPanel({ settings, onFontChange, onSizeChange, onLine
           <div className="mt-1 flex gap-2">
             {themeNames.map(tn => (
               <button key={tn.name} type="button" onClick={() => onThemeChange(tn.name)}
-                className={`flex-1 h-10 rounded-lg border-2 transition-all flex items-center justify-center text-xs font-medium ${
+                className={`flex-1 h-10 rounded-lg border-2 transition-[border-color,box-shadow] flex items-center justify-center text-xs font-medium ${
                   settings.theme === tn.name ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-200 dark:border-slate-700'
                 }`}
                 style={{ background: themes[tn.name].background, color: themes[tn.name].text }}>

@@ -1,5 +1,5 @@
 ﻿import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { cn } from "../../../../../shared/utils/index";
 import { Button } from "../../../../../components/ui/be-ui-button";
 import { Icons } from "./Icons";
@@ -26,10 +26,11 @@ export function ProviderSelector({
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: "auto" }}
-      exit={{ opacity: 0, height: 0 }}
+    <m.div 
+      initial={{ opacity: 0, scaleY: 0 }}
+      animate={{ opacity: 1, scaleY: 1 }}
+      exit={{ opacity: 0, scaleY: 0 }}
+      style={{ transformOrigin: "top" }}
       className="config-group"
     >
       <span className="config-group-title">
@@ -63,6 +64,6 @@ export function ProviderSelector({
           );
         })}
       </div>
-    </motion.div>
+    </m.div>
   );
 }

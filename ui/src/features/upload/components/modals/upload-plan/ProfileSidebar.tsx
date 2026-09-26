@@ -95,7 +95,7 @@ export function ProfileSidebar({
 
                   <div className={cn(
 
-                    "w-1.5 h-1.5 rounded-full transition-all",
+                    "w-1.5 h-1.5 rounded-full transition-[background-color,box-shadow]",
 
                     isActive ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" : "bg-black/10 dark:bg-white/10"
 
@@ -117,7 +117,7 @@ export function ProfileSidebar({
 
                 }}
 
-                className="absolute -top-1 -right-1 z-20 !h-4 !w-4 !rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-lg focus:opacity-100"
+                className="absolute -top-1 -right-1 z-20 !h-4 !w-4 !rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-[opacity,transform] hover:scale-110 shadow-lg focus:opacity-100"
 
                 aria-label={t("upload.deleteProfile", "Delete profile")}
 

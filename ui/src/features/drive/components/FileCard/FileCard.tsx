@@ -279,7 +279,7 @@ function FileCardList(props) {
       }}
       onClick={handleSelect}
       className={cn(
-        "gd-list-row group transition-all duration-200 ease-out",
+        "gd-list-row group transition-[opacity,transform,background-color,box-shadow] duration-200 ease-out",
         isSelected && "is-selected",
         isError && "opacity-60 grayscale",
         isDragging && "opacity-40 scale-[0.98]",
@@ -533,7 +533,7 @@ function FileCardGrid(props) {
       }}
       onClick={handleSelect}
       className={cn(
-        "gd-file-card group transition-all duration-200 ease-out",
+        "gd-file-card group transition-[opacity,transform,background-color,box-shadow] duration-200 ease-out",
         isSelected && "is-selected",
         isError && "opacity-60 grayscale",
         isDragging && "opacity-40 scale-[0.95]",

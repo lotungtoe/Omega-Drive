@@ -2,12 +2,8 @@
 import { Menu } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-import { TxtSearch } from '../../../shared/ui/atoms/TxtSearch'
+import { BtnRefresh, BtnSync, BtnThemeToggle, Logo, TxtSearch } from '../../../shared/ui/atoms/buttons'
 import { Button } from '../../../components/ui/be-ui-button'
-import { BtnThemeToggle } from '../../../shared/ui/atoms/BtnThemeToggle'
-import { BtnSync } from '../../../shared/ui/atoms/BtnSync'
-import { BtnRefresh } from '../../../shared/ui/atoms/BtnRefresh'
-import { Logo } from '../../../shared/ui/atoms/Logo'
 import {
   DriveControllerContext,
   MainAppUiActionsContext,

@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useRef, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
+import { safeListen as listen } from "../../../shared/api/tauri";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   getMpvStatus,

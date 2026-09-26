@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ChevronRight, ChevronDown, Package, Settings2 } from "lucide-react";
 import { uploadPlanService } from "../services/uploadPlanService";
 import { getConnectionStatus } from "../../diagnostics/services/diagnosticsService";
@@ -235,14 +235,14 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
   }
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
       className="fixed inset-0 z-[160] flex items-center justify-center bg-black/60 p-4"
     >
-      <motion.div
+      <m.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         className="upload-plan-popup bg-[var(--gd-surface)] border border-[var(--gd-outline)] w-[920px] max-w-full max-h-[90vh] flex flex-col gap-6 overflow-hidden shadow-2xl rounded-3xl text-[var(--gd-on-surface)]"
@@ -377,10 +377,11 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
                     </Button>
 
                     {showAdvanced && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
+                      <m.div
+                        initial={{ scaleY: 0, opacity: 0 }}
+                        animate={{ scaleY: 1, opacity: 1 }}
+                        exit={{ scaleY: 0, opacity: 0 }}
+                        style={{ transformOrigin: "top" }}
                         className="overflow-hidden"
                       >
                         <div className="grid grid-cols-2 gap-6 mt-6 pb-2">
@@ -402,7 +403,7 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
                                     }
                                   }
                                 }))}
-                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-[border-color,box-shadow]"
                               />
                            </div>
 
@@ -420,7 +421,7 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
                                     advanced: { ...cur.plan.advanced, hardLimitMb: Number.parseInt(e.target.value, 10) || undefined }
                                   }
                                 }))}
-                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-[border-color,box-shadow]"
                               />
                            </div>
 
@@ -438,7 +439,7 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
                                     advanced: { ...cur.plan.advanced, fileLimitMb: Number.parseInt(e.target.value, 10) || undefined }
                                   }
                                 }))}
-                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-[border-color,box-shadow]"
                               />
                            </div>
 
@@ -458,7 +459,7 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
                                     advanced: { ...cur.plan.advanced, concurrencyThreads: Number.parseInt(e.target.value, 10) || undefined }
                                   }
                                 }))}
-                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-[border-color,box-shadow]"
                               />
                            </div>
 
@@ -478,7 +479,7 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
                                     advanced: { ...cur.plan.advanced, discordBatchSize: Number.parseInt(e.target.value, 10) || undefined }
                                   }
                                 }))}
-                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-[border-color,box-shadow]"
                               />
                            </div>
 
@@ -498,7 +499,7 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
                                     advanced: { ...cur.plan.advanced, retryCount: Number.parseInt(e.target.value, 10) || undefined }
                                   }
                                 }))}
-                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-[border-color,box-shadow]"
                               />
                            </div>
 
@@ -517,7 +518,7 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
                                     advanced: { ...cur.plan.advanced, chunkSizeMb: Number.parseInt(e.target.value, 10) || undefined }
                                   }
                                 }))}
-                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-[border-color,box-shadow]"
                               />
                            </div>
 
@@ -536,7 +537,7 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
                                     advanced: { ...cur.plan.advanced, bandwidthLimitKbps: Number.parseInt(e.target.value, 10) || undefined }
                                   }
                                 }))}
-                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-[border-color,box-shadow]"
                               />
                            </div>
 
@@ -554,7 +555,7 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
                                     advanced: { ...cur.plan.advanced, webhookUrl: e.target.value || undefined }
                                   }
                                 }))}
-                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-all font-mono"
+                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-[border-color,box-shadow] font-mono"
                               />
                            </div>
 
@@ -572,7 +573,7 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
                                     advanced: { ...cur.plan.advanced, fileLimitMb: Number.parseInt(e.target.value, 10) || 0 }
                                   }
                                 }))}
-                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-[border-color,box-shadow]"
                               />
                            </div>
 
@@ -590,11 +591,11 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
                                     advanced: { ...cur.plan.advanced, maxTotalUploadMb: Number.parseInt(e.target.value, 10) || 0 }
                                   }
                                 }))}
-                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                                className="bg-[var(--gd-surface-variant)] border border-[var(--gd-outline-variant)] rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none transition-[border-color,box-shadow]"
                               />
                            </div>
                         </div>
-                      </motion.div>
+                      </m.div>
                     )}
                   </div>
                 </div>
@@ -627,8 +628,8 @@ export function UploadPlanModal({ entries, onClose, onProceed, toast }) {
             </Button>
            </div>
         </div>
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   );
 }
 

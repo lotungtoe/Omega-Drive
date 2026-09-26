@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { isTauriRuntime } from "../api/tauri";
 import { reportUiVisibility } from "../../features/diagnostics/services/diagnosticsService";
 
 /**
@@ -11,6 +12,7 @@ export function useWindowStateTracker() {
   const windowRef = useRef(null);
 
   useEffect(() => {
+    if (!isTauriRuntime()) return;
     // Get window instance from Tauri
     try {
       windowRef.current = getCurrentWindow();

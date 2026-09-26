@@ -1,6 +1,6 @@
 
 import { useTranslation } from 'react-i18next';
-import { SortButton } from '../../../../shared/ui/atoms/SortButton';
+import { SortButton } from '../../../../shared/ui/atoms/buttons';
 
 export const ListHeader = ({ sort, setSort, dark, isShared }) => {
   const { t } = useTranslation();

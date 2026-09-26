@@ -13,13 +13,13 @@ const SUPPORTED = new Set([
 export function KreuzbergPreview({ file, onClose, onDownload, dark }) {
   const displayName = file.filename || file.name || ''
   const ext = getExt(displayName)
-
-  if (!SUPPORTED.has(ext)) return null
+  const supported = SUPPORTED.has(ext)
 
   const [content, setContent] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!supported) return
     const load = async () => {
       try {
         setLoading(true)
@@ -35,8 +35,9 @@ export function KreuzbergPreview({ file, onClose, onDownload, dark }) {
       }
     }
     load()
-  }, [file.id, file.filename, file.name])
+  }, [file.id, file.filename, file.name, supported, displayName])
 
+  if (!supported) return null
   if (loading) return null
   if (content != null) {
     return (

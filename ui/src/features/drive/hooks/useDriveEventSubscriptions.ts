@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { listen } from "@tauri-apps/api/event";
+import { safeListen as listen, isTauriRuntime } from "../../../shared/api/tauri";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { openDownloadFile, openDownloadFolder } from "../../download/services/downloadService";
 import { DriveApi } from "../../../api";
@@ -179,6 +179,7 @@ export function useDriveEventSubscriptions({
     let unlisten;
 
     const setupDropListener = async () => {
+      if (!isTauriRuntime()) return;
       try {
         const appWebview = getCurrentWebview();
         unlisten = await appWebview.onDragDropEvent((event) => {

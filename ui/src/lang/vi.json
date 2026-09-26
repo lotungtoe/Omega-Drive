@@ -154,7 +154,12 @@
     "pauseFailed": "Không thể tạm dừng tải xuống",
     "resumeFailed": "Không thể tiếp tục tải xuống",
     "cancelFailed": "Không thể hủy tải xuống",
-    "retryFailed": "Không thể tải lại"
+    "retryFailed": "Không thể tải lại",
+    "ofWord": "của",
+    "eta": ", còn {{time}}",
+    "timeSecs": "{{n}} giây",
+    "timeMins": "{{n}} ph",
+    "timeHours": "{{n}} giờ"
   },
   "upload": {
     "failed": "Tải lên thất bại.",

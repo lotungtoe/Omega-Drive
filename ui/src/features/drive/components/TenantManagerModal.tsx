@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/be-ui-button'
@@ -96,7 +96,7 @@ export function TenantManagerModal({
             }}
           />
 
-      <motion.div
+      <m.div
         role="dialog"
         aria-modal="true"
         initial={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -193,7 +193,7 @@ export function TenantManagerModal({
             ))
           )}
         </div>
-      </motion.div>
+      </m.div>
     </div>
   )
 }

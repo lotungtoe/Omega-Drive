@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/react";
 import { featureLog } from "../featureLog";
 import { normalizeError } from "./normalizeError";
 import type { AppError } from "./types";
@@ -48,17 +47,6 @@ export function reportError(
     stack: appErr.stack,
     retryable: appErr.retryable,
   };
-
-  if (typeof Sentry?.captureException === "function") {
-    Sentry.captureException(appErr, {
-      tags: {
-        feature,
-        action: action || "error",
-        errorCode: appErr.code,
-      },
-      extra: payload,
-    });
-  }
 
   featureLog(feature, "error", action || "error", payload);
   console.error("[AppError]", payload, appErr);

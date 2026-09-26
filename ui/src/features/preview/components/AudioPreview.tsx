@@ -1,5 +1,5 @@
 ﻿import { useState, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { invoke } from '@tauri-apps/api/core'
 import { 
   X, Download, Play, Pause, SkipForward, SkipBack, 
@@ -87,7 +87,7 @@ export function AudioPreview({ file, onClose, onDownload }) {
   }
 
   return (
-    <motion.div 
+    <m.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -121,7 +121,7 @@ export function AudioPreview({ file, onClose, onDownload }) {
         </div>
 
         <div className="flex items-center gap-3">
-          <button type="button" onClick={onDownload} className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all hover:scale-105 active:scale-95">
+          <button type="button" onClick={onDownload} className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-[background-color,transform] hover:scale-105 active:scale-95">
             <Download size={14} /> {t('drive.download')}
           </button>
           <button type="button" onClick={onClose} className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors">
@@ -160,7 +160,7 @@ export function AudioPreview({ file, onClose, onDownload }) {
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center p-12 lg:p-24 relative">
-          <motion.div 
+          <m.div 
             animate={{ scale: playing ? [1, 1.15, 1] : 1, opacity: playing ? [0.4, 0.7, 0.4] : 0.4 }}
             transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
             className="absolute rounded-full blur-[80px]"
@@ -168,7 +168,7 @@ export function AudioPreview({ file, onClose, onDownload }) {
           />
 
           <div className="relative group">
-            <motion.div 
+            <m.div 
               animate={{ rotate: playing ? 360 : 0 }}
               transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
               className="relative w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 rounded-full bg-[#111318] shadow-2xl flex items-center justify-center p-2 border border-white/10"
@@ -183,12 +183,12 @@ export function AudioPreview({ file, onClose, onDownload }) {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           </div>
 
           <div className="mt-12 text-center max-w-2xl">
-            <motion.h1 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-3xl md:text-5xl font-bold tracking-tight mb-2 truncate">{displayName}</motion.h1>
-            <motion.p initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="text-white/60 text-lg font-medium">{t('preview.unknownArtist', 'Unknown Artist')}</motion.p>
+            <m.h1 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-3xl md:text-5xl font-bold tracking-tight mb-2 truncate">{displayName}</m.h1>
+            <m.p initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="text-white/60 text-lg font-medium">{t('preview.unknownArtist', 'Unknown Artist')}</m.p>
           </div>
         </div>
       </div>
@@ -218,7 +218,7 @@ export function AudioPreview({ file, onClose, onDownload }) {
               }
             }}
           >
-            <motion.div 
+            <m.div 
               className="absolute left-0 top-0 h-full rounded-full"
               style={{ 
                 width: `${progress}%`,
@@ -246,7 +246,7 @@ export function AudioPreview({ file, onClose, onDownload }) {
           <div className="flex items-center justify-center gap-6">
             <button type="button" onClick={() => setShuffle(!shuffle)} className={cn("p-2 transition-colors", shuffle ? "text-primary" : "text-white/40 hover:text-white")} style={shuffle ? { color } : {}}><Shuffle size={18} /></button>
             <button type="button" className="text-white/60 hover:text-white transition-colors"><SkipBack size={24} fill="currentColor" /></button>
-            <button type="button" onClick={togglePlay} disabled={loading} className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg disabled:opacity-50 disabled:hover:scale-100">{renderPlayIcon()}</button>
+            <button type="button" onClick={togglePlay} disabled={loading} className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-[transform,opacity] shadow-lg disabled:opacity-50 disabled:hover:scale-100">{renderPlayIcon()}</button>
             <button type="button" className="text-white/60 hover:text-white transition-colors"><SkipForward size={24} fill="currentColor" /></button>
             <button type="button" onClick={() => {
                 const modes = ['none', 'all', 'one']
@@ -266,6 +266,6 @@ export function AudioPreview({ file, onClose, onDownload }) {
           </div>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { listen } from "@tauri-apps/api/event";
+import { safeListen as listen, isTauriRuntime } from "../../../shared/api/tauri";
 import { onOpenUrl } from "@tauri-apps/plugin-deep-link";
 
 export function useDeepLink(handlePlay, driveFiles) {
@@ -26,6 +26,7 @@ export function useDeepLink(handlePlay, driveFiles) {
     };
 
     const initDeepLink = async () => {
+      if (!isTauriRuntime()) return;
       try {
         unlisten = await onOpenUrl((urls) => {
           if (!isMounted) return;

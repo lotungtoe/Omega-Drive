@@ -38,7 +38,7 @@ function FileGridComponent({
   const uiActions = useContext(MainAppUiActionsContext)
   const driveController = useContext(DriveControllerContext)
   const containerRef = useRef(null)
-  const prevFilesRef = useRef(null)
+  const [prevFiles, setPrevFiles] = useState(null)
   const [scrollTop, setScrollTop] = useState(0)
   const [selectedId, setSelectedId] = useState(null)
 
@@ -64,8 +64,8 @@ function FileGridComponent({
   const resolvedLoadMore = useMemo(() => loadMore ?? driveController?.loadMore ?? (() => {}), [loadMore, driveController?.loadMore])
   const resolvedLoadingMore = loadingMore ?? driveController?.loadingMore ?? false
 
-  if (resolvedFiles !== prevFilesRef.current) {
-    prevFilesRef.current = resolvedFiles
+  if (resolvedFiles !== prevFiles) {
+    setPrevFiles(resolvedFiles)
     setSelectedId(null)
   }
 

@@ -67,6 +67,74 @@ export function handleMockCall(cmd: string, args: MockArgs = {}): unknown {
         telegram: { authorized: false },
       };
 
+    case "get_transfers_paginated":
+      return {
+        files: [
+          {
+            id: 301,
+            filename: "Design_Spec_v2.pdf",
+            kind: "document",
+            size: 15728640,
+            status: "uploading",
+            local_path: "C:/Users/Admin/Documents/Design_Spec_v2.pdf",
+          },
+          {
+            id: 302,
+            filename: "Keynote_Final.mp4",
+            kind: "video",
+            size: 536870912,
+            status: "processing",
+            local_path: null,
+          },
+        ],
+        next_cursor: null,
+        has_more: false,
+      };
+
+    case "list_download_jobs":
+      return [
+        {
+          id: 400,
+          target_path: "C:/Users/Admin/Downloads/ubuntu-26.04.1-desktop-amd64.iso",
+          state: "downloading",
+          done_parts: 2,
+          total_parts: 48,
+          speed_bps: 9750000,
+          bytes_done: 58720256,
+          bytes_total: 6442450944,
+          eta_secs: 655,
+          error_code: null,
+          error: null,
+        },
+        {
+          id: 401,
+          target_path: "C:/Users/Admin/Downloads/Dataset_2026.zip",
+          state: "downloading",
+          done_parts: 7,
+          total_parts: 12,
+          error_code: null,
+          error: null,
+        },
+        {
+          id: 402,
+          target_path: "C:/Users/Admin/Downloads/Trailer_4K.mkv",
+          state: "paused",
+          done_parts: 3,
+          total_parts: 20,
+          error_code: null,
+          error: null,
+        },
+        {
+          id: 403,
+          target_path: "C:/Users/Admin/Downloads/Backup_Photos.tar",
+          state: "failed",
+          done_parts: 5,
+          total_parts: 9,
+          error_code: "E_NETWORK",
+          error: "Cannot connect to service.",
+        },
+      ];
+
     case "get_version":
       return { version: "1.0.0-mock" };
 

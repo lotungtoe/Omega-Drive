@@ -11,12 +11,21 @@ vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(async () => []),
 }));
 
-vi.mock("framer-motion", () => ({
-  AnimatePresence: ({ children }) => <>{children}</>,
-  motion: {
-    div: ({ children, ...props }) => <div {...props}>{children}</div>,
-  },
-}));
+vi.mock("framer-motion", () => {
+  const div = ({ children, ...props }) => <div {...props}>{children}</div>;
+  const span = ({ children, ...props }) => <span {...props}>{children}</span>;
+  return {
+    AnimatePresence: ({ children }) => <>{children}</>,
+    motion: { div },
+    m: {
+      div,
+      span,
+      h1: ({ children, ...props }) => <h1 {...props}>{children}</h1>,
+      p: ({ children, ...props }) => <p {...props}>{children}</p>,
+      button: ({ children, ...props }) => <button {...props}>{children}</button>,
+    },
+  };
+});
 
 vi.mock("./PdfPreview", () => ({
   PdfPreview: ({ file, onDownload }) => (

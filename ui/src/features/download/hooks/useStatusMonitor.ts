@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { listen } from "@tauri-apps/api/event";
+import { safeListen as listen } from "../../../shared/api/tauri";
 import { getConnectionStatus } from '../../diagnostics/services/diagnosticsService';
 
 /**

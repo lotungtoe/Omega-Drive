@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { DriveApi } from '../../../api/index'
 import { toUserMessage } from '../../../shared/services/errors/toUserMessage'
@@ -389,13 +389,13 @@ export function ProviderOnboardingModal({
   }, [state, preferredScope])
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[180] flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm"
     >
-      <motion.div
+      <m.div
         initial={{ scale: 0.96, y: 10 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.96, y: 10 }}
@@ -484,8 +484,8 @@ export function ProviderOnboardingModal({
             {t('onboarding.skip', 'Bo qua')}
           </Button>
         </div>
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   )
 }
 

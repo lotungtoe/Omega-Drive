@@ -153,7 +153,12 @@
     "pauseFailed": "Failed to pause download",
     "resumeFailed": "Failed to resume download",
     "cancelFailed": "Failed to cancel download",
-    "retryFailed": "Failed to retry download"
+    "retryFailed": "Failed to retry download",
+    "ofWord": "of",
+    "eta": ", {{time}} left",
+    "timeSecs": "{{n}}s",
+    "timeMins": "{{n}} min",
+    "timeHours": "{{n}} hr"
   },
   "upload": {
     "failed": "Upload failed.",
