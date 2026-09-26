@@ -36,8 +36,30 @@ jobs:
           name: frontend-dist
           path: ui/dist/
 
+  lint:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: x86_64-pc-windows-msvc
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: true
+      - name: Clippy (deny ptr_arg — no &Arc<T> params)
+        run: cargo clippy --workspace --all-targets -- -D clippy::ptr_arg
+      - name: Forbid Arc nesting regressions
+        shell: pwsh
+        run: |
+          $bad1 = Get-ChildItem -Recurse -Filter *.rs src-tauri/crates | Select-String -Pattern '&Arc<'
+          $bad2 = Get-ChildItem -Recurse -Filter *.rs src-tauri/crates | Select-String -Pattern 'Arc<\s*(std::sync::)?(RwLock|Mutex)<\s*(Option<\s*)?Arc<'
+          if ($bad1 -or $bad2) { $bad1; $bad2; exit 1 }
+
   build:
-    needs: frontend
+    needs: [frontend, lint]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
