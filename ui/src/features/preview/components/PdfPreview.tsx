@@ -3,6 +3,7 @@ import { Download, Loader2, AlertCircle, FileText, ChevronLeft, ChevronRight, Zo
 import { useTranslation } from 'react-i18next'
 import { invoke } from '@tauri-apps/api/core'
 import { getColor, formatSize } from '../../../shared/utils'
+import { PreviewErrorState } from './PreviewErrorState'
 import { Document, Page, pdfjs } from 'react-pdf'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
@@ -29,26 +30,31 @@ export function PdfPreview({ file, onClose: _onClose, onDownload }) {
   const containerRef = useRef(null)
 
   useEffect(() => {
+    let cancelled = false
     const loadPdf = async () => {
       try {
         setLoading(true)
         setError(null)
         
         const binaryData = await invoke('retrieve_full_file', { fileId: file.id })
+        if (cancelled) return
         
         // Pass the raw Uint8Array data directly to react-pdf instead of ObjectURL 
         // to avoid some CORS/ObjectURL restrictions in webviews
         setPdfData({ data: new Uint8Array(binaryData as any) })
       } catch (err) {
+        if (cancelled) return
         console.error("Failed to load PDF preview:", err)
         setError(err.toString())
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     loadPdf()
-    return undefined
+    return () => {
+      cancelled = true
+    }
   }, [file.id])
 
   const onDocumentLoadSuccess = ({ numPages }) => {
@@ -192,24 +198,7 @@ export function PdfPreview({ file, onClose: _onClose, onDownload }) {
         )}
 
         {error ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
-              <AlertCircle className="w-8 h-8 text-red-500" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-              {t('preview.errorTitle', 'Cannot preview')}
-            </h3>
-            <p className="text-slate-500 max-w-sm mb-6">
-              {error}
-            </p>
-            <button type="button"
-              onClick={() => onDownload(file)}
-              className="flex items-center gap-2 px-6 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-medium transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              {t('common.download', 'Download file')}
-            </button>
-          </div>
+          <PreviewErrorState error={error} file={file} onDownload={onDownload} />
         ) : (
           pdfData && (
             <div className="shadow-2xl ring-1 ring-slate-900/5 dark:ring-white/10 bg-white">

@@ -16,10 +16,10 @@ function tenantLabel(tenant) {
 
 export function TenantScopeDropdown({
   scope,
-  tenants,
-  activeTenant,
-  loading,
-  disabled,
+  tenants = [],
+  activeTenant = null,
+  loading = false,
+  disabled = false,
   onSelectTenant,
   onOpenManager,
   onOpenSetup,
@@ -91,13 +91,5 @@ export function TenantScopeDropdown({
       </button>
     </div>
   )
-}
-
-TenantScopeDropdown.defaultProps = {
-  tenants: [],
-  activeTenant: null,
-  loading: false,
-  disabled: false,
-  onOpenManager: undefined,
 }
 

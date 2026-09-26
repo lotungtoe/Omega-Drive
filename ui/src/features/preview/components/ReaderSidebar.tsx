@@ -167,10 +167,11 @@ export function ReaderSidebar({ show, onClose, displayName, nav, spine, currentC
           )}
 
           {activeTab === 'history' && (
-            recentHistory.length > 0 ? recentHistory.map((entry, i) => {
+            recentHistory.length > 0 ? recentHistory.map((entry) => {
               const chIndex = typeof entry === 'number' ? entry : (entry.index ?? findChapterIndex(entry.path ?? ''))
+              const entryKey = typeof entry === 'number' ? `h${entry}` : `h${entry.path ?? chIndex}`
               return (
-                <button key={i} type="button" onClick={() => onChapterClick(chIndex)}
+                <button key={entryKey} type="button" onClick={() => onChapterClick(chIndex)}
                   className="w-full text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
                   <div className="font-medium">{entry.title || t('reader.chapter', { n: chIndex + 1 })}</div>
                 </button>

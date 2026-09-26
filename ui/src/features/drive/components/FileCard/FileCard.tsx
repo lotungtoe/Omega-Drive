@@ -189,6 +189,85 @@ function ListActions({
   )
 }
 
+function MenuItem({ icon, label, danger, itemStyle, onSelect, setMenuOpen }) {
+  return (
+    <button
+      type="button"
+      className={cn("gd-menu-item", danger && "danger")}
+      style={itemStyle}
+      onClick={() => { onSelect(); setMenuOpen(false) }}
+    >
+      {icon} {label}
+    </button>
+  )
+}
+
+function FolderMenuItems({ fileId, setCurrentFolderId, t, setMenuOpen }) {
+  return (
+    <MenuItem
+      icon={<Eye size={18} />}
+      label={t('drive.openFolder')}
+      onSelect={() => setCurrentFolderId(fileId)}
+      setMenuOpen={setMenuOpen}
+    />
+  )
+}
+
+function FileMenuItems({
+  canPlayVideo, isTrashed, isStarred, isSharedFile,
+  onPlay, onRestore, onPreview, onDownload, onToggleStar, onForward,
+  t, setMenuOpen,
+}) {
+  if (isTrashed) {
+    return (
+      <MenuItem
+        icon={<RotateCcw size={18} />}
+        label={t('drive.restore')}
+        onSelect={onRestore}
+        setMenuOpen={setMenuOpen}
+      />
+    )
+  }
+  return (
+    <>
+      {canPlayVideo && (
+        <MenuItem
+          icon={<Play size={18} />}
+          label={t('player.play')}
+          onSelect={onPlay}
+          setMenuOpen={setMenuOpen}
+        />
+      )}
+      <MenuItem
+        icon={<Eye size={18} />}
+        label={t('drive.preview')}
+        onSelect={onPreview}
+        setMenuOpen={setMenuOpen}
+      />
+      <MenuItem
+        icon={<Download size={18} />}
+        label={t('drive.download')}
+        onSelect={onDownload}
+        setMenuOpen={setMenuOpen}
+      />
+      <MenuItem
+        icon={<Star size={18} fill={isStarred ? '#fbbc04' : 'none'} color={isStarred ? '#fbbc04' : 'currentColor'} />}
+        label={isStarred ? t('drive.unstar') : t('drive.star')}
+        onSelect={onToggleStar}
+        setMenuOpen={setMenuOpen}
+      />
+      {!isSharedFile && (
+        <MenuItem
+          icon={<Copy size={18} />}
+          label={t('drive.moveToShared')}
+          onSelect={onForward}
+          setMenuOpen={setMenuOpen}
+        />
+      )}
+    </>
+  )
+}
+
 function GridMenu({ 
   isFolder, isVideo, isStarred, isTrashed, status, fileId, isSharedFile,
   setCurrentFolderId, onPlay, onRestore, onPreview, onDownload, onToggleStar, onDelete, onResume, onForward, setMenuOpen 
@@ -204,49 +283,44 @@ function GridMenu({
       style={{ position: 'absolute', right: 0, top: 32, zIndex: 50 }}
     >
       {isFolder ? (
-        <button type="button" className="gd-menu-item" onClick={() => { setCurrentFolderId(fileId); setMenuOpen(false) }}>
-          <Eye size={18} /> {t('drive.openFolder')}
-        </button>
+        <FolderMenuItems
+          fileId={fileId}
+          setCurrentFolderId={setCurrentFolderId}
+          t={t}
+          setMenuOpen={setMenuOpen}
+        />
       ) : (
-        <>
-          {canPlayVideo && (
-            <button type="button" className="gd-menu-item" onClick={() => { onPlay(); setMenuOpen(false) }}>
-              <Play size={18} /> {t('player.play')}
-            </button>
-          )}
-          {isTrashed ? (
-            <button type="button" className="gd-menu-item" onClick={() => { onRestore(); setMenuOpen(false) }}>
-              <RotateCcw size={18} /> {t('drive.restore')}
-            </button>
-          ) : (
-            <>
-              <button type="button" className="gd-menu-item" onClick={() => { onPreview(); setMenuOpen(false) }}>
-                <Eye size={18} /> {t('drive.preview')}
-              </button>
-              <button type="button" className="gd-menu-item" onClick={() => { onDownload(); setMenuOpen(false) }}>
-                <Download size={18} /> {t('drive.download')}
-              </button>
-              <button type="button" className="gd-menu-item" onClick={() => { onToggleStar(); setMenuOpen(false) }}>
-                <Star size={18} fill={isStarred ? '#fbbc04' : 'none'} color={isStarred ? '#fbbc04' : 'currentColor'} /> 
-                {isStarred ? t('drive.unstar') : t('drive.star')}
-              </button>
-              {!isSharedFile && (
-                <button type="button" className="gd-menu-item" onClick={() => { onForward(); setMenuOpen(false) }}>
-                  <Copy size={18} /> {t('drive.moveToShared')}
-                </button>
-              )}
-            </>
-          )}
-        </>
+        <FileMenuItems
+          canPlayVideo={canPlayVideo}
+          isTrashed={isTrashed}
+          isStarred={isStarred}
+          isSharedFile={isSharedFile}
+          onPlay={onPlay}
+          onRestore={onRestore}
+          onPreview={onPreview}
+          onDownload={onDownload}
+          onToggleStar={onToggleStar}
+          onForward={onForward}
+          t={t}
+          setMenuOpen={setMenuOpen}
+        />
       )}
       <div className="gd-menu-divider" />
-      <button type="button" className="gd-menu-item danger" onClick={() => { onDelete(); setMenuOpen(false) }}>
-        <Trash2 size={18} /> {isTrashed ? t('drive.deleteForever') : t('common.delete')}
-      </button>
+      <MenuItem
+        icon={<Trash2 size={18} />}
+        label={isTrashed ? t('drive.deleteForever') : t('common.delete')}
+        danger
+        onSelect={onDelete}
+        setMenuOpen={setMenuOpen}
+      />
       {canResumeUpload && (
-        <button type="button" className="gd-menu-item" style={{ color: '#fb8c00' }} onClick={() => { onResume(); setMenuOpen(false) }}>
-          <Play size={18} fill="#fb8c00" /> {t('upload.resumeUpload')}
-        </button>
+        <MenuItem
+          icon={<Play size={18} fill="#fb8c00" />}
+          label={t('upload.resumeUpload')}
+          itemStyle={{ color: '#fb8c00' }}
+          onSelect={onResume}
+          setMenuOpen={setMenuOpen}
+        />
       )}
     </div>
   )

@@ -34,7 +34,7 @@ export function NewFolderModal({ onClose, onCreate }) {
           value={name}
           onChange={e => setName(e.target.value)}
           onKeyDown={e => {
-            if (e.key === 'Enter') submit()
+            if (e.key === 'Enter' && !e.nativeEvent.isComposing) submit()
             if (e.key === 'Escape') onClose()
           }}
           placeholder={t('modal.newFolder.placeholder')}

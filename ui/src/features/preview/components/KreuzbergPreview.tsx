@@ -20,6 +20,7 @@ export function KreuzbergPreview({ file, onClose, onDownload, dark }) {
 
   useEffect(() => {
     if (!supported) return
+    let cancelled = false
     const load = async () => {
       try {
         setLoading(true)
@@ -27,14 +28,18 @@ export function KreuzbergPreview({ file, onClose, onDownload, dark }) {
           fileId: file.id,
           filename: displayName,
         })
+        if (cancelled) return
         setContent(result.content as string)
       } catch {
-        setContent(null)
+        if (!cancelled) setContent(null)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
     load()
+    return () => {
+      cancelled = true
+    }
   }, [file.id, file.filename, file.name, supported, displayName])
 
   if (!supported) return null

@@ -2,7 +2,7 @@
 import { m } from "framer-motion";
 import { cn } from "../../../../../shared/utils/index";
 import { Button } from "../../../../../components/ui/be-ui-button";
-import { Icons } from "./Icons";
+import { DiscordIcon, TelegramIcon } from "./Icons";
 
 export function ProviderSelector({ 
   providerMode, 
@@ -12,8 +12,8 @@ export function ProviderSelector({
   const { t } = useTranslation();
 
   const providers = [
-    { id: "discord", icon: <Icons.Discord />, label: "Discord", available: true },
-    { id: "telegram", icon: <Icons.Telegram />, label: "Telegram", available: telegramAuthorized }
+    { id: "discord", icon: <DiscordIcon />, label: "Discord", available: true },
+    { id: "telegram", icon: <TelegramIcon />, label: "Telegram", available: telegramAuthorized }
   ];
 
   const handleKeyDown = (e, provider) => {

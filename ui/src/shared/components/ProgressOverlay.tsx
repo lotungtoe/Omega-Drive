@@ -117,7 +117,6 @@ export const ProgressOverlay = memo(function ProgressOverlay({ progressMap, onCl
           alignItems: 'center', 
           justifyContent: 'space-between',
           padding: '12px 16px',
-          cursor: 'pointer',
           userSelect: 'none'
         }}
         onClick={() => setIsMinimized(!isMinimized)}
@@ -127,11 +126,15 @@ export const ProgressOverlay = memo(function ProgressOverlay({ progressMap, onCl
         </h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button type="button" 
+            aria-expanded={!isMinimized}
+            aria-label={t('progress.toggleDetails', { defaultValue: 'Toggle upload details' })}
+            onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }}
             style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', color: 'var(--gd-on-surface-variant)', display: 'flex' }}
           >
             {isMinimized ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </button>
           <button type="button" 
+            aria-label={t('progress.close', { defaultValue: 'Close progress panel' })}
             onClick={(e) => { e.stopPropagation(); onClose(); }} 
             style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', color: 'var(--gd-on-surface-variant)', display: 'flex' }}
           >

@@ -442,6 +442,16 @@ export function MainAppContent() {
     };
   }, [uiState.activeSection, uiState.onboardingVisible]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const el = document.getElementById("main-scroll-container");
+      if (el && globalThis.__GD_SCROLL_TOP) {
+        el.scrollTop = globalThis.__GD_SCROLL_TOP;
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [uiState.activeSection, driveController.currentFolderId]);
+
   const isDefaultTenant = useCallback((tenant) => {
     if (!tenant) return false;
     return (tenant.discordGuildId || "0") === "0" && (tenant.telegramGroupId || "0") === "0";
@@ -656,19 +666,6 @@ export function MainAppContent() {
                 <FileGrid {...({ files: sorted, hasMore: listHasMore, loadMore, loadingMore } as any)} />
               )}
             </div>
-
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `
-                  setTimeout(() => {
-                    const el = document.getElementById("main-scroll-container");
-                    if (el && globalThis.__GD_SCROLL_TOP) {
-                      el.scrollTop = globalThis.__GD_SCROLL_TOP;
-                    }
-                  }, 50);
-                `,
-              }}
-            />
           </div>
         </main>
 

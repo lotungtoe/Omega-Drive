@@ -13,10 +13,11 @@ export function useStatusMonitor(isLite = false) {
   useEffect(() => {
     if (isLite) return;
 
+    let cancelled = false;
     // 1. Listen for events pushed from Backend (Instant feedback)
     let unlisten;
     const setupListener = async () => {
-      unlisten = await listen("omega-event", (event) => {
+      const u = await listen("omega-event", (event) => {
         const payload = event.payload as Record<string, any> | null;
         // Handle variant DiscordConnectionStatusChanged(bool)
         if (payload?.type === "DiscordConnectionStatusChanged") {
@@ -29,6 +30,11 @@ export function useStatusMonitor(isLite = false) {
           setTelegramOnline(isConnected);
         }
       });
+      if (cancelled) {
+        u();
+        return;
+      }
+      unlisten = u;
     };
     setupListener();
 
@@ -36,6 +42,7 @@ export function useStatusMonitor(isLite = false) {
     const check = async () => {
       try {
         const st = await getConnectionStatus() as Record<string, any> | null;
+        if (cancelled) return;
         setDiscordOnline(st?.discord?.connected ?? false);
         setTelegramOnline(st?.telegram?.authorized ?? false);
       } catch (err) {
@@ -46,6 +53,7 @@ export function useStatusMonitor(isLite = false) {
     check();
 
     return () => {
+      cancelled = true;
       if (unlisten) unlisten();
     };
   }, [isLite]);

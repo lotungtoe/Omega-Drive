@@ -213,9 +213,30 @@ export default function NativePlayerOverlay() {
       <div
         ref={seekBarRef}
         className="mpv-seek-bar"
+        role="slider"
+        tabIndex={0}
+        aria-label="Seek"
+        aria-valuemin={0}
+        aria-valuemax={Math.round(status.duration)}
+        aria-valuenow={Math.round(displayPos)}
         onMouseDown={(event) => {
           setSeeking(true);
           updateSeekFromEvent(event);
+        }}
+        onKeyDown={(event) => {
+          const step = 5;
+          if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+            event.preventDefault();
+            const delta = event.key === "ArrowLeft" ? -step : step;
+            const next = Math.max(0, Math.min(status.duration, displayPos + delta));
+            void runAction("mpv_seek", () => seekMpv(next));
+          } else if (event.key === "Home") {
+            event.preventDefault();
+            void runAction("mpv_seek", () => seekMpv(0));
+          } else if (event.key === "End") {
+            event.preventDefault();
+            void runAction("mpv_seek", () => seekMpv(status.duration));
+          }
         }}
       >
         <div className="mpv-seek-track">

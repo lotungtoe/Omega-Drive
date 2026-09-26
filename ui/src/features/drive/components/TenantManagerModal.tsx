@@ -40,9 +40,9 @@ function getSwitchButtonStyle(isActive) {
 
 export function TenantManagerModal({
   scope,
-  tenants,
-  activeTenant,
-  loading,
+  tenants = [],
+  activeTenant = null,
+  loading = false,
   onClose,
   onSwitchTenant,
   onRenameTenant,
@@ -80,11 +80,8 @@ export function TenantManagerModal({
         padding: 24,
       }}
     >
-      {/* Backdrop overlay */}
+      {/* Backdrop overlay (mouse-only affordance; keyboard users close via Escape or the close button) */}
           <div
-            role="button"
-            tabIndex={-1}
-            aria-label="Close modal"
             onClick={onClose}
             style={{
               position: 'absolute',
@@ -196,12 +193,6 @@ export function TenantManagerModal({
       </m.div>
     </div>
   )
-}
-
-TenantManagerModal.defaultProps = {
-  tenants: [],
-  activeTenant: null,
-  loading: false,
 }
 
 function TenantItem({

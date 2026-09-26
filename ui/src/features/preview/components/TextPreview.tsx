@@ -1,8 +1,9 @@
 ﻿import { useState, useEffect } from 'react'
-import { Download, Loader2, AlertCircle, FileText } from 'lucide-react'
+import { Download, Loader2, FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { invoke } from '@tauri-apps/api/core'
 import { getColor, formatSize, getExt } from '../../../shared/utils'
+import { PreviewErrorState } from './PreviewErrorState'
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
@@ -35,6 +36,7 @@ export function TextPreview({ file, onClose: _onClose, onDownload, preloadedCont
   const isDarkMode = document.documentElement.classList.contains('dark')
 
   useEffect(() => {
+    let cancelled = false
     const loadText = async () => {
       try {
         setLoading(true)
@@ -52,19 +54,24 @@ export function TextPreview({ file, onClose: _onClose, onDownload, preloadedCont
         }
 
         const binaryData = await invoke('retrieve_full_file', { fileId: file.id })
+        if (cancelled) return
         
         const decoder = new TextDecoder('utf-8')
         const text = decoder.decode(new Uint8Array(binaryData as any))
         setContent(text)
       } catch (err) {
+        if (cancelled) return
         console.error("Failed to load text preview:", err)
         setError(err.toString())
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     loadText()
+    return () => {
+      cancelled = true
+    }
   }, [file.id, file.size, preloadedContent])
 
   return (
@@ -105,24 +112,7 @@ export function TextPreview({ file, onClose: _onClose, onDownload, preloadedCont
         )}
 
         {error ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
-              <AlertCircle className="w-8 h-8 text-red-500" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-              {t('preview.errorTitle', 'Cannot preview')}
-            </h3>
-            <p className="text-slate-500 max-w-sm mb-6">
-              {error}
-            </p>
-            <button type="button"
-              onClick={() => onDownload(file)}
-              className="flex items-center gap-2 px-6 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-medium transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              {t('common.download', 'Download file')}
-            </button>
-          </div>
+          <PreviewErrorState error={error} file={file} onDownload={onDownload} />
         ) : (
           <div className="min-h-full p-4">
             <SyntaxHighlighter

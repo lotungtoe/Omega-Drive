@@ -3600,13 +3600,11 @@ dependencies = [
 name = "omega_drive_backup"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "chrono",
  "futures-util",
  "omega_drive_gateway",
  "serde",
  "serde_json",
- "tokio",
  "tracing",
  "zstd",
 ]
@@ -3616,11 +3614,9 @@ name = "omega_drive_book_bridge"
 version = "0.1.0"
 dependencies = [
  "axum",
- "chrono",
  "flate2",
  "omega_drive_gateway",
  "serde",
- "serde_json",
  "tokio",
  "tower-http",
  "tracing",
@@ -3632,9 +3628,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "bytes",
  "chrono",
- "futures-util",
  "infer",
  "omega_drive_gateway",
  "serde",
@@ -3647,10 +3641,8 @@ dependencies = [
 name = "omega_drive_db"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-trait",
  "chrono",
- "futures-util",
  "omega_drive_gateway",
  "rusqlite",
  "serde",
@@ -3666,13 +3658,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "base64 0.22.1",
- "bytes",
  "chrono",
- "futures-util",
  "omega_drive_gateway",
  "reqwest 0.12.28",
- "serde",
  "serde_json",
  "serenity",
  "tokio",
@@ -3692,7 +3680,6 @@ dependencies = [
  "omega_drive_gateway",
  "parking_lot",
  "reqwest 0.12.28",
- "serde",
  "serde_json",
  "tokio",
  "tokio-util",
@@ -3707,7 +3694,6 @@ dependencies = [
  "base64 0.22.1",
  "futures-util",
  "omega_drive_gateway",
- "serde",
  "serde_json",
  "tokio",
  "tracing",
@@ -3720,7 +3706,6 @@ dependencies = [
  "anyhow",
  "async-trait",
  "blake3",
- "bytes",
  "omega_drive_gateway",
  "tokio",
  "zip 2.4.2",
@@ -3766,7 +3751,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
- "tokio-util",
  "tower-http",
  "tracing",
 ]
@@ -3795,7 +3779,6 @@ dependencies = [
  "omega_drive_updater",
  "omega_drive_upload",
  "open",
- "reqwest 0.12.28",
  "rusqlite",
  "rxing",
  "serde",
@@ -3825,7 +3808,6 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bytes",
- "chrono",
  "fs2",
  "futures-util",
  "grammers-client",
