@@ -61,14 +61,22 @@ async fn install_telegram(ctx: ProviderInstallContext) -> AppResult<ProviderInst
 }
 
 #[cfg(feature = "telegram")]
-fn has_telegram_env() -> bool {
+fn telegram_creds() -> Option<(String, i32, String)> {
     let phone = std::env::var("TELEGRAM_PHONE").unwrap_or_default();
     let api_id: i32 = std::env::var("TELEGRAM_API_ID")
         .unwrap_or_default()
         .parse()
         .unwrap_or(0);
     let api_hash = std::env::var("TELEGRAM_API_HASH").unwrap_or_default();
-    !phone.is_empty() && api_id != 0 && !api_hash.is_empty()
+    if phone.is_empty() || api_id == 0 || api_hash.is_empty() {
+        return None;
+    }
+    Some((phone, api_id, api_hash))
+}
+
+#[cfg(feature = "telegram")]
+fn has_telegram_env() -> bool {
+    telegram_creds().is_some()
 }
 
 #[cfg(feature = "telegram")]
@@ -79,15 +87,9 @@ async fn connect_telegram(
     let Some(chat_id) = chat_id else {
         return Ok(None);
     };
-    if !has_telegram_env() {
+    let Some((phone, api_id, api_hash)) = telegram_creds() else {
         return Ok(None);
-    }
-    let phone = std::env::var("TELEGRAM_PHONE").unwrap_or_default();
-    let api_id: i32 = std::env::var("TELEGRAM_API_ID")
-        .unwrap_or_default()
-        .parse()
-        .unwrap_or(0);
-    let api_hash = std::env::var("TELEGRAM_API_HASH").unwrap_or_default();
+    };
 
     let session_path = omega_drive_telegram::telegram_session::telegram_session_path(base_dir)
         .to_string_lossy()

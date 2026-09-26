@@ -2,25 +2,18 @@ use std::{
     collections::HashMap,
     fs, io,
     path::{Path, PathBuf},
-    sync::{Mutex, OnceLock},
+    sync::Mutex,
 };
 
 use anyhow::Context;
 use futures_util::future::BoxFuture;
 use grammers_session::{
     types::{
-        ChannelKind, ChannelState, DcOption, PeerAuth, PeerId, PeerInfo, PeerKind, UpdateState,
+        ChannelState, DcOption, PeerId, PeerInfo, PeerKind, UpdateState,
         UpdatesState,
     },
     Session, SessionData,
 };
-use omega_drive_gateway::provider::legacy_session::LegacySessionReader;
-
-static LEGACY_READER: OnceLock<Box<dyn LegacySessionReader + Send + Sync>> = OnceLock::new();
-
-pub fn init_legacy_reader(reader: Box<dyn LegacySessionReader + Send + Sync>) {
-    let _ = LEGACY_READER.set(reader);
-}
 
 pub(crate) const TELEGRAM_SESSION_FILE_NAME: &str = "tg.session.json";
 pub(crate) const LEGACY_TELEGRAM_SESSION_FILE_NAME: &str = "tg.session";
@@ -105,7 +98,7 @@ pub fn legacy_telegram_session_path(base_dir: &Path) -> PathBuf {
 impl FileTelegramSession {
     pub(crate) fn open<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let path = path.as_ref().to_path_buf();
-        let state = load_or_migrate_state(&path).with_context(|| {
+        let state = load_state(&path).with_context(|| {
             format!(
                 "Khong the khoi phuc session Telegram tai {}",
                 path.display()
@@ -228,7 +221,7 @@ impl Session for FileTelegramSession {
     }
 }
 
-fn load_or_migrate_state(path: &Path) -> io::Result<RuntimeTelegramSessionState> {
+fn load_state(path: &Path) -> io::Result<RuntimeTelegramSessionState> {
     if path.exists() {
         return load_json_state(path).or_else(|err| {
             tracing::warn!(
@@ -240,64 +233,7 @@ fn load_or_migrate_state(path: &Path) -> io::Result<RuntimeTelegramSessionState>
         });
     }
 
-    if let Some(legacy_path) = legacy_path_for_json(path) {
-        if legacy_path.exists() {
-            let migrated = try_migrate_legacy(&legacy_path).or_else(|err| {
-                tracing::warn!(
-                    path = %legacy_path.display(),
-                    error = %err,
-                    "Khong the migrate session Telegram SQLite cu, se dung session moi"
-                );
-                Ok::<RuntimeTelegramSessionState, io::Error>(RuntimeTelegramSessionState::default())
-            })?;
-            persist_snapshot(path, &migrated)?;
-            return Ok(migrated);
-        }
-    }
-
     Ok(RuntimeTelegramSessionState::default())
-}
-
-fn try_migrate_legacy(path: &Path) -> io::Result<RuntimeTelegramSessionState> {
-    let reader = LEGACY_READER.get().ok_or_else(|| {
-        io::Error::new(io::ErrorKind::NotFound, "legacy session reader not initialized")
-    })?;
-    let data = reader.read_legacy_session(path).map_err(io::Error::other)?;
-    let mut dc_options = HashMap::new();
-    for opt in data.dc_options {
-        let auth_key = opt.auth_key.and_then(|bytes| <[u8; 256]>::try_from(bytes).ok());
-        dc_options.insert(
-            opt.id,
-            DcOption {
-                id: opt.id,
-                ipv4: opt.ipv4.parse().map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?,
-                ipv6: opt.ipv6.parse().map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?,
-                auth_key,
-            },
-        );
-    }
-    let mut peer_infos = HashMap::new();
-    for p in data.peer_infos {
-        let peer_info = decode_legacy_peer_info(p.peer_id, p.hash, p.subtype)?;
-        peer_infos.insert(peer_info.id(), peer_info);
-    }
-    let updates_state = UpdatesState {
-        pts: data.pts as i32,
-        qts: data.qts as i32,
-        date: data.date as i32,
-        seq: data.seq as i32,
-        channels: data
-            .channels
-            .into_iter()
-            .map(|c| ChannelState { id: c.id, pts: c.pts as i32 })
-            .collect(),
-    };
-    Ok(RuntimeTelegramSessionState {
-        home_dc: data.home_dc,
-        dc_options,
-        peer_infos,
-        updates_state,
-    })
 }
 
 fn load_json_state(path: &Path) -> io::Result<RuntimeTelegramSessionState> {
@@ -323,141 +259,4 @@ fn persist_snapshot(path: &Path, snapshot: &RuntimeTelegramSessionState) -> io::
     fs::rename(temp_path, path)
 }
 
-fn legacy_path_for_json(path: &Path) -> Option<PathBuf> {
-    let parent = path.parent()?;
-    Some(parent.join(LEGACY_TELEGRAM_SESSION_FILE_NAME))
-}
 
-
-
-fn decode_legacy_peer_info(
-    peer_id: i64,
-    hash: Option<i64>,
-    subtype: Option<i64>,
-) -> io::Result<PeerInfo> {
-    const USER_SELF: u8 = 1;
-    const USER_BOT: u8 = 2;
-    const MEGAGROUP: u8 = 4;
-    const BROADCAST: u8 = 8;
-    const GIGAGROUP: u8 = 12;
-
-    let peer = decode_peer_id(peer_id)?;
-    let subtype = subtype.map(|value| value as u8);
-    Ok(match peer.kind() {
-        PeerKind::User | PeerKind::UserSelf => PeerInfo::User {
-            id: peer.bare_id(),
-            auth: hash.map(PeerAuth::from_hash),
-            bot: subtype.map(|value| value & USER_BOT != 0),
-            is_self: subtype.map(|value| value & USER_SELF != 0),
-        },
-        PeerKind::Chat => PeerInfo::Chat { id: peer.bare_id() },
-        PeerKind::Channel => PeerInfo::Channel {
-            id: peer.bare_id(),
-            auth: hash.map(PeerAuth::from_hash),
-            kind: subtype.and_then(|value| {
-                if (value & GIGAGROUP) == GIGAGROUP {
-                    Some(ChannelKind::Gigagroup)
-                } else if value & BROADCAST != 0 {
-                    Some(ChannelKind::Broadcast)
-                } else if value & MEGAGROUP != 0 {
-                    Some(ChannelKind::Megagroup)
-                } else {
-                    None
-                }
-            }),
-        },
-    })
-}
-
-fn decode_peer_id(value: i64) -> io::Result<PeerId> {
-    if value == (1_i64 << 40) {
-        return Ok(PeerId::self_user());
-    }
-    if value > 0 {
-        return PeerId::user(value).ok_or_else(|| invalid_peer_error(value));
-    }
-    if (-999_999_999_999..=-1).contains(&value) {
-        return PeerId::chat(-value).ok_or_else(|| invalid_peer_error(value));
-    }
-    let channel_id = -value - 1_000_000_000_000;
-    PeerId::channel(channel_id).ok_or_else(|| invalid_peer_error(value))
-}
-
-fn invalid_peer_error(value: i64) -> io::Error {
-    io::Error::new(
-        io::ErrorKind::InvalidData,
-        format!("invalid peer id {value}"),
-    )
-}
-
-#[cfg(test)]
-mod tests {
-    use std::path::Path;
-
-    use super::*;
-
-    struct MockLegacyReader;
-
-    impl LegacySessionReader for MockLegacyReader {
-        fn read_legacy_session(&self, _path: &Path) -> Result<LegacySessionData, String> {
-            use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
-            Ok(LegacySessionData {
-                home_dc: 2,
-                dc_options: vec![LegacyDcOption {
-                    id: 2,
-                    ipv4: SocketAddrV4::new(Ipv4Addr::LOCALHOST, 443).to_string(),
-                    ipv6: SocketAddrV6::new(Ipv6Addr::LOCALHOST, 443, 0, 0).to_string(),
-                    auth_key: Some(vec![7_u8; 256]),
-                }],
-                peer_infos: vec![LegacyPeerInfo {
-                    peer_id: 1,
-                    hash: Some(99),
-                    subtype: Some(3),
-                }],
-                pts: 10,
-                qts: 11,
-                date: 12,
-                seq: 13,
-                channels: vec![LegacyChannelState { id: 123, pts: 456 }],
-            })
-        }
-    }
-
-    #[test]
-    fn migrates_legacy_state() {
-        init_legacy_reader(Box::new(MockLegacyReader));
-
-        let temp_root =
-            std::env::temp_dir().join(format!("omega-drive-tg-session-{}", std::process::id()));
-        let _ = fs::remove_dir_all(&temp_root);
-        fs::create_dir_all(&temp_root).unwrap();
-
-        let legacy = legacy_telegram_session_path(&temp_root);
-        fs::write(&legacy, b"placeholder").unwrap();
-
-        let json = telegram_session_path(&temp_root);
-        let session = FileTelegramSession::open(&json).unwrap();
-        assert_eq!(session.home_dc_id(), 2);
-        assert_eq!(session.dc_option(2).unwrap().auth_key, Some([7_u8; 256]));
-        assert!(json.exists());
-
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        let self_peer = runtime.block_on(session.peer(PeerId::self_user())).unwrap();
-        match self_peer {
-            PeerInfo::User {
-                bot: Some(true),
-                is_self: Some(true),
-                ..
-            } => {}
-            other => panic!("unexpected peer info: {other:?}"),
-        }
-        let updates = runtime.block_on(session.updates_state());
-        assert_eq!(updates.pts, 10);
-        assert_eq!(updates.channels.len(), 1);
-
-        let _ = fs::remove_dir_all(&temp_root);
-    }
-}

@@ -49,7 +49,6 @@ export function useDriveController(
       deleteItem: mutations.deleteItem,
       restoreFile: mutations.restoreFile,
       toggleStar: mutations.toggleStar,
-      forwardFileToShared: mutations.forwardFileToShared,
     }),
     [mutations, query]
   );

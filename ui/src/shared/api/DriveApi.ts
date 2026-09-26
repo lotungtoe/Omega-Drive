@@ -101,8 +101,6 @@ export const DriveApi = {
     call("move_folder", { folderId, parentId }, { feature: "drive", action: "move_folder" }),
   getFile: (fileId: IdLike): Promise<unknown> =>
     call("get_file", { fileId }, { feature: "drive", action: "get_file" }),
-  forwardFileToShared: (fileId: IdLike): Promise<unknown> =>
-    call("forward_file_to_shared", { fileId }, { feature: "drive", action: "forward_file_to_shared" }),
   toggleStar: (id: IdLike, isFolder: boolean, starred: boolean): Promise<unknown> =>
     call("toggle_star", { id, isFolder, starred }, { feature: "drive", action: "toggle_star" }),
 

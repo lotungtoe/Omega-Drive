@@ -203,26 +203,3 @@ pub async fn setup_shared_drive_internal(
 
     Ok(guild_name)
 }
-
-pub async fn forward_file_to_shared_internal(
-    st: tauri::State<'_, crate::app_wiring::app_runtime::AppState>,
-    file_id: i64,
-) -> AppResult<()> {
-    let active_scope = st
-        .active_tenant
-        .lock()
-        .map(|tenant| tenant.scope.clone())
-        .unwrap_or_else(|_| "my".to_string());
-
-    if active_scope == "shared" {
-        return Ok(());
-    }
-
-    Err(wrap_error(
-        "move",
-        codes::E_UNAVAILABLE,
-        "Forward sang Shared Drive da bi vo hieu hoa trong che do multi-DB. Hay chuyen sang tenant Shared roi tai lai file o do.",
-        serde_json::json!({ "file_id": file_id, "active_scope": active_scope }),
-        anyhow!("forward_file_to_shared is not supported after tenant split"),
-    ))
-}

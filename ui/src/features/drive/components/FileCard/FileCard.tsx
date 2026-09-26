@@ -2,7 +2,7 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import { useTranslation } from 'react-i18next'
 import { open } from "@tauri-apps/plugin-dialog";
-import { Star, Play, Eye, Download, Trash2, MoreVertical, RotateCcw, Copy, Users } from 'lucide-react'
+import { Star, Play, Eye, Download, Trash2, MoreVertical, RotateCcw, Users } from 'lucide-react'
 import { FileIcon, FolderIcon } from '../../../../shared/components/Icons'
 import { getFileType, formatSize, formatDateSafe, cn } from '../../../../shared/utils/index'
 import { resumeUploadTask } from '../../../upload/services/uploadService'
@@ -122,8 +122,8 @@ function useFileCardLogic(props) {
 }
 
 function ListActions({ 
-  isFolder, isVideo, isImage, isStarred, isTrashed, isSharedFile, status, 
-  onDownload, onDelete, onRestore, onPlay, onPreview, onToggleStar, onResume, onForward 
+  isFolder, isVideo, isImage, isStarred, isTrashed, status, 
+  onDownload, onDelete, onRestore, onPlay, onPreview, onToggleStar, onResume 
 }) {
   const { t } = useTranslation()
   const canPlayVideo = isVideo && status === 'ready'
@@ -170,11 +170,6 @@ function ListActions({
           <button type="button" onClick={onDownload} className="gd-icon-btn" style={{ width: 32, height: 32 }} title={t('drive.download')}>
             <Download size={16} />
           </button>
-          {!isSharedFile && (
-            <button type="button" onClick={onForward} className="gd-icon-btn" style={{ width: 32, height: 32 }} title={t('drive.moveToShared')}>
-              <Copy size={16} />
-            </button>
-          )}
           {canResumeUpload && (
             <button type="button" onClick={(e) => { e.stopPropagation(); onResume(); }} className="gd-icon-btn" style={{ width: 32, height: 32, color: '#fb8c00' }} title={t('upload.resumeUpload')}>
               <Play size={16} fill="#fb8c00" />
@@ -214,8 +209,8 @@ function FolderMenuItems({ fileId, setCurrentFolderId, t, setMenuOpen }) {
 }
 
 function FileMenuItems({
-  canPlayVideo, isTrashed, isStarred, isSharedFile,
-  onPlay, onRestore, onPreview, onDownload, onToggleStar, onForward,
+  canPlayVideo, isTrashed, isStarred,
+  onPlay, onRestore, onPreview, onDownload, onToggleStar,
   t, setMenuOpen,
 }) {
   if (isTrashed) {
@@ -256,21 +251,13 @@ function FileMenuItems({
         onSelect={onToggleStar}
         setMenuOpen={setMenuOpen}
       />
-      {!isSharedFile && (
-        <MenuItem
-          icon={<Copy size={18} />}
-          label={t('drive.moveToShared')}
-          onSelect={onForward}
-          setMenuOpen={setMenuOpen}
-        />
-      )}
     </>
   )
 }
 
 function GridMenu({ 
-  isFolder, isVideo, isStarred, isTrashed, status, fileId, isSharedFile,
-  setCurrentFolderId, onPlay, onRestore, onPreview, onDownload, onToggleStar, onDelete, onResume, onForward, setMenuOpen 
+  isFolder, isVideo, isStarred, isTrashed, status, fileId,
+  setCurrentFolderId, onPlay, onRestore, onPreview, onDownload, onToggleStar, onDelete, onResume, setMenuOpen 
 }) {
   const { t } = useTranslation()
   const canPlayVideo = isVideo && status === 'ready'
@@ -294,13 +281,11 @@ function GridMenu({
           canPlayVideo={canPlayVideo}
           isTrashed={isTrashed}
           isStarred={isStarred}
-          isSharedFile={isSharedFile}
           onPlay={onPlay}
           onRestore={onRestore}
           onPreview={onPreview}
           onDownload={onDownload}
           onToggleStar={onToggleStar}
-          onForward={onForward}
           t={t}
           setMenuOpen={setMenuOpen}
         />
@@ -328,9 +313,9 @@ function GridMenu({
 
 function FileCardList(props) {
   const { t } = useTranslation()
-  const { file, isSelected, onDownload, onDelete, onRestore, onPlay, onPreview, onToggleStar, onForward, progressPercentage } = props
+  const { file, isSelected, onDownload, onDelete, onRestore, onPlay, onPreview, onToggleStar, progressPercentage } = props
   const {
-    isFolder, fileType, date, isVideo, isStarred, isError, isTrashed, isImage, isSharedFile,
+    isFolder, fileType, date, isVideo, isStarred, isError, isTrashed, isImage,
     handleDoubleClick, handleSelect, handleResume,
     mergedRef, dragAttributes, dragListeners, isDragging, isOver,
   } = useFileCardLogic(props)
@@ -454,9 +439,7 @@ function FileCardList(props) {
         onPreview={onPreview}
         onToggleStar={onToggleStar}
         status={file.status}
-        isSharedFile={isSharedFile}
         onResume={handleResume}
-        onForward={onForward}
       />
     </div>
   )
@@ -507,7 +490,7 @@ const PreviewSection = ({ file, isStarred, isImage, onToggleStar, onPreview, pre
 const DetailsSection = ({ 
   file, menuOpen, setMenuOpen, menuRef, isFolder, isVideo, isStarred, isTrashed, 
   isSharedFile, setCurrentFolderId, onPlay, onRestore, onPreview, onDownload, onToggleStar, onDelete, 
-  handleResume, onForward, progressPercentage, t 
+  handleResume, progressPercentage, t 
 }) => (
   <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
     {isFolder ? <FolderIcon size={16} /> : <FileIcon filename={file.filename} kind={file.kind} size={14} />}
@@ -549,7 +532,6 @@ const DetailsSection = ({
           isVideo={isVideo}
           isStarred={isStarred}
           isTrashed={isTrashed}
-          isSharedFile={isSharedFile}
           fileId={file.id}
           setCurrentFolderId={setCurrentFolderId}
           onPlay={onPlay}
@@ -560,7 +542,6 @@ const DetailsSection = ({
           onDelete={onDelete}
           status={file.status}
           onResume={handleResume}
-          onForward={onForward}
           setMenuOpen={setMenuOpen}
         />
       )}
@@ -570,7 +551,7 @@ const DetailsSection = ({
 
 function FileCardGrid(props) {
   const { t } = useTranslation()
-  const { file, dark, isSelected, onDownload, onDelete, onRestore, onPlay, onPreview, onToggleStar, onForward, setCurrentFolderId, progressPercentage } = props
+  const { file, dark, isSelected, onDownload, onDelete, onRestore, onPlay, onPreview, onToggleStar, setCurrentFolderId, progressPercentage } = props
   const {
     menuOpen, setMenuOpen, menuRef,
     isFolder, isVideo, isStarred, isError, isTrashed, isImage, isSharedFile,
@@ -644,7 +625,6 @@ function FileCardGrid(props) {
         onToggleStar={onToggleStar}
         onDelete={onDelete}
         handleResume={handleResume}
-        onForward={onForward}
         progressPercentage={progressPercentage}
         t={t}
       />

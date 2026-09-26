@@ -92,8 +92,3 @@ pub async fn setup_shared_drive(
 ) -> AppResult<String> {
     crate::providers::discord_provider::setup_shared_drive_internal(st, guild_id, tg_chat_id).await
 }
-
-#[tauri::command]
-pub async fn forward_file_to_shared(st: tauri::State<'_, AppState>, file_id: i64) -> AppResult<()> {
-    crate::providers::discord_provider::forward_file_to_shared_internal(st, file_id).await
-}

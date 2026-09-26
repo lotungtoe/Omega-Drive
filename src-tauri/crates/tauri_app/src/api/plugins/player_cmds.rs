@@ -8,6 +8,10 @@ use omega_drive_upload::coordinator::{run_upload, UploadDataSource};
 use omega_drive_gateway::{core::scope::DriveScope, upload::upload_plan::UploadPlan};
 use omega_drive_player::nativeplayer::{MpvSessionType, MpvStatus};
 
+fn player_disabled<T>() -> Result<T, String> {
+    Err("player feature disabled".to_string())
+}
+
 #[tauri::command]
 pub async fn open_in_native_player(
     st: State<'_, AppState>,
@@ -29,7 +33,7 @@ pub async fn open_in_native_player(
     }
     #[cfg(not(feature = "player"))]
     {
-        Err("player feature disabled".to_string())
+        player_disabled()
     }
 }
 
@@ -50,7 +54,7 @@ pub async fn player_update_playback_progress(
     }
     #[cfg(not(feature = "player"))]
     {
-        Err("player feature disabled".to_string())
+        player_disabled()
     }
 }
 
@@ -69,7 +73,7 @@ pub async fn player_clear_playback_history(
     }
     #[cfg(not(feature = "player"))]
     {
-        Err("player feature disabled".to_string())
+        player_disabled()
     }
 }
 
@@ -84,7 +88,7 @@ pub async fn mpv_get_status(
     }
     #[cfg(not(feature = "player"))]
     {
-        Err("player feature disabled".to_string())
+        player_disabled()
     }
 }
 
@@ -99,7 +103,7 @@ pub async fn mpv_play_pause(
     }
     #[cfg(not(feature = "player"))]
     {
-        Err("player feature disabled".to_string())
+        player_disabled()
     }
 }
 
@@ -116,7 +120,7 @@ pub async fn mpv_seek(
     }
     #[cfg(not(feature = "player"))]
     {
-        Err("player feature disabled".to_string())
+        player_disabled()
     }
 }
 
@@ -137,7 +141,7 @@ pub async fn mpv_set_volume(
     }
     #[cfg(not(feature = "player"))]
     {
-        Err("player feature disabled".to_string())
+        player_disabled()
     }
 }
 
@@ -158,7 +162,7 @@ pub async fn mpv_set_speed(
     }
     #[cfg(not(feature = "player"))]
     {
-        Err("player feature disabled".to_string())
+        player_disabled()
     }
 }
 
@@ -177,7 +181,7 @@ pub async fn mpv_toggle_fullscreen(
     }
     #[cfg(not(feature = "player"))]
     {
-        Err("player feature disabled".to_string())
+        player_disabled()
     }
 }
 
@@ -286,6 +290,6 @@ pub async fn add_audio_track(
         .await
     }
     #[cfg(not(feature = "player"))] {
-        Err("player feature disabled".to_string())
+        player_disabled()
     }
 }

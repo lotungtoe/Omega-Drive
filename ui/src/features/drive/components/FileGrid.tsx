@@ -23,7 +23,6 @@ function FileGridComponent({
   onFileStar,
   onFileRestore,
   onFileResume,
-  onFileForward,
   onUpload,
   isDragOver,
   sort,
@@ -54,7 +53,6 @@ function FileGridComponent({
   const resolvedStar = onFileStar ?? driveController?.toggleStar ?? (() => {})
   const resolvedRestore = onFileRestore ?? driveController?.restoreFile ?? (() => {})
   const resolvedResume = onFileResume ?? uiActions?.resumeUpload ?? (() => {})
-  const resolvedForward = onFileForward ?? driveController?.forwardFileToShared ?? (() => {})
   const resolvedUpload = onUpload ?? uiActions?.uploadPaths ?? (() => {})
   const resolvedIsDragOver = isDragOver ?? uiState?.isDragOver ?? false
   const resolvedSort = sort ?? uiState?.sort ?? { field: 'name', dir: 'asc' }
@@ -234,7 +232,6 @@ function FileGridComponent({
               onPreview={() => resolvedPreview(file)}
               onRestore={() => resolvedRestore(file.id)} onToggleStar={() => resolvedStar(file)}
               onResume={() => resolvedResume(file)}
-              onForward={() => resolvedForward(file.id)}
               setCurrentFolderId={resolvedSetCurrentFolderId}
               onSelect={setSelectedId}
             />

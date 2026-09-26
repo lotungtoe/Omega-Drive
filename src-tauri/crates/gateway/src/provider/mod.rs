@@ -1,5 +1,4 @@
 pub mod app_context;
-pub mod legacy_session;
 pub mod backup_service;
 pub mod discord_backup;
 pub mod download_job_repository;

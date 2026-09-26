@@ -5,7 +5,6 @@ import {
   deleteFolder as deleteFolderService,
   moveFile as moveFileService,
   moveFolder as moveFolderService,
-  forwardFileToShared as forwardFileToSharedService,
   purgeFile as purgeFileService,
   restoreFile as restoreFileService,
   toggleStar as toggleStarService,
@@ -207,23 +206,6 @@ export function useDriveMutations({
     [applyFoldersPatch, refresh, refreshInBackground, toast]
   );
   
-  const forwardFileToShared = useCallback(
-    async (fileId) => {
-      const loadingToastId = toast?.show("Moving files to Shared Drive...", "loading");
-      try {
-        await forwardFileToSharedService(fileId);
-        toast?.show("Files moved successfully!", "success", { id: loadingToastId });
-        await refresh();
-      } catch (error) {
-        const message = toUserMessage(error);
-        console.error("Error moving to Shared Drive:", error);
-        toast?.show(message.message || "Could not move file.", "error", { id: loadingToastId });
-        await refresh();
-      }
-    },
-    [refresh, toast]
-  );
-
   const toggleStar = useCallback(
     async (item) => {
       const nextStarred = !item.starred;
@@ -262,6 +244,5 @@ export function useDriveMutations({
     moveFolder,
     restoreFile,
     toggleStar,
-    forwardFileToShared,
   };
 }

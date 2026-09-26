@@ -117,10 +117,6 @@ export async function moveFolder(folderId: IdLike, parentId: Nullable<number>): 
   return DriveApi.moveFolder(folderId, parentId);
 }
 
-export async function forwardFileToShared(fileId: IdLike): Promise<unknown> {
-  return DriveApi.forwardFileToShared(fileId);
-}
-
 export async function purgeFile(fileId: IdLike): Promise<unknown> {
   return DriveApi.purgeFile(fileId);
 }
