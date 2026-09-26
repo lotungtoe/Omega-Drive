@@ -174,7 +174,7 @@ fn effective_mpv_buffer_values(
 }
 
 fn persist_playback_snapshot(
-    file_repo: &Arc<dyn FileRepository>,
+    file_repo: Arc<dyn FileRepository>,
     file_id: i64,
     position_sec: f64,
     duration_sec: Option<f64>,
@@ -183,7 +183,6 @@ fn persist_playback_snapshot(
     let should_clear = position_sec < PLAYBACK_MIN_SAVE_POSITION_SECS
         || playback_should_clear(position_sec, duration_sec);
 
-    let file_repo = Arc::clone(file_repo);
     let _ = handle.block_on(async move {
         if should_clear {
             file_repo.clear_playback_history(file_id).await
@@ -194,7 +193,7 @@ fn persist_playback_snapshot(
 }
 
 async fn persist_playback_snapshot_async(
-    file_repo: &Arc<dyn FileRepository>,
+    file_repo: &dyn FileRepository,
     file_id: i64,
     position_sec: f64,
     duration_sec: Option<f64>,
@@ -520,7 +519,7 @@ fn teardown_session(
     let (file_id, position_sec, duration_sec) = save_video_progress(&session);
     shutdown_native_session(&mut session, state);
     drop(session);
-    persist_playback_snapshot(&state.file_repo, file_id, position_sec, duration_sec, handle);
+    persist_playback_snapshot(Arc::clone(&state.file_repo), file_id, position_sec, duration_sec, handle);
 }
 
 async fn teardown_taken_session_async(
@@ -531,7 +530,7 @@ async fn teardown_taken_session_async(
     let (file_id, position_sec, duration_sec) = save_video_progress(&session);
     shutdown_native_session(&mut session, state);
     drop(session);
-    persist_playback_snapshot_async(&state.file_repo, file_id, position_sec, duration_sec).await;
+    persist_playback_snapshot_async(state.file_repo.as_ref(), file_id, position_sec, duration_sec).await;
 }
 
 async fn current_mpv_status(

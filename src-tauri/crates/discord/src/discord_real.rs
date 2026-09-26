@@ -272,7 +272,7 @@ pub async fn try_start_gateway(
 }
 
 pub async fn fetch_guild_upload_limit(
-    http: &Arc<Http>,
+    http: &Http,
     guild_id: GuildId,
 ) -> Result<Option<i64>> {
     use serenity::model::guild::PremiumTier;
@@ -289,7 +289,7 @@ pub async fn fetch_guild_upload_limit(
     }
 }
 
-pub async fn channel_exists(http: &Arc<Http>, thread_id: u64) -> Result<bool> {
+pub async fn channel_exists(http: &Http, thread_id: u64) -> Result<bool> {
     match http.get_channel(thread_id.into()).await {
         Ok(channel) => Ok(channel.guild().is_some()),
         Err(serenity::Error::Http(http_err))
@@ -302,7 +302,7 @@ pub async fn channel_exists(http: &Arc<Http>, thread_id: u64) -> Result<bool> {
 }
 
 pub async fn message_exists(
-    http: &Arc<Http>,
+    http: &Http,
     thread_id: u64,
     message_id: u64,
 ) -> Result<bool> {
@@ -321,7 +321,7 @@ pub async fn message_exists(
 }
 
 pub async fn send_backup_message(
-    http: &Arc<Http>,
+    http: &Http,
     thread_id: u64,
     data: Vec<u8>,
     filename: &str,
@@ -351,7 +351,7 @@ pub struct BackupAttachment {
 }
 
 pub async fn fetch_backup_messages(
-    http: &Arc<Http>,
+    http: &Http,
     thread_id: u64,
     limit: u8,
 ) -> Result<Vec<BackupMessage>> {
@@ -380,7 +380,7 @@ pub async fn fetch_backup_messages(
 }
 
 pub async fn delete_discord_message(
-    http: &Arc<Http>,
+    http: &Http,
     thread_id: u64,
     message_id: u64,
 ) -> Result<()> {
@@ -391,7 +391,7 @@ pub async fn delete_discord_message(
 }
 
 pub async fn create_forum_thread(
-    http: &Arc<Http>,
+    http: &Http,
     thread_id: u64,
     thread_name: &str,
 ) -> Result<u64> {
@@ -443,7 +443,7 @@ pub fn sanitize_name(name: &str) -> String {
 }
 
 pub async fn get_or_create_category(
-    http: &Arc<Http>,
+    http: &Http,
     guild_id: GuildId,
     name: &str,
 ) -> Result<GuildChannel> {
@@ -478,7 +478,7 @@ pub async fn get_or_create_category(
 }
 
 pub async fn get_or_create_fixed_channel(
-    http: &Arc<Http>,
+    http: &Http,
     guild_id: GuildId,
     name: &str,
     category_id: Option<ChannelId>,
@@ -516,7 +516,7 @@ pub async fn get_or_create_fixed_channel(
 }
 
 pub async fn create_file_thread(
-    http: &Arc<Http>,
+    http: &Http,
     thread_id: ChannelId,
     file_name: &str,
 ) -> Result<ChannelId> {
@@ -547,7 +547,7 @@ pub async fn create_file_thread(
     Ok(thread.id)
 }
 
-pub async fn archive_thread(http: &Arc<Http>, thread_id: u64) -> Result<()> {
+pub async fn archive_thread(http: &Http, thread_id: u64) -> Result<()> {
     let payload = serde_json::json!({ "archived": true });
     http.edit_channel(thread_id.into(), &payload, None)
         .await
@@ -556,12 +556,12 @@ pub async fn archive_thread(http: &Arc<Http>, thread_id: u64) -> Result<()> {
     Ok(())
 }
 
-pub async fn delete_channel(http: &Arc<Http>, thread_id: u64) -> Result<()> {
+pub async fn delete_channel(http: &Http, thread_id: u64) -> Result<()> {
     ChannelId::new(thread_id).delete(http).await?;
     Ok(())
 }
 
-pub async fn delete_file_thread(http: &Arc<Http>, thread_id: u64) -> Result<()> {
+pub async fn delete_file_thread(http: &Http, thread_id: u64) -> Result<()> {
     let parent_id = if let Ok(channel) = http.get_channel(thread_id.into()).await {
         channel.guild().and_then(|g| g.parent_id)
     } else {
@@ -579,7 +579,7 @@ pub async fn delete_file_thread(http: &Arc<Http>, thread_id: u64) -> Result<()> 
 }
 
 pub async fn delete_category(
-    http: &Arc<Http>,
+    http: &Http,
     guild_id: GuildId,
     category_id: u64,
 ) -> Result<()> {
@@ -613,7 +613,7 @@ pub async fn delete_category(
 }
 
 pub async fn rename_category(
-    http: &Arc<Http>,
+    http: &Http,
     _guild_id: GuildId,
     category_id: u64,
     new_name: &str,
@@ -628,7 +628,7 @@ pub async fn rename_category(
 }
 
 pub async fn send_part(
-    http: &Arc<Http>,
+    http: &Http,
     thread_id: ChannelId,
     zip_bytes: Vec<u8>,
     zip_name: String,
@@ -653,7 +653,7 @@ pub async fn send_part(
 }
 
 pub async fn send_part_batch(
-    http: &Arc<Http>,
+    http: &Http,
     thread_id: ChannelId,
     parts: Vec<(Vec<u8>, String)>,
     content: String,
@@ -684,7 +684,7 @@ pub async fn send_part_batch(
 }
 
 pub async fn post_thread_note(
-    http: &Arc<Http>,
+    http: &Http,
     thread_id: u64,
     content: &str,
 ) -> Result<i64> {
@@ -714,7 +714,7 @@ fn find_msg_attachment<'a>(
 }
 
 pub async fn fetch_attachment_url(
-    http: &Arc<Http>,
+    http: &Http,
     thread_id: u64,
     message_id: u64,
     part_index: u32,
@@ -736,7 +736,7 @@ pub async fn fetch_attachment_url(
 }
 
 pub async fn fetch_message_attachments(
-    http: &Arc<Http>,
+    http: &Http,
     thread_id: u64,
     message_id: u64,
 ) -> Result<Vec<(String, String)>> {
@@ -754,7 +754,7 @@ pub async fn fetch_message_attachments(
 }
 
 pub async fn move_channel_to_category(
-    http: &Arc<Http>,
+    http: &Http,
     thread_id: u64,
     category_id: Option<u64>,
 ) -> Result<()> {

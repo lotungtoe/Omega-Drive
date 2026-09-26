@@ -116,7 +116,7 @@ fn build_install_output(input: TelegramInstallInput) -> TelegramInstallOutput {
     }
 
     if let Some(active_client) = input.client.clone() {
-        spawn_telegram_connection_probe(active_client, &shared, Arc::clone(&input.event_bus));
+        spawn_telegram_connection_probe(active_client, Arc::clone(&shared), Arc::clone(&input.event_bus));
     }
 
     let storage = input.client.as_ref().map(|tg| {
@@ -180,10 +180,10 @@ fn telegram_authorized_from_state(shared: &TelegramProviderShared) -> bool {
 
 fn spawn_telegram_connection_probe(
     client: Arc<TelegramClient>,
-    shared: &Arc<TelegramProviderShared>,
+    shared: Arc<TelegramProviderShared>,
     event_bus: Arc<EventBus>,
 ) {
-    let shared_weak = Arc::downgrade(shared);
+    let shared_weak = Arc::downgrade(&shared);
     let client_weak = Arc::downgrade(&client);
     tokio::spawn(async move {
         let Some(shared) = shared_weak.upgrade() else {

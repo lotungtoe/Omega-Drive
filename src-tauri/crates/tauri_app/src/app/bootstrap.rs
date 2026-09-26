@@ -481,7 +481,7 @@ pub async fn run() {
                 dc: &DiscordBackupGateway,
                 db: &dyn DbExecutor,
                 dir: &PathBuf,
-                bs: &Arc<BackupService>,
+                bs: &BackupService,
             ) {
                 let chunks = {
                     let mut result = None;

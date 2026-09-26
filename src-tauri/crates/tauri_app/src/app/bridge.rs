@@ -65,7 +65,7 @@ fn enable_bridge_native_dpi_awareness() {}
 pub(super) async fn ensure_video_bridge_child(
     base_dir: &Path,
     bridge_port: u16,
-    processes: &Arc<std::sync::Mutex<std::collections::HashMap<String, Child>>>,
+    processes: &std::sync::Mutex<std::collections::HashMap<String, Child>>,
 ) -> Result<u16, String> {
     ensure_video_bridge_child_shared(base_dir, bridge_port, processes).await
 }

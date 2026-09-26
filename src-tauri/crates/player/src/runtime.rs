@@ -38,7 +38,7 @@ const VIDEO_BRIDGE_SPAWN_RETRIES: u32 = 3;
 pub async fn ensure_video_bridge_child(
     base_dir: &Path,
     bridge_port: u16,
-    processes: &Arc<std::sync::Mutex<HashMap<String, Child>>>,
+    processes: &std::sync::Mutex<HashMap<String, Child>>,
 ) -> Result<u16, String> {
     {
         let mut guard = processes

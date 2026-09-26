@@ -93,7 +93,7 @@ impl ZipReader {
         tracing::info!(eocd_offset, eocd_size, "zip open: fetching EOCD");
         let eocd_data = Self::read_range(
             file_id, &parts, &chunk_offsets, eocd_offset, eocd_size,
-            &provider,
+            provider.as_ref(),
         ).await?;
 
         tracing::info!(
@@ -117,7 +117,7 @@ impl ZipReader {
         // Fetch Central Directory (may share parts with EOCD — cached)
         let cd_data = Self::read_range(
             file_id, &parts, &chunk_offsets, cd_offset, cd_size,
-            &provider,
+            provider.as_ref(),
         ).await?;
 
         // Parse CD entries
@@ -157,7 +157,7 @@ impl ZipReader {
         // Determine opf_dir by reading META-INF/container.xml (may share parts — cached)
         let opf_dir = if let Some(meta) = entries.get("META-INF/container.xml") {
             let raw = Self::read_entry_raw(
-                file_id, &parts, &chunk_offsets, meta, &provider, false,
+                file_id, &parts, &chunk_offsets, meta, provider.as_ref(), false,
             ).await?;
             let s = String::from_utf8_lossy(&raw);
             let prefix = "full-path=\"";
@@ -195,7 +195,7 @@ impl ZipReader {
                 return Self::read_and_decompress(
                     self.file_id, m,
                     &self.parts, &self.chunk_offsets,
-                    &self.provider,
+                    self.provider.as_ref(),
                 ).await;
             }
         }
@@ -243,7 +243,7 @@ impl ZipReader {
         _chunk_offsets: &[u64],
         offset: u64,
         size: u64,
-        provider: &Arc<dyn ByteStreamProvider>,
+        provider: &dyn ByteStreamProvider,
     ) -> Result<Vec<u8>, String> {
         let mut rx = provider.stream_range(file_id, offset, size, "preview").await?;
         let mut result = Vec::with_capacity(size as usize);
@@ -261,7 +261,7 @@ impl ZipReader {
         parts: &[PartMetadata],
         chunk_offsets: &[u64],
         meta: &ZipEntryMeta,
-        provider: &Arc<dyn ByteStreamProvider>,
+        provider: &dyn ByteStreamProvider,
         expand: bool,
     ) -> Result<Vec<u8>, String> {
         let lfh_size = 30u64;
@@ -325,7 +325,7 @@ impl ZipReader {
         meta: &ZipEntryMeta,
         parts: &[PartMetadata],
         chunk_offsets: &[u64],
-        provider: &Arc<dyn ByteStreamProvider>,
+        provider: &dyn ByteStreamProvider,
     ) -> Result<Vec<u8>, String> {
         let compressed = Self::read_entry_raw(
             file_id, parts, chunk_offsets, meta, provider, true,
