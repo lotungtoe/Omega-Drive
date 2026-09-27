@@ -43,26 +43,24 @@ pub(crate) async fn stream_byte_range(
     let stream = futures_util::stream::unfold(
         (rx, file_id, stream_gen),
         |(mut rx, file_id, gen)| async move {
-            loop {
-                let current_gen = crate::bridge::RAW_STREAM_GENERATION
-                    .get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
-                    .lock()
-                    .expect("Mutex poisoned")
-                    .get(&file_id)
-                    .copied();
-                if current_gen != Some(gen) {
-                    debug_log!("cancel", "stream_byte_range: superseded, file={} gen={} current={:?}", file_id, gen, current_gen);
-                    return None;
+            let current_gen = crate::bridge::RAW_STREAM_GENERATION
+                .get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
+                .lock()
+                .expect("Mutex poisoned")
+                .get(&file_id)
+                .copied();
+            if current_gen != Some(gen) {
+                debug_log!("cancel", "stream_byte_range: superseded, file={} gen={} current={:?}", file_id, gen, current_gen);
+                return None;
+            }
+            match rx.recv().await {
+                Some(Ok(chunk)) => {
+                    Some((Ok(chunk.data), (rx, file_id, gen)))
                 }
-                match rx.recv().await {
-                    Some(Ok(chunk)) => {
-                        return Some((Ok(chunk.data), (rx, file_id, gen)));
-                    }
-                    Some(Err(e)) => {
-                        return Some((Err(StreamError::Network(e)), (rx, file_id, gen)));
-                    }
-                    None => return None,
+                Some(Err(e)) => {
+                    Some((Err(StreamError::Network(e)), (rx, file_id, gen)))
                 }
+                None => None,
             }
         },
     );
