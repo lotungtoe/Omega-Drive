@@ -16,7 +16,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::{info, warn};
 
 use omega_drive_gateway::{
-    core::platform::{PLATFORM_DISCORD, PLATFORM_TELEGRAM},
+    core::platform::{Platform, PLATFORM_DISCORD, PLATFORM_TELEGRAM},
     core::scope::DriveScope,
     provider::provider_types::{RemoteObjectRef, RemoteUploadTarget},
     upload::upload_plan::{AdvancedLimits, DerivativesPlan, ProviderType, UploadPlan, UploadStrategy},
@@ -1131,10 +1131,10 @@ fn spawn_derivative_processing(
 
         let mut sanity_failed = false;
         for p_enum in &prepared.providers {
-            let p_name = format!("{:?}", p_enum).to_lowercase();
+            let p_name = Platform::from(*p_enum).as_str();
             let expected_parts = prepared
                 .provider_settings
-                .get(&p_name)
+                .get(p_name)
                 .map(|s| s.total_parts)
                 .unwrap_or(0);
 

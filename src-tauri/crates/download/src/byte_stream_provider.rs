@@ -7,7 +7,7 @@ use futures_util::StreamExt;
 use reqwest::StatusCode;
 use tokio::sync::mpsc;
 
-use omega_drive_gateway::core::platform::{PLATFORM_DISCORD, PLATFORM_TELEGRAM};
+use omega_drive_gateway::core::platform::{Platform, PLATFORM_TELEGRAM};
 use omega_drive_gateway::download::byte_stream_provider::{ByteStreamProvider, StreamChunk};
 use omega_drive_gateway::provider::provider_types::ByteRange;
 use omega_drive_gateway::provider::storage::PartMetadata;
@@ -176,18 +176,22 @@ async fn stream_range_impl(
         // Cache miss — download, write to cache, and forward data in one pass
         let part_meta = db_part.clone();
 
-        if part_meta.platform == PLATFORM_DISCORD {
-            download_and_forward_discord(
-                &ctx, file_id, &part_meta,
-                part_start, cur_file_off, fetch_len, namespace, &tx,
-            ).await?;
-        } else if part_meta.platform == PLATFORM_TELEGRAM {
-            download_and_forward_telegram(
-                &ctx, file_id, &part_meta,
-                part_start, cur_file_off, fetch_len, namespace, &tx,
-            ).await?;
-        } else {
-            return Err(format!("Unsupported platform: {}", part_meta.platform));
+        match part_meta.platform.parse::<Platform>() {
+            Ok(Platform::Discord) => {
+                download_and_forward_discord(
+                    &ctx, file_id, &part_meta,
+                    part_start, cur_file_off, fetch_len, namespace, &tx,
+                ).await?;
+            }
+            Ok(Platform::Telegram) => {
+                download_and_forward_telegram(
+                    &ctx, file_id, &part_meta,
+                    part_start, cur_file_off, fetch_len, namespace, &tx,
+                ).await?;
+            }
+            Err(_) => {
+                return Err(format!("Unsupported platform: {}", part_meta.platform));
+            }
         }
 
         cur_file_off += fetch_len;

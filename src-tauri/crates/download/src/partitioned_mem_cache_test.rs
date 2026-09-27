@@ -149,9 +149,13 @@ async fn test_multiple_partitions_isolated() {
     cfg.insert("a".into(), PartitionConfig { max_bytes: None });
     cfg.insert("b".into(), PartitionConfig { max_bytes: None });
     let cache = PartitionedMemCache::new(cfg);
+    // NOTE: different file_ids per partition on purpose. Same (file, offset)
+    // with different bytes in two partitions is impossible in prod, and
+    // HashMap iteration order is random — asserting on that would be flaky.
     cache.write(1, 0, Bytes::from("aaaa"), "a").await;
-    cache.write(1, 0, Bytes::from("bbbb"), "b").await;
+    cache.write(2, 0, Bytes::from("bbbb"), "b").await;
     assert_eq!(cache.read(1, 0, 4).await, Some(Bytes::from("aaaa")));
+    assert_eq!(cache.read(2, 0, 4).await, Some(Bytes::from("bbbb")));
 }
 
 #[tokio::test]

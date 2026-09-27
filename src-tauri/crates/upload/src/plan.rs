@@ -1,7 +1,7 @@
 ﻿use std::path::Path;
 use std::collections::HashMap;
 
-use omega_drive_gateway::core::platform::PLATFORM_DISCORD;
+use omega_drive_gateway::core::platform::{Platform, PLATFORM_DISCORD};
 use omega_drive_gateway::core::config::DEFAULT_DISCORD_PARTS_PER_MESSAGE;
 pub use omega_drive_gateway::upload::upload_plan::{PreparedUploadPlan, ProviderExecutionSettings, UploadSourceInfo};
 use omega_drive_gateway::upload::upload_plan::{PriorityMode, ProviderType, UploadPlan, UploadStrategy};
@@ -44,7 +44,7 @@ pub async fn build_execution_plan(
         let cfg = state.cfg.read().expect("cfg RwLock");
         min_chunk_bytes = cfg.general.chunk_bytes;
         for provider in &providers {
-            let provider_id = format!("{:?}", provider).to_lowercase();
+            let provider_id = provider_key(*provider);
             let mut parallel = cfg.providers.get(&provider_id).map(|p| p.transfer.parallel_sends).unwrap_or(cfg.general.parallel_sends);
             if matches!(priority_mode, PriorityMode::Background) { parallel = 1; }
             let chunk_mb = cfg.providers.get(&provider_id).and_then(|p| p.transfer.chunk_mb).unwrap_or(0);
@@ -147,7 +147,7 @@ fn div_ceil_u64(value: u64, divisor: u64) -> u64 {
 }
 
 fn provider_key(provider: ProviderType) -> String {
-    format!("{:?}", provider).to_lowercase()
+    Platform::from(provider).as_str().to_string()
 }
 
 fn build_provider_part_counts(total_base_parts: usize, strategy: UploadStrategy, providers: &[ProviderType]) -> HashMap<String, usize> {
