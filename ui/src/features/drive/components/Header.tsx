@@ -84,7 +84,8 @@ export const Header = memo(function Header(props: any) {
           >
             <DiscordIcon size={16} color="#5865F2" />
             <span style={{ position: 'relative', display: 'flex', width: '8px', height: '8px' }}>
-              {resolvedDiscordOnline && <span className="animate-ping" style={{ position: 'absolute', width: '100%', height: '100%', borderRadius: '50%', backgroundColor: '#23a559', opacity: 0.7 }} />}
+              {/* ponytail: no animate-ping here — an infinite compositor animation
+                  forces a frame every vsync (~165fps) for a decorative dot. */}
               <span style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '50%', backgroundColor: resolvedDiscordOnline ? '#23a559' : '#80848e' }} />
             </span>
           </div>
@@ -104,7 +105,6 @@ export const Header = memo(function Header(props: any) {
           >
             <TelegramIcon size={16} color="#24A1DE" />
             <span style={{ position: 'relative', display: 'flex', width: '8px', height: '8px' }}>
-              {resolvedTelegramOnline && <span className="animate-ping" style={{ position: 'absolute', width: '100%', height: '100%', borderRadius: '50%', backgroundColor: '#23a559', opacity: 0.7 }} />}
               <span style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '50%', backgroundColor: resolvedTelegramOnline ? '#23a559' : '#80848e' }} />
             </span>
           </div>
