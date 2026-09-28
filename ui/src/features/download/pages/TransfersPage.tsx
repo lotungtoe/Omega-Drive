@@ -1,15 +1,116 @@
-﻿import { useState } from 'react';
+﻿import { memo, useMemo, useState } from 'react';
 import { Pause, Play, X, RefreshCw, Upload, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDownloads } from '../hooks/useDownloads';
 import { useTransfersList } from '../hooks/useTransfersList';
-import { toDownloadView, toUploadView, type TransferView, type DownloadJobRow, type UploadFileRow } from '../components/transferView';
+import { uploadStatKey, resolveUploadStat, type UploadLiveStat } from '../hooks/uploadProgress';
+import {
+  toDownloadView,
+  toUploadView,
+  type TransferView,
+  type DownloadJobRow,
+  type UploadFileRow,
+  type DownloadStatsLike,
+} from '../components/transferView';
 import {
   TransferCard,
   TransferEmptyState,
   TransferSublabel,
   ActionBtn,
 } from '../components/TransferCard';
+
+function ViewCard({ view, actions }: { view: TransferView; actions: React.ReactNode }) {
+  return (
+    <TransferCard
+      filename={view.filename}
+      kind={view.kind}
+      sublabel={<TransferSublabel view={view} />}
+      extra={view.error
+        ? <span style={{ fontSize: 11, color: '#ef4444' }}>{view.error}</span>
+        : view.extra
+          ? <span style={{ fontSize: 11, color: 'var(--gd-on-surface-variant)' }}>{view.extra}</span>
+          : undefined}
+      progress={view.indeterminate ? { percent: 0, indeterminate: true } : { percent: view.percent }}
+      dimmed={view.status === 'done'}
+      actions={actions}
+    />
+  );
+}
+
+/* Memo rows: re-render only when their own file/job or stat changes.
+   Props must stay referentially stable — mapper runs inside the row. */
+
+const UploadRow = memo(function UploadRow({ file, stat, onResume, onCancel }: {
+  file: UploadFileRow;
+  stat: UploadLiveStat | null;
+  onResume: (file: UploadFileRow) => void;
+  onCancel: (id: number) => void;
+}) {
+  const { t } = useTranslation();
+  const single = useMemo(
+    () => (stat ? { [uploadStatKey({ fileId: file.id ?? null, fileName: file.filename ?? '' }) ?? '']: stat } : {}),
+    [stat, file.id, file.filename]
+  );
+  const view = toUploadView(file, single, t);
+  return (
+    <ViewCard
+      view={view}
+      actions={<>
+        {file?.local_path && (
+          <ActionBtn onClick={() => onResume(file)} title={t('upload.resumeUpload')}>
+            <Play size={15} />
+          </ActionBtn>
+        )}
+        <ActionBtn onClick={() => onCancel(file?.id as number)} title={t('common.cancel')}>
+          <X size={15} />
+        </ActionBtn>
+      </>}
+    />
+  );
+});
+
+const DownloadRow = memo(function DownloadRow({ job, stat, onPause, onResume, onRetry, onCancel }: {
+  job: DownloadJobRow;
+  stat: DownloadStatsLike | null;
+  onPause: (id: number) => void;
+  onResume: (id: number) => void;
+  onRetry: (id: number) => void;
+  onCancel: (id: number) => void;
+}) {
+  const { t } = useTranslation();
+  const single = useMemo(
+    () => (stat ? { [job.id as number]: stat } : undefined),
+    [stat, job.id]
+  );
+  const view = toDownloadView(job, single, t);
+  return (
+    <ViewCard
+      view={view}
+      actions={<>
+        {view.status === 'active' && (
+          <ActionBtn onClick={() => onPause(job.id as number)} title={t('downloads.pause')}>
+            <Pause size={15} />
+          </ActionBtn>
+        )}
+        {view.status === 'paused' && (
+          <ActionBtn onClick={() => onResume(job.id as number)} title={t('downloads.resume')}>
+            <Play size={15} />
+          </ActionBtn>
+        )}
+        {view.status === 'failed' && (
+          <ActionBtn onClick={() => onRetry(job.id as number)} title={t('downloads.retry')}>
+            <RefreshCw size={15} />
+          </ActionBtn>
+        )}
+        {['queued', 'active', 'paused', 'failed'].includes(view.status) && (
+          <ActionBtn onClick={() => onCancel(job.id as number)} title={t('downloads.cancel')}>
+            <X size={15} />
+          </ActionBtn>
+        )}
+      </>}
+    />
+  );
+});
 
 /* ─── Page ─────────────────────────────────────────────────── */
 
@@ -34,65 +135,6 @@ export function TransfersPage({ toast }: { toast: unknown }) {
     gap: 6,
     transition: 'background 0.15s, color 0.15s',
   } as React.CSSProperties);
-
-  const renderActions = (view: TransferView) => {
-    if (view.source === 'download') {
-      const job = view.ref as DownloadJobRow;
-      return <>
-        {view.status === 'active' && (
-          <ActionBtn onClick={() => pauseJob(job.id)} title={t('downloads.pause')}>
-            <Pause size={15} />
-          </ActionBtn>
-        )}
-        {view.status === 'paused' && (
-          <ActionBtn onClick={() => resumeJob(job.id)} title={t('downloads.resume')}>
-            <Play size={15} />
-          </ActionBtn>
-        )}
-        {view.status === 'failed' && (
-          <ActionBtn onClick={() => retryJob(job.id)} title={t('downloads.retry')}>
-            <RefreshCw size={15} />
-          </ActionBtn>
-        )}
-        {['queued', 'active', 'paused', 'failed'].includes(view.status) && (
-          <ActionBtn onClick={() => cancelJob(job.id)} title={t('downloads.cancel')}>
-            <X size={15} />
-          </ActionBtn>
-        )}
-      </>;
-    }
-    const file = view.ref as UploadFileRow;
-    return <>
-      {file?.local_path && (
-        <ActionBtn onClick={() => resumeUpload(file)} title={t('upload.resumeUpload')}>
-          <Play size={15} />
-        </ActionBtn>
-      )}
-      <ActionBtn onClick={() => cancelUpload(file?.id)} title={t('common.cancel')}>
-        <X size={15} />
-      </ActionBtn>
-    </>;
-  };
-
-  const renderRow = (view: TransferView) => (
-    <TransferCard
-      key={view.key}
-      filename={view.filename}
-      kind={view.kind}
-      sublabel={<TransferSublabel view={view} />}
-      extra={view.error
-        ? <span style={{ fontSize: 11, color: '#ef4444' }}>{view.error}</span>
-        : view.extra
-          ? <span style={{ fontSize: 11, color: 'var(--gd-on-surface-variant)' }}>{view.extra}</span>
-          : undefined}
-      progress={view.indeterminate ? { percent: 0, indeterminate: true } : { percent: view.percent }}
-      dimmed={view.status === 'done'}
-      actions={renderActions(view)}
-    />
-  );
-
-  const uploadViews = uploads.map((file) => toUploadView(file, liveStats ?? {}, t));
-  const downloadViews = downloadJobs.map((job) => toDownloadView(job, dlStats, t));
 
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -132,7 +174,15 @@ export function TransfersPage({ toast }: { toast: unknown }) {
           {!uploadsLoading && uploads.length === 0 && (
             <TransferEmptyState title="No files uploading or processing" icon={Upload} />
           )}
-          {uploadViews.map(renderRow)}
+          {uploads.map((file) => (
+            <UploadRow
+              key={file.id}
+              file={file}
+              stat={resolveUploadStat(file, liveStats ?? {})}
+              onResume={resumeUpload}
+              onCancel={cancelUpload}
+            />
+          ))}
         </div>
       )}
 
@@ -145,7 +195,17 @@ export function TransfersPage({ toast }: { toast: unknown }) {
           {!downloadsLoading && downloadJobs.length === 0 && (
             <TransferEmptyState title={t('downloads.empty')} icon={Download} />
           )}
-          {downloadViews.map(renderRow)}
+          {downloadJobs.map((job) => (
+            <DownloadRow
+              key={job.id}
+              job={job}
+              stat={(dlStats as Record<number, DownloadStatsLike> | undefined)?.[job.id] ?? null}
+              onPause={pauseJob}
+              onResume={resumeJob}
+              onRetry={retryJob}
+              onCancel={cancelJob}
+            />
+          ))}
         </div>
       )}
     </section>

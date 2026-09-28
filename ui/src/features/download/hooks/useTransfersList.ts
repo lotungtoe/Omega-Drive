@@ -25,6 +25,7 @@ export function useTransfersList(toast) {
   const cursorRef = useRef(cursor);
   const hasMoreRef = useRef(hasMore);
   const samplesRef = useRef<Record<string, SpeedSample>>({});
+  const renderedRef = useRef<Record<string, { percent: number; phase: string; at: number }>>({});
   const uploadsRef = useRef<{ id?: number; filename?: string; size?: number; status?: string }[]>([]);
   const mockPercentsRef = useRef<Record<string, number>>({});
   uploadsRef.current = uploads;
@@ -70,6 +71,7 @@ export function useTransfersList(toast) {
       if (phase === 'done' || phase === 'failed') {
         if (key) {
           delete samplesRef.current[key];
+          delete renderedRef.current[key];
           delete mockPercentsRef.current[key];
           setLiveStats((prev) => {
             if (!(key in prev)) return prev;
@@ -83,6 +85,14 @@ export function useTransfersList(toast) {
       }
       if (!key) return;
       const percent = Math.min(Math.max(Number(p.overallProgress) || 0, 0), 100);
+      // Throttle: backend emits per chunk. Render when visible progress moves
+      // or 800ms elapsed (keeps speed/ETA alive while percent stands still).
+      const nowMs = performance.now();
+      const last = renderedRef.current[key];
+      if (last && Math.round(last.percent) === Math.round(percent) && last.phase === phase && nowMs - last.at < 800) {
+        return;
+      }
+      renderedRef.current[key] = { percent, phase, at: nowMs };
       const { done, total } = uploadBytes({ platforms: p.platforms ?? [] });
       const now = performance.now();
       const { speed, sample } = nextSpeed(samplesRef.current[key], done, now);
@@ -96,12 +106,7 @@ export function useTransfersList(toast) {
         bytesDone: done,
         bytesTotal: total,
       };
-      // Throttle: backend emits per chunk; skip render if nothing visible changed.
-      setLiveStats((prev) => {
-        const cur = prev[key];
-        if (cur && Math.round(cur.percent) === Math.round(percent) && cur.phase === phase) return prev;
-        return { ...prev, [key]: stat };
-      });
+      setLiveStats((prev) => ({ ...prev, [key]: stat }));
     } catch {
       // Never let stats bookkeeping break the page.
     }
