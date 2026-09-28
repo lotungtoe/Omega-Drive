@@ -51,10 +51,14 @@ export function uploadBytes(p: Pick<UploadProgressPayload, "platforms">): { done
 
 /** Pick the live stat for a DB file row: id match first, name match as fallback. */
 export function resolveUploadStat(
-  file: { id: number; filename: string },
+  file: { id?: number | string | null; filename?: string | null },
   live: Record<string, UploadLiveStat>
 ): UploadLiveStat | null {
-  return live[`id:${file.id}`] ?? live[`name:${basename(file.filename)}`] ?? null;
+  if (file.id != null) {
+    const hit = live[`id:${file.id}`];
+    if (hit) return hit;
+  }
+  return live[`name:${basename(file.filename)}`] ?? null;
 }
 
 export type SpeedSample = { bytes: number; t: number };

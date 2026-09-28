@@ -3,6 +3,9 @@ import {
   FileVideo, FileAudio, FileImage, FileText, File,
   Archive, FileCode,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatSize } from '../../../shared/utils/index';
+import type { TransferView, Ti18n } from './transferView';
 
 /* ─── File icon ─────────────────────────────────────────────── */
 
@@ -132,6 +135,34 @@ export function ActionBtn({ onClick, title, children }: {
     >
       {children}
     </button>
+  );
+}
+
+/* ─── Shared sublabel (speed line or fallback text) ─────────── */
+
+function formatEta(secs: number | null | undefined, t: Ti18n): string {
+  if (secs == null || !Number.isFinite(secs) || secs < 0) return "";
+  const s = Math.round(secs);
+  if (s < 60) return t('downloads.timeSecs', { n: s });
+  const m = Math.round(s / 60);
+  if (m < 60) return t('downloads.timeMins', { n: m });
+  return t('downloads.timeHours', { n: Math.round(m / 60) });
+}
+
+export function TransferSublabel({ view }: { view: TransferView }) {
+  const { t } = useTranslation();
+  if (view.status === 'active' && view.speedBps > 0 && view.bytesTotal > 0) {
+    return (
+      <>
+        {formatSize(view.speedBps)}/s&nbsp;·&nbsp;{formatSize(view.bytesDone)} {t('downloads.ofWord')} {formatSize(view.bytesTotal)}
+        {view.etaSecs != null && Number.isFinite(view.etaSecs) ? t('downloads.eta', { time: formatEta(view.etaSecs, t) }) : ''}
+      </>
+    );
+  }
+  return (
+    <span style={view.status === 'failed' ? { color: '#ef4444' } : undefined}>
+      {view.statusText}
+    </span>
   );
 }
 
