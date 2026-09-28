@@ -34,6 +34,16 @@ globalThis.onunhandledrejection = function(event) {
 
 console.info('[Forensic] Global error handlers hooked.')
 
+// React Scan (dev-only render inspector). Dynamic import keeps it out of the
+// production bundle; the DEV gate keeps it out of Tauri release builds.
+if (import.meta.env.DEV) {
+  void import('react-scan').then(({ scan }) => {
+    scan({ enabled: true, showToolbar: true, animationSpeed: 'fast' });
+  }).catch(() => {
+    // Never break boot if the inspector fails to load.
+  });
+}
+
 const boot = async () => {
   let initialLng
   try {
