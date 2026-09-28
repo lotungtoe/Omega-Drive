@@ -1,15 +1,17 @@
 ﻿import { useState } from 'react';
-import {
-  Pause, Play, X, RefreshCw, Upload, Download,
-  FileVideo, FileAudio, FileImage, FileText, File,
-  Archive, FileCode,
-} from 'lucide-react';
+import { Pause, Play, X, RefreshCw, Upload, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDownloads } from '../hooks/useDownloads';
 import { useTransfersList } from '../hooks/useTransfersList';
+import { resolveUploadStat } from '../hooks/uploadProgress';
 import { formatSize } from '../../../shared/utils/index';
+import {
+  TransferCard,
+  TransferEmptyState,
+  ActionBtn,
+} from '../components/TransferCard';
 
-/* â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Helpers ──────────────────────────────────────────────── */
 
 function getFilename(targetPath?: string | null) {
   if (!targetPath) return 'Unknown';
@@ -31,145 +33,14 @@ function formatEta(secs: number | null | undefined, t: (k: string, o?: any) => s
   return t('downloads.timeHours', { n: Math.round(m / 60) });
 }
 
-function getExt(filename: string) {
-  const dot = filename.lastIndexOf('.');
-  return dot >= 0 ? filename.slice(dot + 1).toLowerCase() : '';
-}
-
-/* â”€â”€â”€ File icon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-
-const KIND_MAP: Record<string, { Icon: React.ElementType; color: string; bg: string }> = {
-  video:   { Icon: FileVideo,  color: '#fff', bg: '#8b5cf6' },
-  audio:   { Icon: FileAudio,  color: '#fff', bg: '#ec4899' },
-  image:   { Icon: FileImage,  color: '#fff', bg: '#0ea5e9' },
-  pdf:     { Icon: FileText,   color: '#fff', bg: '#ef4444' },
-  word:    { Icon: FileText,   color: '#fff', bg: '#2563eb' },
-  excel:   { Icon: FileText,   color: '#fff', bg: '#16a34a' },
-  code:    { Icon: FileCode,   color: '#fff', bg: '#f59e0b' },
-  archive: { Icon: Archive,    color: '#fff', bg: '#d97706' },
-};
-
-const EXT_KIND: Record<string, string> = {
-  mp4: 'video', mkv: 'video', avi: 'video', mov: 'video', webm: 'video',
-  mp3: 'audio', flac: 'audio', wav: 'audio', aac: 'audio',
-  jpg: 'image', jpeg: 'image', png: 'image', gif: 'image', webp: 'image',
-  pdf: 'pdf',
-  doc: 'word', docx: 'word',
-  xls: 'excel', xlsx: 'excel',
-  js: 'doc', ts: 'doc', tsx: 'doc', jsx: 'doc', py: 'doc', rs: 'doc',
-  zip: 'archive', rar: 'archive', '7z': 'archive', tar: 'archive', gz: 'archive',
-};
-
-function FileIcon({ filename, kind }: { filename: string; kind?: string | null }) {
-  const ext = getExt(filename);
-  const resolvedKind = kind || EXT_KIND[ext] || 'file';
-  const meta = KIND_MAP[resolvedKind] ?? { Icon: File, color: '#fff', bg: 'var(--gd-outline)' };
-  const { Icon, color, bg } = meta;
-  const label = ext ? ext.toUpperCase().slice(0, 4) : '?';
-
-  return (
-    <div style={{
-      width: 48,
-      height: 48,
-      borderRadius: 10,
-      backgroundColor: bg,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0,
-      gap: 2,
-    }}>
-      <Icon size={18} color={color} />
-      <span style={{ fontSize: 9, color, fontWeight: 700, letterSpacing: '0.03em', lineHeight: 1 }}>
-        {label}
-      </span>
-    </div>
-  );
-}
-
-/* â”€â”€â”€ Progress bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-
-function ThinProgressBar({ percent, indeterminate = false }: { percent: number; indeterminate?: boolean }) {
-  return (
-    <div style={{
-      height: 3,
-      borderRadius: 2,
-      backgroundColor: 'var(--gd-outline-variant)',
-      overflow: 'hidden',
-      width: '100%',
-    }}>
-      <div style={{
-        height: '100%',
-        borderRadius: 2,
-        backgroundColor: 'var(--gd-blue)',
-        width: indeterminate ? '40%' : `${percent}%`,
-        transition: indeterminate ? 'none' : 'width 0.3s ease',
-        animation: indeterminate ? 'gd-indeterminate 1.4s infinite ease-in-out' : 'none',
-      }} />
-    </div>
-  );
-}
-
-/* â”€â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-
-const TransferEmptyState = ({ title, icon: Icon }: { title: string; icon: React.ElementType }) => (
-  <div style={{
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '80px 24px',
-    textAlign: 'center',
-    borderRadius: 'var(--gd-radius-md)',
-    border: '2px dashed var(--gd-outline)',
-  }}>
-    <div style={{
-      width: 64, height: 64,
-      borderRadius: 'var(--gd-radius-full)',
-      backgroundColor: 'var(--gd-surface-variant)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      marginBottom: 16,
-    }}>
-      <Icon size={28} style={{ color: 'var(--gd-on-surface-variant)' }} />
-    </div>
-    <h3 style={{
-      fontSize: 16, fontFamily: "'Google Sans', sans-serif",
-      fontWeight: 500, margin: 0, color: 'var(--gd-on-surface)',
-    }}>
-      {title}
-    </h3>
-  </div>
-);
-
-/* â”€â”€â”€ Icon action button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-
-function ActionBtn({ onClick, title, children }: {
-  onClick: () => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className="gd-icon-btn"
-      style={{ width: 32, height: 32, borderRadius: 'var(--gd-radius-full)', flexShrink: 0 }}
-    >
-      {children}
-    </button>
-  );
-}
-
-/* â”€â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Page ─────────────────────────────────────────────────── */
 
 export function TransfersPage({ toast }: { toast: unknown }) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('uploads');
 
   const { jobs: downloadJobs, loading: downloadsLoading, stats: dlStats, pauseJob, resumeJob, cancelJob, retryJob } = useDownloads(toast);
-  const { uploads, loading: uploadsLoading, resumeUpload, cancelUpload } = useTransfersList(toast);
+  const { uploads, loading: uploadsLoading, liveStats, resumeUpload, cancelUpload } = useTransfersList(toast);
 
   const tabBtn = (active: boolean) => ({
     padding: '7px 16px',
@@ -215,7 +86,7 @@ export function TransfersPage({ toast }: { toast: unknown }) {
         </button>
       </div>
 
-      {/* â”€â”€ Uploads tab â”€â”€ */}
+      {/* ── Uploads tab ── */}
       {activeTab === 'uploads' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {uploadsLoading && uploads.length === 0 && (
@@ -225,45 +96,40 @@ export function TransfersPage({ toast }: { toast: unknown }) {
             <TransferEmptyState title="No files uploading or processing" icon={Upload} />
           )}
           {uploads.map((file) => {
-            const isProcessing = file.status === 'processing';
-            const statusLabel = isProcessing ? 'Processing...' : 'Uploading...';
+            const stat = resolveUploadStat(file, liveStats ?? {});
+            const isProcessing = file.status === 'processing' && (!stat || stat.phase === 'processing');
+            const percent = stat ? Math.min(Math.round(stat.percent), 100) : 0;
+            const total = stat && stat.bytesTotal > 0 ? stat.bytesTotal : (file.size || 0);
+            const done = stat && stat.bytesTotal > 0
+              ? stat.bytesDone
+              : Math.round((percent / 100) * (file.size || 0));
+            const showLive = !!stat && !isProcessing;
+
+            const sublabel = isProcessing ? (
+              <>Processing...</>
+            ) : showLive && stat.speedBps > 0 && total > 0 ? (
+              <>
+                {formatSize(stat.speedBps)}/s&nbsp;·&nbsp;{formatSize(done)} {t('downloads.ofWord')} {formatSize(total)}
+                {stat.etaSecs != null && Number.isFinite(stat.etaSecs) ? t('downloads.eta', { time: formatEta(stat.etaSecs, t) }) : ''}
+              </>
+            ) : showLive ? (
+              <>{percent}%{stat.detail ? ` · ${stat.detail}` : ''}</>
+            ) : (
+              <>{formatSize(file.size || 0)} &nbsp;·&nbsp; Uploading...</>
+            );
 
             return (
-              <div key={file.id} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                padding: '14px 16px',
-                borderRadius: 'var(--gd-radius-md)',
-                backgroundColor: 'var(--gd-surface)',
-                border: '1px solid var(--gd-outline-variant)',
-                marginBottom: 6,
-                transition: 'background 0.15s',
-              }}>
-                {/* File icon */}
-                <FileIcon filename={file.filename} kind={null} />
-
-                {/* Info */}
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
-                  <span style={{
-                    fontSize: 14, fontWeight: 600,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    color: 'var(--gd-on-surface)',
-                  }}>
-                    {file.filename}
+              <TransferCard
+                key={file.id}
+                filename={file.filename}
+                sublabel={sublabel}
+                extra={isProcessing ? (
+                  <span style={{ fontSize: 11, color: 'var(--gd-on-surface-variant)' }}>
+                    Processing (export, mp4, encode)...
                   </span>
-                  <span style={{ fontSize: 12, color: 'var(--gd-on-surface-variant)', lineHeight: 1.4 }}>
-                    {formatSize(file.size || 0)} &nbsp;Â·&nbsp; {statusLabel}
-                  </span>
-                  {isProcessing && (
-                    <span style={{ fontSize: 11, color: 'var(--gd-on-surface-variant)' }}>
-                      Processing (export, mp4, encode)...
-                    </span>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                ) : undefined}
+                progress={isProcessing ? { percent: 0, indeterminate: true } : { percent }}
+                actions={<>
                   {file.local_path && (
                     <ActionBtn onClick={() => resumeUpload(file)} title={t('upload.resumeUpload')}>
                       <Play size={15} />
@@ -272,14 +138,14 @@ export function TransfersPage({ toast }: { toast: unknown }) {
                   <ActionBtn onClick={() => cancelUpload(file.id)} title={t('common.cancel')}>
                     <X size={15} />
                   </ActionBtn>
-                </div>
-              </div>
+                </>}
+              />
             );
           })}
         </div>
       )}
 
-      {/* â”€â”€ Downloads tab â”€â”€ */}
+      {/* ── Downloads tab ── */}
       {activeTab === 'downloads' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {downloadsLoading && downloadJobs.length === 0 && (
@@ -314,53 +180,30 @@ export function TransfersPage({ toast }: { toast: unknown }) {
               done: 'Completed',
             }[job.state] ?? job.state;
 
+            const sublabel = isActive && st ? (
+              <>
+                {formatSize(st.speedBps)}/s&nbsp;·&nbsp;{formatSize(st.bytesDone)} {t('downloads.ofWord')} {formatSize(st.bytesTotal)}
+                {st.etaSecs != null && Number.isFinite(st.etaSecs) ? t('downloads.eta', { time: formatEta(st.etaSecs, t) }) : ''}
+              </>
+            ) : (
+              <span style={isFailed ? { color: '#ef4444' } : undefined}>
+                {t('downloads.part', { current: done, total })}
+                &nbsp;·&nbsp;{stateLabel}
+                {job.error_code ? ` (${job.error_code})` : ''}
+              </span>
+            );
+
             return (
-              <div key={job.id} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                padding: '14px 16px',
-                borderRadius: 'var(--gd-radius-md)',
-                backgroundColor: 'var(--gd-surface)',
-                border: '1px solid var(--gd-outline-variant)',
-                marginBottom: 6,
-                opacity: isDone ? 0.65 : 1,
-                transition: 'background 0.15s, opacity 0.2s',
-              }}>
-                {/* File icon */}
-                <FileIcon filename={filename} kind={null} />
-
-                {/* Info */}
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
-                  <span style={{
-                    fontSize: 14, fontWeight: 600,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    color: 'var(--gd-on-surface)',
-                  }}>
-                    {filename}
-                  </span>
-                  <span style={{ fontSize: 12, color: isFailed ? '#ef4444' : 'var(--gd-on-surface-variant)', lineHeight: 1.4 }}>
-                    {isActive && st ? (
-                      <>
-                        {formatSize(st.speedBps)}/s&nbsp;·&nbsp;{formatSize(st.bytesDone)} {t('downloads.ofWord')} {formatSize(st.bytesTotal)}
-                        {st.etaSecs != null && Number.isFinite(st.etaSecs) ? t('downloads.eta', { time: formatEta(st.etaSecs, t) }) : ''}
-                      </>
-                    ) : (
-                      <>
-                        {t('downloads.part', { current: done, total })}
-                        &nbsp;·&nbsp;{stateLabel}
-                        {job.error_code ? ` (${job.error_code})` : ''}
-                      </>
-                    )}
-                  </span>
-                  {job.error && (
-                    <span style={{ fontSize: 11, color: '#ef4444' }}>{job.error}</span>
-                  )}
-                  <ThinProgressBar percent={isDone ? 100 : percent} />
-                </div>
-
-                {/* Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+              <TransferCard
+                key={job.id}
+                filename={filename}
+                sublabel={sublabel}
+                extra={job.error ? (
+                  <span style={{ fontSize: 11, color: '#ef4444' }}>{job.error}</span>
+                ) : undefined}
+                progress={{ percent: isDone ? 100 : percent }}
+                dimmed={isDone}
+                actions={<>
                   {isActive && (
                     <ActionBtn onClick={() => pauseJob(job.id)} title={t('downloads.pause')}>
                       <Pause size={15} />
@@ -381,8 +224,8 @@ export function TransfersPage({ toast }: { toast: unknown }) {
                       <X size={15} />
                     </ActionBtn>
                   )}
-                </div>
-              </div>
+                </>}
+              />
             );
           })}
         </div>
@@ -392,4 +235,3 @@ export function TransfersPage({ toast }: { toast: unknown }) {
 }
 
 export default TransfersPage;
-

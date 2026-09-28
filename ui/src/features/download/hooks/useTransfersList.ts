@@ -4,9 +4,18 @@ import { fetchTransfersPaginated } from '../../drive/services/driveService';
 import { toUserMessage } from '../../../shared/services/errors/toUserMessage';
 import { resumeUploadByPath } from '../../upload/services/uploadService';
 import { DriveApi } from '../../../api/index';
+import {
+  uploadStatKey,
+  uploadBytes,
+  nextSpeed,
+  type UploadLiveStat,
+  type UploadProgressPayload,
+  type SpeedSample,
+} from './uploadProgress';
 
 export function useTransfersList(toast) {
   const [uploads, setUploads] = useState([]);
+  const [liveStats, setLiveStats] = useState<Record<string, UploadLiveStat>>({});
   const [loading, setLoading] = useState(true);
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
@@ -14,6 +23,7 @@ export function useTransfersList(toast) {
   const toastRef = useRef(toast);
   const cursorRef = useRef(cursor);
   const hasMoreRef = useRef(hasMore);
+  const samplesRef = useRef<Record<string, SpeedSample>>({});
   useEffect(() => {
     toastRef.current = toast;
     cursorRef.current = cursor;
@@ -51,9 +61,46 @@ export function useTransfersList(toast) {
     void loadUploads(true);
 
     const refreshOnProgress = listen('upload-progress', (event) => {
-      const phase = (event.payload as any)?.phase;
-      if (phase === 'done' || phase === 'failed') {
-        void loadUploads(true);
+      try {
+        const p = (event?.payload ?? {}) as Partial<UploadProgressPayload>;
+        const phase = String(p.phase ?? "");
+        const key = uploadStatKey({ fileId: p.fileId ?? null, fileName: p.fileName ?? "" });
+        if (phase === 'done' || phase === 'failed') {
+          if (key) {
+            delete samplesRef.current[key];
+            setLiveStats((prev) => {
+              if (!(key in prev)) return prev;
+              const next = { ...prev };
+              delete next[key];
+              return next;
+            });
+          }
+          void loadUploads(true);
+          return;
+        }
+        if (!key) return;
+        const percent = Math.min(Math.max(Number(p.overallProgress) || 0, 0), 100);
+        const { done, total } = uploadBytes({ platforms: p.platforms ?? [] });
+        const now = performance.now();
+        const { speed, sample } = nextSpeed(samplesRef.current[key], done, now);
+        samplesRef.current[key] = sample;
+        const stat: UploadLiveStat = {
+          percent,
+          detail: String(p.detail ?? ""),
+          phase,
+          speedBps: speed,
+          etaSecs: speed > 0 && total > done ? (total - done) / speed : null,
+          bytesDone: done,
+          bytesTotal: total,
+        };
+        // Throttle: backend emits per chunk; skip render if nothing visible changed.
+        setLiveStats((prev) => {
+          const cur = prev[key];
+          if (cur && Math.round(cur.percent) === Math.round(percent) && cur.phase === phase) return prev;
+          return { ...prev, [key]: stat };
+        });
+      } catch {
+        // Never let stats bookkeeping break the page.
       }
     });
 
@@ -81,5 +128,5 @@ export function useTransfersList(toast) {
     }
   }, [loadUploads]);
 
-  return { uploads, loading, hasMore, loadMore: () => loadUploads(false), refresh: () => loadUploads(true), resumeUpload, cancelUpload };
+  return { uploads, loading, liveStats, hasMore, loadMore: () => loadUploads(false), refresh: () => loadUploads(true), resumeUpload, cancelUpload };
 }
